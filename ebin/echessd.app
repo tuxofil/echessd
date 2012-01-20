@@ -8,7 +8,10 @@
                   echessd_lib,
                   echessd_log,
                   echessd_cfg,
-                  echessd_srv
+                  echessd_srv,
+                  echessd_game,
+                  echessd_db,
+                  echessd_html
                  ]},
   {registered,   [echessd_sup, echessd_log, echessd_srv]},
   {applications, []},
