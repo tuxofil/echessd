@@ -1,0 +1,6 @@
+*~
+*.beam
+contrib/*
+tmp/*
+erl_crash.dump
+*.log
