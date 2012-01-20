@@ -22,5 +22,32 @@
 
 -define(LOG_LEVELS, [?LOG_ERR, ?LOG_INFO, ?LOG_DEBUG]).
 
+%% colors
+-define(white, w).
+-define(black, b).
+
+%% figures
+-define(pawn, p).
+-define(rook, r).
+-define(knight, h).
+-define(bishop, b).
+-define(queen, q).
+-define(king, k).
+
+-define(w_pawn, {?white, ?pawn}).
+-define(b_pawn, {?black, ?pawn}).
+-define(w_rook, {?white, ?rook}).
+-define(b_rook, {?black, ?rook}).
+-define(w_knight, {?white, ?knight}).
+-define(b_knight, {?black, ?knight}).
+-define(w_bishop, {?white, ?bishop}).
+-define(b_bishop, {?black, ?bishop}).
+-define(w_queen, {?white, ?queen}).
+-define(b_queen, {?black, ?queen}).
+-define(w_king, {?white, ?king}).
+-define(b_king, {?black, ?king}).
+
+-define(empty, z).
+
 -endif.
 
