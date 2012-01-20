@@ -1,0 +1,38 @@
+
+body, td, p, div, span, form, input, textarea, select, button {
+    margin:0;
+    padding:0;
+}
+
+body { 
+    margin-top:10;
+    margin-bottom:10;
+}
+
+td.wc, td.bc, td.crd_t, td.crd_b, td.crd_l, td.crd_r {
+    text-align: center;
+    vertical-align: middle;
+}
+
+td.wc, td.bc {
+    height: 40;
+    width: 40;
+    font-size: 30px;
+}
+
+td.bc {
+    background-color: #505050;
+}
+
+td.wc {
+    background-color: #aaaaaa;
+}
+
+td.crd_t, td.crd_b {
+    height:20;
+}
+
+td.crd_l, td.crd_r {
+    width: 20;
+}
+
