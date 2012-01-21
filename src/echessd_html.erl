@@ -146,6 +146,7 @@ login() ->
 register() ->
     header("echessd", []) ++
         h1("echessd register form") ++
+        "<div class=navig>[&nbsp;<a href='?goto=login'>Return to login form</a>&nbsp;]</div>"
         "<form method=post>"
         "<input name=action type=hidden value=register>"
         "Login:    <input name=regusername type=text><br>"
