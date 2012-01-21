@@ -8,5 +8,5 @@ exec erl -sname "echessd" \
     -mnesia dir \"tmp/mnesia\" \
     -echessd_config echessd.conf \
     -s mnesia \
-    -s echessd start
+    -s echessd
 
