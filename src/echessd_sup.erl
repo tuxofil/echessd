@@ -13,6 +13,7 @@ init(_StartArgs) ->
     true = register(?MODULE, self()),
     ok = echessd_cfg:read(),
     ok = echessd_db:wait(),
+    ok = echessd_db:mksession_table(),
     {ok, {
        {one_for_one, 5, 1},
        [

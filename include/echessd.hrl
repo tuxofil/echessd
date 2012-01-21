@@ -9,15 +9,18 @@
 -define(CFG_LOGFILE, logfile).
 -define(CFG_BIND_ADDR, bind_addr).
 -define(CFG_BIND_PORT, bind_port).
+-define(CFG_DOC_ROOT, doc_root).
 
 -define(CFGS, [?CFG_LOGLEVEL, ?CFG_LOGFILE,
-               ?CFG_BIND_ADDR, ?CFG_BIND_PORT]).
+               ?CFG_BIND_ADDR, ?CFG_BIND_PORT,
+               ?CFG_DOC_ROOT]).
 
 -define(MANDATORY_CFGS, []).
 
 %% database tables
 -define(dbt_users, echessd_dbt_users).
 -define(dbt_games, echessd_dbt_games).
+-define(dbt_session, echessd_dbt_session).
 
 %% log message classes
 -define(LOG_ERR, err).

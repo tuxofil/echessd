@@ -9,6 +9,7 @@
                   echessd_log,
                   echessd_cfg,
                   echessd_srv,
+                  echessd_user,
                   echessd_game,
                   echessd_db,
                   echessd_html
