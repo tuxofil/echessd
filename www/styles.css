@@ -48,3 +48,8 @@ td.crd_l, td.crd_r {
     width: 20;
 }
 
+.error {
+    font-weight: bold;
+    color: red;
+}
+
