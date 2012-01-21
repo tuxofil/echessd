@@ -8,7 +8,6 @@
          error/1,
          eaccess/0,
          main/0,
-         games/0,
          game/1,
          users/0,
          test_table/0,
@@ -114,8 +113,7 @@ navigation() ->
             fun(Section) ->
                     Caption =
                         case Section of
-                            ?SECTION_MAIN -> "Home";
-                            ?SECTION_GAMES -> "My games";
+                            ?SECTION_HOME -> "Home";
                             ?SECTION_USERS -> "Users";
                             _ -> Section
                         end,
@@ -125,8 +123,7 @@ navigation() ->
                            true -> Caption
                         end ++ "</a>"
             end,
-            [?SECTION_MAIN, ?SECTION_GAMES,
-             ?SECTION_USERS, ?SECTION_TEST]),
+            [?SECTION_HOME, ?SECTION_USERS, ?SECTION_TEST]),
           "&nbsp;|&nbsp;") ++
         "&nbsp;|&nbsp;<a href='?action=exit'>Logout</a>"
         "&nbsp;]</div>".
@@ -169,13 +166,6 @@ main() ->
         h1("Logged in as \"" ++ get(username) ++ "\"") ++
         navigation() ++
         "" ++
-        footer([]).
-
-games() ->
-    header("echessd", []) ++
-        h1("Logged in as " ++ get(username)) ++
-        navigation() ++
-        "<a href=''>Start new game</a>" ++
         footer([]).
 
 users() ->

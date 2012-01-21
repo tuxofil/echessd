@@ -97,7 +97,7 @@ process_post(Req, "login", Query, LoggedIn) ->
                 {ok, UserInfo} ->
                     SID = echessd_session:mk(Username),
                     echessd_session:read([{"sid", SID}]),
-                    echessd_session:set_val(section, ?SECTION_MAIN),
+                    echessd_session:set_val(section, ?SECTION_HOME),
                     echessd_session:set_val(userinfo, UserInfo),
                     echessd_log:debug(
                       "session ~9999p created for user ~9999p",
@@ -142,8 +142,6 @@ process_show(Req, ExtraHeaders) ->
     process_show(Req, ExtraHeaders, Section).
 process_show(Req, ExtraHeaders, ?SECTION_GAME) ->
     Req:ok({?mime_text_html, ExtraHeaders, echessd_html:game(undefined)});
-process_show(Req, ExtraHeaders, ?SECTION_GAMES) ->
-    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:games()});
 process_show(Req, ExtraHeaders, ?SECTION_USERS) ->
     Req:ok({?mime_text_html, ExtraHeaders, echessd_html:users()});
 process_show(Req, ExtraHeaders, ?SECTION_TEST) ->
@@ -156,7 +154,7 @@ process_goto(Query) ->
     Section =
         case lists:member(String, ?SECTIONS) of
             true -> String;
-            _ -> ?SECTION_MAIN
+            _ -> ?SECTION_HOME
         end,
     echessd_session:set_val(section, Section).
 
