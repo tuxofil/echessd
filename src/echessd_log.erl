@@ -158,14 +158,7 @@ format_msg(Time, MessageClass, Format, Args) ->
 format_msg_(Time, MessageClass, Format, Args) ->
     io_lib:format(
       "~s ~s: " ++ Format ++ "~n",
-      [timestamp(Time),
+      [echessd_lib:timestamp(Time),
        string:to_upper(atom_to_list(MessageClass)) |
        Args]).
-
-timestamp(Time) ->
-    {{Year, Month, Day}, {Hour, Minutes, Seconds}} =
-        calendar:now_to_local_time(Time),
-    io_lib:format(
-      "~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0B",
-      [Year, Month, Day, Hour, Minutes, Seconds]).
 
