@@ -147,7 +147,7 @@ process_show(Req, ExtraHeaders, ?SECTION_USERS) ->
 process_show(Req, ExtraHeaders, ?SECTION_TEST) ->
     Req:ok({?mime_text_html, ExtraHeaders, echessd_html:test_table()});
 process_show(Req, ExtraHeaders, _Default) ->
-    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:main()}).
+    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:home()}).
 
 process_goto(Query) ->
     String = proplists:get_value("goto", Query),

@@ -7,7 +7,7 @@
          register/0,
          error/1,
          eaccess/0,
-         main/0,
+         home/0,
          game/1,
          users/0,
          test_table/0,
@@ -129,7 +129,7 @@ navigation() ->
         "&nbsp;]</div>".
 
 login() ->
-    header("echessd", []) ++
+    header("echessd - Login", []) ++
         h1("echessd login") ++
         "<div class=navig>[&nbsp;<a href='?goto=register'>Register new user</a>&nbsp;]</div>"
         "<form method=post>"
@@ -141,7 +141,7 @@ login() ->
         footer([]).
 
 register() ->
-    header("echessd", []) ++
+    header("echessd - Register new user", []) ++
         h1("echessd register form") ++
         "<div class=navig>[&nbsp;<a href='?goto=login'>Return to login form</a>&nbsp;]</div>"
         "<form method=post>"
@@ -154,15 +154,15 @@ register() ->
         footer([]).
 
 error(String) ->
-    header("echessd", []) ++
+    header("echessd - Error", []) ++
         h1("echessd error") ++
         "<div class=error>" ++ String ++ "</div>" ++
         footer([]).
 
 eaccess() -> ?MODULE:error("ACCESS DENIED").
 
-main() ->
-    header("echessd", []) ++
+home() ->
+    header("echessd - Home", []) ++
         h1("Logged in as \"" ++ get(username) ++ "\"") ++
         navigation() ++
         "" ++
@@ -171,20 +171,20 @@ main() ->
 users() ->
     {ok, Users0} = echessd_user:list(),
     Users = lists:usort(Users0) -- get(username),
-    header("echessd", []) ++
+    header("echessd - Users list", []) ++
         h1("Users list") ++
         navigation() ++
+        "<br>" ++
         string:join(
           lists:map(
             fun(User) ->
                     "*&nbsp;<a href='?goto=user&name=" ++ User ++ "'>" ++
                         User ++ "</a>"
             end, Users), "<br>") ++
-        "<br><br><a href=''>Start new game</a>" ++
         footer([]).
 
 game(GameID) ->
-    header("echessd", []) ++
+    header("echessd - Game", []) ++
         h1("Logged in as " ++ get(username)) ++
         navigation() ++
         "" ++
@@ -199,14 +199,14 @@ test_table() ->
                   {T, _} = echessd_game:move(Acc, Move),
                   T
           end, Game0, Moves),
-    header("echessd", []) ++
+    header("echessd - Test table", []) ++
         h1("Test table") ++
         navigation() ++
         table(Game) ++
         footer([]).
 
 notyet() ->
-    header("echessd", []) ++
+    header("echessd - Under construction", []) ++
         h1("Not implemented yet") ++
         "" ++
         footer([]).
