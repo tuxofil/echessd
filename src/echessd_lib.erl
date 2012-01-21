@@ -1,6 +1,8 @@
 -module(echessd_lib).
 
--export([ip2str/1, read_file/1]).
+-export([ip2str/1, read_file/1,
+         proplist_replace/2
+        ]).
 
 ip2str({A, B, C, D}) ->
     io_lib:format("~B.~B.~B.~B", [A, B, C, D]).
@@ -15,4 +17,12 @@ read_file(Filename) ->
               [Filename, Reason]),
             throw(Reason)
     end.
+
+proplist_replace(PropList, NewValues) ->
+    lists:foldl(
+      fun({Key, _V} = Item, Acc) ->
+              [Item |
+               [I || {K, _} = I <- Acc,
+                     K /= Key]]
+      end, PropList, NewValues).
 

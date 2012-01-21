@@ -35,13 +35,16 @@ loop(Req) ->
                 throw(PeerReason)
         end,
     Method = Req:get(method),
+    FullPath = Req:get(path),
     Query = Req:parse_qs(),
-    echessd_log:debug("Query=~9999p", [Query]),
+    echessd_log:debug(
+      "~s> Method=~9999p; Path=~9999p; Query=~9999p",
+      [echessd_lib:ip2str(IP), Method, FullPath, Query]),
     if Method == ?HTTP_GET ->
-            "/" ++ Path = Req:get(path),
+            "/" ++ Path = FullPath,
             case Path of
                 "table" ->
-                    Game0 = echessd_game:new(),
+                    Game0 = echessd_game:new(?GAME_CLASSIC),
                     Moves = string:tokens(proplists:get_value("moves", Query), ","),
                     Game =
                         lists:foldl(
@@ -69,15 +72,4 @@ loop(Req) ->
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
-
-%% @doc Replaces all matched by Regexp text in String by Replacement
-%% @spec str_replace(String, Regexp, Replacement) -> NewString
-%%     String = Regexp = Replacement = NewString = string()
-str_replace(String, Regexp, Replacement)
-  when is_list(String), is_list(Regexp), is_list(Replacement) ->
-    try re:replace( String, Regexp, Replacement, [global, {return, list}]) of
-        Result -> Result
-    catch
-        _:_ -> String
-    end.
 

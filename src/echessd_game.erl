@@ -1,6 +1,6 @@
 -module(echessd_game).
 
--export([new/0,
+-export([new/1,
          move/2, move/3,
          getcell/2, setcell/3
         ]).
@@ -9,7 +9,7 @@
 
 -include("echessd.hrl").
 
-new() ->
+new(?GAME_CLASSIC) ->
     {{?b_rook,?b_knight,?b_bishop,?b_queen,?b_king,?b_bishop,?b_knight,?b_rook}, %% 8
      {?b_pawn,?b_pawn,?b_pawn,?b_pawn,?b_pawn,?b_pawn,?b_pawn,?b_pawn}, %% 7
      {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 6
@@ -19,7 +19,12 @@ new() ->
      {?w_pawn,?w_pawn,?w_pawn,?w_pawn,?w_pawn,?w_pawn,?w_pawn,?w_pawn}, %% 2
      {?w_rook,?w_knight,?w_bishop,?w_queen,?w_king,?w_bishop,?w_knight,?w_rook}  %% 1
      %% a,b,c,d,e,f,g,h
-    }.
+    };
+new(Other) ->
+    echessd_log:err(
+      "Failed to generate game of ~99999p style: not implemented",
+      [Other]),
+    throw({unsupported_game_style, Other}).
 
 move(Game, [A, B, C, D]) ->
     move(Game, [A, B], [C, D]).

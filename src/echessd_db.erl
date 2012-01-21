@@ -4,7 +4,10 @@
          mksession_table/0,
          adduser/2,
          deluser/1,
-         get_user_props/1
+         get_user_props/1,
+         set_user_props/2,
+         addgame/1,
+         set_game_props/2
         ]).
 
 -include("echessd.hrl").
@@ -57,13 +60,9 @@ adduser(Name, Props) ->
       fun() ->
               case mnesia:read({?dbt_users, Name}) of
                   [_] ->
-                      mnesia:abort(user_already_exists);
+                      mnesia:abort({user_already_exists, Name});
                   _ ->
-                      mnesia:write(
-                        ?dbt_users,
-                        #hrec{key = Name,
-                              val = Props},
-                        write)
+                      ll_set_props(?dbt_users, Name, Props)
               end
       end).
 
@@ -76,11 +75,46 @@ deluser(Name) ->
 get_user_props(Name) ->
     transaction(
      fun() ->
-             case mnesia:read({?dbt_users, Name}) of
-                 [HRec] -> HRec#hrec.val;
-                 _ -> mnesia:abort(no_such_user)
-             end
+             ll_get_props(?dbt_users, Name)
      end).
+
+set_user_props(Name, Props) ->
+    transaction(
+      fun() ->
+              OldProps = ll_get_props(?dbt_users, Name),
+              ll_replace_props(
+                ?dbt_users, Name, OldProps, Props)
+      end).
+
+addgame(Props) ->
+    ID = now(),
+    transaction(
+      fun() ->
+              ll_set_props(?dbt_games, ID, Props)
+      end).
+
+set_game_props(ID, Props) ->
+    transaction(
+      fun() ->
+              OldProps = ll_get_props(?dbt_games, ID),
+              NewProps =
+                  echessd_lib:proplist_replace(
+                    OldProps, Props),
+              Users =
+                  [N || {users, L} <- NewProps,
+                        {N, _Role} <- L],
+              lists:foreach(
+                fun(User) ->
+                        UserProps = ll_get_props(?dbt_users, User),
+                        UserGames =
+                            lists:usort([ID | proplists:get_value(
+                                                games, UserProps, [])]),
+                        ll_replace_props(
+                          ?dbt_users, User, UserProps, [{games, UserGames}])
+                end, Users),
+              ll_set_props(
+                ?dbt_games, ID, NewProps)
+      end).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
@@ -93,4 +127,31 @@ transaction(Fun) ->
         {aborted, Reason} ->
             {error, Reason}
     end.
+
+ll_replace_props(Table, ID, OldProps, Props2Replace) ->
+    NewProps = echessd_lib:proplist_replace(OldProps, Props2Replace),
+    mnesia:write(
+      Table,
+      #hrec{key = ID,
+            val = NewProps},
+      write).
+
+ll_get_props(Table, ID) ->
+    case mnesia:read({Table, ID}) of
+        [HRec] ->
+            HRec#hrec.val;
+        _ when Table == ?dbt_users ->
+            mnesia:abort({no_such_user, ID});
+        _ when Table == ?dbt_games ->
+            mnesia:abort({no_such_game, ID});
+        _ ->
+            mnesia:abort({no_such_item, ID})
+    end.
+
+ll_set_props(Table, ID, Props) ->
+    mnesia:write(
+      Table,
+      #hrec{key = ID,
+            val = Props},
+      write).
 

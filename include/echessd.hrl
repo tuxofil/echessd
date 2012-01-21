@@ -29,6 +29,11 @@
 
 -define(LOG_LEVELS, [?LOG_ERR, ?LOG_INFO, ?LOG_DEBUG]).
 
+%% game styles
+-define(GAME_CLASSIC, classic).
+
+-define(GAME_STYLES, [?GAME_CLASSIC]).
+
 %% colors
 -define(white, w).
 -define(black, b).
@@ -55,6 +60,17 @@
 -define(b_king, {?black, ?king}).
 
 -define(empty, z).
+
+%% ----------------------------------------------------------------------
+
+-define(nonnegint(I), (is_integer(I) andalso I >= 0)).
+
+-define(is_now(T),
+        (is_tuple(T)
+         andalso size(T) == 3
+         andalso ?nonnegint(element(1, T))
+         andalso ?nonnegint(element(2, T))
+         andalso ?nonnegint(element(3, T)))).
 
 -endif.
 

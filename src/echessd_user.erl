@@ -69,8 +69,23 @@ auth(Name, Password) when is_binary(Password) ->
             Error
     end.
 
-setprops(Name, Properties) ->
-    ok.
+setprops(Name, Properties0) ->
+    Result =
+        case check_properties(Properties0) of
+            {error, _} = Error -> Error;
+            Properties ->
+                echessd_db:set_user_props(Name, Properties)
+        end,
+    case Result of
+        {ok, _} ->
+            echessd_log:info("user ~9999p props updated", [Name]),
+            ok;
+        {error, Reason} = FinalError ->
+            echessd_log:err(
+              "user ~9999p props update failed: ~9999p",
+              [Name, Reason]),
+            FinalError
+    end.
 
 %% ----------------------------------------------------------------------
 %% Internal functions
@@ -109,6 +124,17 @@ check_property({password = K, V} = I) ->
     if is_binary(V) -> I;
        is_list(V) -> {K, crypto:sha(V)};
        true -> throw({error, {badval, K, V}})
+    end;
+check_property({games, V} = I) ->
+    if is_list(V) ->
+            lists:foreach(
+              fun(N) when ?is_now(N) -> ok;
+                 (N) ->
+                      throw({error, {bad_game_id, N}})
+              end, V),
+            I;
+       true ->
+            throw({error, {bad_games_list, V}})
     end;
 check_property({K, _V}) ->
     throw({error, {unknown_property, K}}).
