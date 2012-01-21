@@ -156,7 +156,8 @@ register() ->
 error(String) ->
     header("echessd - Error", []) ++
         h1("echessd error") ++
-        "<div class=error>" ++ String ++ "</div>" ++
+        "<div class=error>" ++ String ++ "</div>"
+        "<br>[&nbsp;<a href='javascript: history.back();'>Back</a>&nbsp;]" ++
         footer([]).
 
 eaccess() -> ?MODULE:error("ACCESS DENIED").
