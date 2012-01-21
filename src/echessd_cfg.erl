@@ -42,6 +42,10 @@ read() ->
             throw({cfg_read_error, Reason})
     end.
 
+%% @doc Fetch configuration parameter from config.
+%% @spec get(CfgName) -> Value
+%%     CfgName = atom(),
+%%     Value = term()
 get(CfgName) ->
     case ets:lookup(?echessd_cfg, CfgName) of
         [{_, Value}] -> Value;
@@ -61,6 +65,8 @@ default(?CFG_BIND_ADDR) ->
     {ok, {0,0,0,0}};
 default(?CFG_BIND_PORT) ->
     {ok, 8888};
+default(?CFG_DOC_ROOT) ->
+    {ok, "www"};
 default(_) ->
     undefined.
 

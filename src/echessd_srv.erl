@@ -6,6 +6,8 @@
 
 -define(HTTP_GET, 'GET').
 
+-define(mime_text_html, "text/html").
+
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
@@ -47,14 +49,18 @@ loop(Req) ->
                                   {T, _} = echessd_game:move(Acc, Move),
                                   T
                           end, Game0, Moves),
+                    DocRoot = echessd_cfg:get(?CFG_DOC_ROOT),
                     Content =
-                        echessd_lib:read_file("www/header.html") ++
+                        echessd_lib:read_file(
+                          filename:join(DocRoot, "header.html")) ++
                         echessd_html:table(Game) ++
-                        echessd_lib:read_file("www/footer.html"),
-                    Req:ok({"text/html", Content});
+                        echessd_lib:read_file(
+                          filename:join(DocRoot, "footer.html")),
+                    Req:ok({?mime_text_html, Content});
                 _Other ->
                     %% fixme: following behaviour is only for debug purposes
-                    Req:serve_file(Path, "www")
+                    DocRoot = echessd_cfg:get(?CFG_DOC_ROOT),
+                    Req:serve_file(Path, DocRoot)
             end;
        true ->
             Req:respond({501, [], []})
