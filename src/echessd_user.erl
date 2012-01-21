@@ -132,6 +132,11 @@ check_property({password = K, V} = I) ->
        is_list(V) -> {K, crypto:sha(V)};
        true -> throw({error, {badval, K, V}})
     end;
+check_property({created, V} = I) ->
+    if ?is_now(V) -> I;
+       true ->
+            throw({error, {bad_creation_time, V}})
+    end;
 check_property({games, V} = I) ->
     if is_list(V) ->
             lists:foreach(
