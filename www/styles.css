@@ -1,12 +1,23 @@
 
-body, td, p, div, span, form, input, textarea, select, button {
+body, td, p, div, span, form, input, textarea, select, button, h1 {
     margin:0;
     padding:0;
+    font-family: verdana, arial;
 }
 
 body {
     margin-top:10;
     margin-bottom:10;
+}
+
+a {
+    color: navy;
+    text-decoration: none;
+}
+
+a:hover {
+    color: blue;
+    text-decoration: underline;
 }
 
 td.wc, td.bc, td.crd_t, td.crd_b, td.crd_l, td.crd_r {

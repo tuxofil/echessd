@@ -34,6 +34,16 @@
 
 -define(GAME_STYLES, [?GAME_CLASSIC]).
 
+%% site sections
+-define(SECTION_MAIN, "main").
+-define(SECTION_GAME, "game").
+-define(SECTION_GAMES, "games").
+-define(SECTION_TEST, "test").
+-define(SECTION_USERS, "users").
+
+-define(SECTIONS, [?SECTION_MAIN, ?SECTION_GAME, ?SECTION_TEST,
+                   ?SECTION_USERS, ?SECTION_GAMES]).
+
 %% colors
 -define(white, w).
 -define(black, b).
