@@ -92,7 +92,14 @@ addgame(Props) ->
     ID = now(),
     transaction(
       fun() ->
-              ll_set_props(?dbt_games, ID, Props)
+              ID =
+                  case mnesia:read({?dbt_games, counter}) of
+                      [HRec] -> HRec#hrec.val;
+                      _ -> 1
+                  end,
+              ll_set_props(?dbt_games, counter, ID + 1),
+              ll_set_props(?dbt_games, ID, Props),
+              ID
       end).
 
 set_game_props(ID, Props) ->

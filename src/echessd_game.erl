@@ -1,23 +1,48 @@
 -module(echessd_game).
 
--export([new/1,
+-export([add/5,
+         new/1,
          move/2, move/3,
          getcell/2, setcell/3
         ]).
 
--compile(export_all).
-
 -include("echessd.hrl").
 
+%% ----------------------------------------------------------------------
+%% API functions
+%% ----------------------------------------------------------------------
+
+add(Type, Owner, OwnerColor, Opponent, OtherProps) ->
+    Props =
+        [{type, Type},
+         {time, now()},
+         {creator, Owner},
+         {users,
+          [{Owner, OwnerColor},
+           {Opponent, hd([?black, ?white] -- [OwnerColor])}]}
+         | OtherProps],
+    case echessd_db:addgame(Props) of
+        {ok, ID} = Ok ->
+            echessd_log:info(
+              "game ~9999p created: ~9999p",
+              [ID, Props]),
+            Ok;
+        {error, Reason} = Error ->
+            echessd_log:err(
+              "game creation failed: ~9999p (props=~99999p)",
+              [Reason, Props]),
+            Error
+    end.
+
 new(?GAME_CLASSIC) ->
-    {{?b_rook,?b_knight,?b_bishop,?b_queen,?b_king,?b_bishop,?b_knight,?b_rook}, %% 8
-     {?b_pawn,?b_pawn,?b_pawn,?b_pawn,?b_pawn,?b_pawn,?b_pawn,?b_pawn}, %% 7
+    {{?brook,?bknight,?bbishop,?bqueen,?bking,?bbishop,?bknight,?brook}, %% 8
+     {?bpawn,?bpawn,?bpawn,?bpawn,?bpawn,?bpawn,?bpawn,?bpawn}, %% 7
      {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 6
      {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 5
      {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 4
      {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 3
-     {?w_pawn,?w_pawn,?w_pawn,?w_pawn,?w_pawn,?w_pawn,?w_pawn,?w_pawn}, %% 2
-     {?w_rook,?w_knight,?w_bishop,?w_queen,?w_king,?w_bishop,?w_knight,?w_rook}  %% 1
+     {?wpawn,?wpawn,?wpawn,?wpawn,?wpawn,?wpawn,?wpawn,?wpawn}, %% 2
+     {?wrook,?wknight,?wbishop,?wqueen,?wking,?wbishop,?wknight,?wrook}  %% 1
      %% a,b,c,d,e,f,g,h
     };
 new(Other) ->
@@ -65,6 +90,10 @@ setcell(Game, Coord, Figure) ->
     setelement(
       R, Game,
       setelement(C, element(R, Game), Figure)).
+
+%% ----------------------------------------------------------------------
+%% Internal functions
+%% ----------------------------------------------------------------------
 
 decode_coord([Col, Row]) ->
     decode_coord(Col, Row).

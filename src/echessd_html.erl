@@ -8,6 +8,7 @@
          game/1,
          users/0,
          user/0,
+         newgame/0,
          test_table/0,
          notyet/0
         ]).
@@ -84,10 +85,9 @@ user() ->
                 {ok, UserInfo} ->
                     user(User, UserInfo);
                 {error, Reason} ->
-                    ?MODULE:error(
-                       io_lib:format(
-                         "Unable to fetch user ~9999p properties:"
-                         "<br><tt>~p</tt>", [User, Reason]))
+                    format_error(
+                      "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
+                      [User, Reason])
             end
     end.
 user(User, UserInfo) ->
@@ -105,6 +105,41 @@ user(User, UserInfo) ->
         "<br>" ++
         navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ User,
                       "Start new game"}]) ++
+        footer([]).
+
+newgame() ->
+    Iam = get(username),
+    case proplists:get_value("user", get(query_proplist)) of
+        Iam ->
+            format_error("You cannot play with yourself at now!", []);
+        User ->
+            case echessd_user:getprops(User) of
+                {ok, UserInfo} ->
+                    newgame(User, UserInfo);
+                {error, Reason} ->
+                    format_error(
+                      "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
+                      [User, Reason])
+            end
+    end.
+newgame(User, UserInfo) ->
+    echessd_session:set_val(opponent, {User, UserInfo}),
+    header("echessd - New game", []) ++
+        h1("New game") ++
+        navigation() ++
+        h2("Your opponent: '" ++ User ++ "'") ++
+        "<form method=post>"
+        "<input name=action type=hidden value=" ++ ?SECTION_NEWGAME ++ ">"
+        "Game type: <select name=gametype>"
+        "<option value='classic'>Classic chess</option>"
+        "</select><br>"
+        "Color: <select name=color>"
+        "<option value='random'>Choose randomly</option>"
+        "<option value='white'>White</option>"
+        "<option value='black'>Black</option>"
+        "</select><br>"
+        "<input type=submit value='Create'>"
+        "</form>" ++
         footer([]).
 
 game(GameID) ->
@@ -158,8 +193,14 @@ footer(_Options) ->
 h1(String) ->
     "<h1>" ++ String ++ "</h1>".
 
+h2(String) ->
+    "<h2>" ++ String ++ "</h2>".
+
 b(String) ->
     "<b>" ++ String ++ "</b>".
+
+tt(String) ->
+    "<tt>" ++ String ++ "</tt>".
 
 table(Game) ->
     "<table cellpadding=0 cellspacing=0>\n"
@@ -193,9 +234,9 @@ table_rows(Game) ->
 table_rows([Row | Tail], N, Result) ->
     StrRow =
         "<tr>\n"
-        "<td class=crd_l><tt>" ++ integer_to_list(N) ++ "</tt>\n"
+        "<td class=crd_l>" ++ tt(integer_to_list(N)) ++ "\n"
         ++ table_row(Row, N) ++
-        "<td class=crd_r><tt>" ++ integer_to_list(N) ++ "</tt>\n",
+        "<td class=crd_r>" ++ tt(integer_to_list(N)) ++ "\n",
     table_rows(Tail, N - 1, [StrRow | Result]);
 table_rows(_, _, Result) ->
     lists:reverse(Result).
@@ -219,18 +260,18 @@ table_row(_, _) -> "".
 figure(?empty) -> "&nbsp;";
 figure(Fig) ->
     "&#" ++ integer_to_list(figure_(Fig)) ++ ";".
-figure_(?w_king  ) -> 9812;
-figure_(?w_queen ) -> 9813;
-figure_(?w_rook  ) -> 9814;
-figure_(?w_bishop) -> 9815;
-figure_(?w_knight) -> 9816;
-figure_(?w_pawn  ) -> 9817;
-figure_(?b_king  ) -> 9818;
-figure_(?b_queen ) -> 9819;
-figure_(?b_rook  ) -> 9820;
-figure_(?b_bishop) -> 9821;
-figure_(?b_knight) -> 9822;
-figure_(?b_pawn  ) -> 9823.
+figure_(?wking  ) -> 9812;
+figure_(?wqueen ) -> 9813;
+figure_(?wrook  ) -> 9814;
+figure_(?wbishop) -> 9815;
+figure_(?wknight) -> 9816;
+figure_(?wpawn  ) -> 9817;
+figure_(?bking  ) -> 9818;
+figure_(?bqueen ) -> 9819;
+figure_(?brook  ) -> 9820;
+figure_(?bbishop) -> 9821;
+figure_(?bknight) -> 9822;
+figure_(?bpawn  ) -> 9823.
 
 navig_links(List) -> navig_links(List, undefined).
 navig_links([], _Current) -> "";
@@ -258,4 +299,7 @@ navigation() ->
                 ?SECTION_TEST]] ++
           [{"?action=" ++ ?SECTION_EXIT, "Logout"}],
       section_caption(echessd_session:get_val(section))).
+
+format_error(F, A) ->
+    ?MODULE:error(io_lib:format(F, A)).
 

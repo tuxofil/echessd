@@ -49,10 +49,10 @@ loop(Req) ->
                     "/res/" ++ ResName = Path,
                     Req:serve_file(ResName, DocRoot);
                 _ ->
-                    process_get(Req)
+                    safe_handle(Req, fun process_get/1)
             end;
        Method == ?HTTP_POST ->
-            process_post(Req);
+            safe_handle(Req, fun process_post/1);
        true ->
             Req:respond({501, [], []})
     end.
@@ -61,36 +61,78 @@ loop(Req) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
+safe_handle(Req, Fun) ->
+    erase(extra_headers),
+    Content =
+        try Fun(Req)
+        catch
+            _:{error, Reason} ->
+                echessd_html:error(
+                  io_lib:format(
+                    "Response generation failed:<br><tt>~p</tt>",
+                    [Reason]));
+            Type:Reason ->
+                StackTrace = erlang:get_stacktrace(),
+                echessd_html:error(
+                  io_lib:format(
+                    "Response generation failed:<br><tt>~p</tt>",
+                    [{Type, Reason, StackTrace}]))
+        end,
+    ExtraHeaders =
+        case get(extra_headers) of
+            [_ | _] = ExtraHeaders0 ->
+                ExtraHeaders0;
+            _ -> []
+        end,
+    try Req:ok({?mime_text_html, ExtraHeaders, Content})
+    catch
+        Type2:Reason2 ->
+            StackTrace2 = erlang:get_stacktrace(),
+            Req:ok({?mime_text_html, [],
+                    echessd_html:error(
+                      io_lib:format(
+                        "Response sending failed:<br><tt>~p</tt>",
+                        [{Type2, Reason2, StackTrace2}]))})
+    end.
+
+add_extra_headers(ExtraHeaders) ->
+    put(extra_headers,
+        case get(extra_headers) of
+            [_ | _] = ExtraHeaders0 ->
+                ExtraHeaders0;
+            _ -> []
+        end ++ ExtraHeaders).
+
 process_get(Req) ->
     put(query_proplist, Query = Req:parse_qs()),
     echessd_log:debug("GET query=~9999p", [Query]),
     Action = proplists:get_value("action", Query),
-    process_get(Req, Action, Query, get(logged_in)).
-process_get(Req, ?SECTION_EXIT, _Query, true) ->
+    process_get(Action, Query, get(logged_in)).
+process_get(?SECTION_EXIT, _Query, true) ->
     echessd_session:del(get(sid)),
-    Req:ok({?mime_text_html, echessd_html:login()});
-process_get(Req, _, Query, true) ->
+    echessd_html:login();
+process_get(_, Query, true) ->
     process_goto(Query),
-    process_show(Req);
-process_get(Req, _, Query, _) ->
+    process_show();
+process_get(_, Query, _) ->
     case proplists:get_value("goto", Query) of
         ?SECTION_REG ->
-            Req:ok({?mime_text_html, echessd_html:register()});
+            echessd_html:register();
         _ ->
-            Req:ok({?mime_text_html, echessd_html:login()})
+            echessd_html:login()
     end.
 
 process_post(Req) ->
     put(query_proplist, Query = Req:parse_post()),
     echessd_log:debug("POST query=~9999p", [Query]),
     Action = proplists:get_value("action", Query),
-    process_post(Req, Action, Query, get(logged_in)).
-process_post(Req, ?SECTION_LOGIN, Query, LoggedIn) ->
+    process_post(Action, Query, get(logged_in)).
+process_post(?SECTION_LOGIN, Query, LoggedIn) ->
     Username = proplists:get_value("username", Query),
     Password = proplists:get_value("password", Query),
     case LoggedIn andalso get(username) == Username of
         true ->
-            process_show(Req);
+            process_show();
         _ ->
             ok = echessd_session:del(get(sid)),
             case echessd_user:auth(Username, Password) of
@@ -102,18 +144,18 @@ process_post(Req, ?SECTION_LOGIN, Query, LoggedIn) ->
                     echessd_log:debug(
                       "session ~9999p created for user ~9999p",
                       [SID, Username]),
-                    process_show(Req, [{"Set-Cookie", "sid=" ++ SID}]);
+                    add_extra_headers([{"Set-Cookie", "sid=" ++ SID}]),
+                    process_show();
                 _ ->
-                    Req:ok({?mime_text_html, echessd_html:eaccess()})
+                    echessd_html:eaccess()
             end
     end;
-process_post(Req, ?SECTION_REG, Query, false) ->
+process_post(?SECTION_REG, Query, false) ->
     Username = proplists:get_value("regusername", Query),
     Password1 = proplists:get_value("regpassword1", Query),
     Password2 = proplists:get_value("regpassword2", Query),
     if Password1 /= Password2 ->
-            Req:ok({?mime_text_html,
-                    echessd_html:error("Password confirmation failed")});
+            echessd_html:error("Password confirmation failed");
        true ->
             case echessd_user:add(
                    Username,
@@ -121,38 +163,61 @@ process_post(Req, ?SECTION_REG, Query, false) ->
                     {created, now()}]) of
                 ok ->
                     process_post(
-                      Req, "login",
+                      ?SECTION_LOGIN,
                       [{"username", Username},
                        {"password", Password1}], false);
                 {error, Reason} ->
-                    Req:ok({?mime_text_html,
-                            echessd_html:error(
-                              io_lib:format(
-                                "Failed to create new user:<br><tt>~9999p</tt>",
-                                [Reason]))})
+                    echessd_html:error(
+                      io_lib:format(
+                        "Failed to create new user:<br><tt>~9999p</tt>",
+                        [Reason]))
             end
     end;
-process_post(Req, "move", Query, true) ->
+process_post(?SECTION_NEWGAME, Query, true) ->
+    {User, _UserInfo} = echessd_session:get_val(opponent),
+    Color =
+        case proplists:get_value("color", Query) of
+            "white" -> ?white;
+            "black" -> ?black;
+            _ ->
+                echessd_lib:random_elem([?white, ?black])
+        end,
+    GameType0 = proplists:get_value("gametype", Query),
+    GameType =
+        case lists:member(GameType0, ?GAME_TYPES) of
+            true -> GameType0;
+            _ -> ?GAME_CLASSIC
+        end,
+    case echessd_game:add(GameType, get(username), Color, User, []) of
+        {ok, ID} ->
+            process_show(?SECTION_GAME);
+        {error, Reason} ->
+            echessd_html:error(
+              io_lib:format(
+                "Failed to create new game:<br><tt>~9999p</tt>",
+                [Reason]))
+    end;
+process_post("move", Query, true) ->
     process_goto(Query),
-    process_show(Req);
-process_post(Req, _, _, _) ->
-    Req:ok({?mime_text_html, echessd_html:eaccess()}).
+    process_show();
+process_post(_, _, _) ->
+    echessd_html:eaccess().
 
-process_show(Req) ->
-    process_show(Req, []).
-process_show(Req, ExtraHeaders) ->
+process_show() ->
     Section = echessd_session:get_val(section),
-    process_show(Req, ExtraHeaders, Section).
-process_show(Req, ExtraHeaders, ?SECTION_GAME) ->
-    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:game(undefined)});
-process_show(Req, ExtraHeaders, ?SECTION_USERS) ->
-    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:users()});
-process_show(Req, ExtraHeaders, ?SECTION_TEST) ->
-    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:test_table()});
-process_show(Req, ExtraHeaders, ?SECTION_USER) ->
-    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:user()});
-process_show(Req, ExtraHeaders, _Default) ->
-    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:home()}).
+    process_show(Section).
+process_show(?SECTION_GAME) ->
+    echessd_html:game(undefined);
+process_show(?SECTION_USERS) ->
+    echessd_html:users();
+process_show(?SECTION_TEST) ->
+    echessd_html:test_table();
+process_show(?SECTION_USER) ->
+    echessd_html:user();
+process_show(?SECTION_NEWGAME) ->
+    echessd_html:newgame();
+process_show(_Default) ->
+    echessd_html:home().
 
 process_goto(Query) ->
     String = proplists:get_value("goto", Query),

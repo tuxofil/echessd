@@ -30,9 +30,9 @@
 -define(LOG_LEVELS, [?LOG_ERR, ?LOG_INFO, ?LOG_DEBUG]).
 
 %% game styles
--define(GAME_CLASSIC, classic).
+-define(GAME_CLASSIC, "classic").
 
--define(GAME_STYLES, [?GAME_CLASSIC]).
+-define(GAME_TYPES, [?GAME_CLASSIC]).
 
 %% site sections
 -define(SECTION_HOME, "home").
@@ -61,18 +61,18 @@
 -define(queen, q).
 -define(king, k).
 
--define(w_pawn, {?white, ?pawn}).
--define(b_pawn, {?black, ?pawn}).
--define(w_rook, {?white, ?rook}).
--define(b_rook, {?black, ?rook}).
--define(w_knight, {?white, ?knight}).
--define(b_knight, {?black, ?knight}).
--define(w_bishop, {?white, ?bishop}).
--define(b_bishop, {?black, ?bishop}).
--define(w_queen, {?white, ?queen}).
--define(b_queen, {?black, ?queen}).
--define(w_king, {?white, ?king}).
--define(b_king, {?black, ?king}).
+-define(wpawn, {?white, ?pawn}).
+-define(bpawn, {?black, ?pawn}).
+-define(wrook, {?white, ?rook}).
+-define(brook, {?black, ?rook}).
+-define(wknight, {?white, ?knight}).
+-define(bknight, {?black, ?knight}).
+-define(wbishop, {?white, ?bishop}).
+-define(bbishop, {?black, ?bishop}).
+-define(wqueen, {?white, ?queen}).
+-define(bqueen, {?black, ?queen}).
+-define(wking, {?white, ?king}).
+-define(bking, {?black, ?king}).
 
 -define(empty, z).
 

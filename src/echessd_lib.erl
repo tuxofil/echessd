@@ -2,7 +2,8 @@
 
 -export([ip2str/1, read_file/1,
          proplist_replace/2,
-         timestamp/1
+         timestamp/1,
+         random_elem/1
         ]).
 
 ip2str({A, B, C, D}) ->
@@ -33,4 +34,8 @@ timestamp(Time) ->
     io_lib:format(
       "~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0B",
       [Year, Month, Day, Hour, Minutes, Seconds]).
+
+random_elem([Item]) -> Item;
+random_elem(List) when is_list(List) ->
+    lists:nth(random:uniform(length(List)), List).
 
