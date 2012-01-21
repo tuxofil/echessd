@@ -35,6 +35,9 @@ footer(_Options) ->
 h1(String) ->
     "<h1>" ++ String ++ "</h1>".
 
+b(String) ->
+    "<b>" ++ String ++ "</b>".
+
 table(Game) ->
     "<table cellpadding=0 cellspacing=0>\n"
         "<tr>\n"
@@ -106,33 +109,37 @@ figure_(?b_bishop) -> 9821;
 figure_(?b_knight) -> 9822;
 figure_(?b_pawn  ) -> 9823.
 
-navigation() ->
-    Curr = echessd_session:get_val(section),
+navig_links(List) -> navig_links(List, undefined).
+navig_links([], _Current) -> "";
+navig_links(List, Current) ->
     "<div class=navig>[&nbsp;" ++
         string:join(
           lists:map(
-            fun(Section) ->
-                    Caption =
-                        case Section of
-                            ?SECTION_HOME -> "Home";
-                            ?SECTION_USERS -> "Users";
-                            _ -> Section
-                        end,
-                    "<a href='?goto=" ++ Section ++ "'>" ++
-                        if Section == Curr ->
-                                "<b>" ++ Caption ++ "</b>";
+            fun({URL, Caption}) ->
+                    "<a href='" ++ URL ++ "'>" ++
+                        if Caption == Current ->
+                                b(Caption);
                            true -> Caption
                         end ++ "</a>"
-            end,
-            [?SECTION_HOME, ?SECTION_USERS, ?SECTION_TEST]),
-          "&nbsp;|&nbsp;") ++
-        "&nbsp;|&nbsp;<a href='?action=exit'>Logout</a>"
+            end, List), "&nbsp;|&nbsp;") ++
         "&nbsp;]</div>".
+
+section_caption(?SECTION_HOME) -> "Home";
+section_caption(?SECTION_USERS) -> "Users";
+section_caption(Other) -> Other.
+
+navigation() ->
+    navig_links(
+      [{"?goto=" ++ S, section_caption(S)} ||
+          S <- [?SECTION_HOME, ?SECTION_USERS,
+                ?SECTION_TEST]] ++
+          [{"?action=exit", "Logout"}],
+      section_caption(echessd_session:get_val(section))).
 
 login() ->
     header("echessd - Login", []) ++
         h1("echessd login") ++
-        "<div class=navig>[&nbsp;<a href='?goto=register'>Register new user</a>&nbsp;]</div>"
+        navig_links([{"?goto=register", "Register new user"}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=login>"
         "Login:    <input name=username type=text><br>"
@@ -144,7 +151,7 @@ login() ->
 register() ->
     header("echessd - Register new user", []) ++
         h1("echessd register form") ++
-        "<div class=navig>[&nbsp;<a href='?goto=login'>Return to login form</a>&nbsp;]</div>"
+        navig_links([{"?goto=login", "Return to login form"}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=register>"
         "Login:    <input name=regusername type=text><br>"
@@ -158,7 +165,8 @@ error(String) ->
     header("echessd - Error", []) ++
         h1("echessd error") ++
         "<div class=error>" ++ String ++ "</div>"
-        "<br>[&nbsp;<a href='javascript: history.back();'>Back</a>&nbsp;]" ++
+        "<br>" ++
+        navig_links([{"javascript: history.back();", "Back"}]) ++
         footer([]).
 
 eaccess() -> ?MODULE:error("ACCESS DENIED").
@@ -212,6 +220,7 @@ user(User, UserInfo) ->
                (_) ->
                     []
             end, UserInfo), "<br>") ++
+        "<br>[&nbsp;&nbsp;]" ++
         footer([]).
 
 game(GameID) ->
@@ -240,5 +249,6 @@ notyet() ->
     header("echessd - Under construction", []) ++
         h1("Not implemented yet") ++
         "" ++
+        navig_links([{"javascript: history.back();", "Back"}]) ++
         footer([]).
 
