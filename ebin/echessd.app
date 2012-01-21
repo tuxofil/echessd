@@ -12,6 +12,7 @@
                   echessd_user,
                   echessd_game,
                   echessd_db,
+                  echessd_session,
                   echessd_html
                  ]},
   {registered,   [echessd_sup, echessd_log, echessd_srv]},
