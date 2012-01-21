@@ -15,6 +15,10 @@
 
 -define(MANDATORY_CFGS, []).
 
+%% database tables
+-define(dbt_users, echessd_dbt_users).
+-define(dbt_games, echessd_dbt_games).
+
 %% log message classes
 -define(LOG_ERR, err).
 -define(LOG_INFO, info).

@@ -14,7 +14,7 @@
                   echessd_html
                  ]},
   {registered,   [echessd_sup, echessd_log, echessd_srv]},
-  {applications, []},
+  {applications, [mnesia]},
   {env,          []},
   {mod,          {echessd_app, []}}
  ]}.
