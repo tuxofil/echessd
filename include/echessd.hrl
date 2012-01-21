@@ -40,10 +40,14 @@
 -define(SECTION_TEST, "test").
 -define(SECTION_USERS, "users").
 -define(SECTION_USER, "user").
+-define(SECTION_NEWGAME, "newgame").
+-define(SECTION_REG, "register").
+-define(SECTION_LOGIN, "login").
+-define(SECTION_EXIT, "exit").
 
 -define(SECTIONS,
         [?SECTION_HOME, ?SECTION_GAME, ?SECTION_TEST,
-         ?SECTION_USERS, ?SECTION_USER]).
+         ?SECTION_USERS, ?SECTION_USER, ?SECTION_NEWGAME]).
 
 %% colors
 -define(white, w).

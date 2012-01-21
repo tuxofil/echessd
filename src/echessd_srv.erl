@@ -66,7 +66,7 @@ process_get(Req) ->
     echessd_log:debug("GET query=~9999p", [Query]),
     Action = proplists:get_value("action", Query),
     process_get(Req, Action, Query, get(logged_in)).
-process_get(Req, "exit", _Query, true) ->
+process_get(Req, ?SECTION_EXIT, _Query, true) ->
     echessd_session:del(get(sid)),
     Req:ok({?mime_text_html, echessd_html:login()});
 process_get(Req, _, Query, true) ->
@@ -74,7 +74,7 @@ process_get(Req, _, Query, true) ->
     process_show(Req);
 process_get(Req, _, Query, _) ->
     case proplists:get_value("goto", Query) of
-        "register" ->
+        ?SECTION_REG ->
             Req:ok({?mime_text_html, echessd_html:register()});
         _ ->
             Req:ok({?mime_text_html, echessd_html:login()})
@@ -85,7 +85,7 @@ process_post(Req) ->
     echessd_log:debug("POST query=~9999p", [Query]),
     Action = proplists:get_value("action", Query),
     process_post(Req, Action, Query, get(logged_in)).
-process_post(Req, "login", Query, LoggedIn) ->
+process_post(Req, ?SECTION_LOGIN, Query, LoggedIn) ->
     Username = proplists:get_value("username", Query),
     Password = proplists:get_value("password", Query),
     case LoggedIn andalso get(username) == Username of
@@ -107,7 +107,7 @@ process_post(Req, "login", Query, LoggedIn) ->
                     Req:ok({?mime_text_html, echessd_html:eaccess()})
             end
     end;
-process_post(Req, "register", Query, false) ->
+process_post(Req, ?SECTION_REG, Query, false) ->
     Username = proplists:get_value("regusername", Query),
     Password1 = proplists:get_value("regpassword1", Query),
     Password2 = proplists:get_value("regpassword2", Query),

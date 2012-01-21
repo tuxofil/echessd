@@ -21,7 +21,7 @@
 login() ->
     header("echessd - Login", []) ++
         h1("echessd login") ++
-        navig_links([{"?goto=register", "Register new user"}]) ++
+        navig_links([{"?goto=" ++ ?SECTION_REG, "Register new user"}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=login>"
         "Login:    <input name=username type=text><br>"
@@ -33,7 +33,7 @@ login() ->
 register() ->
     header("echessd - Register new user", []) ++
         h1("echessd register form") ++
-        navig_links([{"?goto=login", "Return to login form"}]) ++
+        navig_links([{"?goto=" ++ ?SECTION_LOGIN, "Return to login form"}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=register>"
         "Login:    <input name=regusername type=text><br>"
@@ -70,8 +70,8 @@ users() ->
         string:join(
           lists:map(
             fun(User) ->
-                    "*&nbsp;<a href='?goto=user&name=" ++ User ++ "'>" ++
-                        User ++ "</a>"
+                    "*&nbsp;<a href='?goto=" ++ ?SECTION_USER ++ "&name=" ++
+                        User ++ "'>" ++ User ++ "</a>"
             end, Users), "<br>") ++
         footer([]).
 
@@ -102,7 +102,9 @@ user(User, UserInfo) ->
                (_) ->
                     []
             end, UserInfo), "<br>") ++
-        "<br>[&nbsp;&nbsp;]" ++
+        "<br>" ++
+        navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ User,
+                      "Start new game"}]) ++
         footer([]).
 
 game(GameID) ->
@@ -254,6 +256,6 @@ navigation() ->
       [{"?goto=" ++ S, section_caption(S)} ||
           S <- [?SECTION_HOME, ?SECTION_USERS,
                 ?SECTION_TEST]] ++
-          [{"?action=exit", "Logout"}],
+          [{"?action=" ++ ?SECTION_EXIT, "Logout"}],
       section_caption(echessd_session:get_val(section))).
 
