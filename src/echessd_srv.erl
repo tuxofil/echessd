@@ -150,8 +150,7 @@ process_show(Req, ExtraHeaders, ?SECTION_USERS) ->
 process_show(Req, ExtraHeaders, ?SECTION_TEST) ->
     Req:ok({?mime_text_html, ExtraHeaders, echessd_html:test_table()});
 process_show(Req, ExtraHeaders, ?SECTION_USER) ->
-    User = get(query_proplist),
-    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:user(User)});
+    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:user()});
 process_show(Req, ExtraHeaders, _Default) ->
     Req:ok({?mime_text_html, ExtraHeaders, echessd_html:home()}).
 

@@ -10,7 +10,7 @@
          home/0,
          game/1,
          users/0,
-         user/1,
+         user/0,
          test_table/0,
          notyet/0
         ]).
@@ -185,11 +185,33 @@ users() ->
             end, Users), "<br>") ++
         footer([]).
 
-user(User) ->
+user() ->
+    Iam = get(username),
+    case proplists:get_value("name", get(query_proplist)) of
+        Iam -> home();
+        User ->
+            case echessd_user:getprops(User) of
+                {ok, UserInfo} ->
+                    user(User, UserInfo);
+                {error, Reason} ->
+                    ?MODULE:error(
+                       io_lib:format(
+                         "Unable to fetch user ~9999p properties:"
+                         "<br><tt>~p</tt>", [User, Reason]))
+            end
+    end.
+user(User, UserInfo) ->
     header("echessd - User '" ++ User ++ "'", []) ++
         h1("User '" ++ User ++ "'") ++
         navigation() ++
         "<br>" ++
+        string:join(
+          lists:flatmap(
+            fun({created, Time}) ->
+                    ["<b>Registered:</b> " ++ echessd_lib:timestamp(Time)];
+               (_) ->
+                    []
+            end, UserInfo), "<br>") ++
         footer([]).
 
 game(GameID) ->
