@@ -39,9 +39,11 @@
 -define(SECTION_GAME, "game").
 -define(SECTION_TEST, "test").
 -define(SECTION_USERS, "users").
+-define(SECTION_USER, "user").
 
--define(SECTIONS, [?SECTION_HOME, ?SECTION_GAME, ?SECTION_TEST,
-                   ?SECTION_USERS]).
+-define(SECTIONS,
+        [?SECTION_HOME, ?SECTION_GAME, ?SECTION_TEST,
+         ?SECTION_USERS, ?SECTION_USER]).
 
 %% colors
 -define(white, w).

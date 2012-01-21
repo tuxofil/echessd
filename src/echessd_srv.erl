@@ -115,7 +115,10 @@ process_post(Req, "register", Query, false) ->
             Req:ok({?mime_text_html,
                     echessd_html:error("Password confirmation failed")});
        true ->
-            case echessd_user:add(Username, [{password, Password1}]) of
+            case echessd_user:add(
+                   Username,
+                   [{password, Password1},
+                    {created, now()}]) of
                 ok ->
                     process_post(
                       Req, "login",
@@ -146,6 +149,9 @@ process_show(Req, ExtraHeaders, ?SECTION_USERS) ->
     Req:ok({?mime_text_html, ExtraHeaders, echessd_html:users()});
 process_show(Req, ExtraHeaders, ?SECTION_TEST) ->
     Req:ok({?mime_text_html, ExtraHeaders, echessd_html:test_table()});
+process_show(Req, ExtraHeaders, ?SECTION_USER) ->
+    User = get(query_proplist),
+    Req:ok({?mime_text_html, ExtraHeaders, echessd_html:user(User)});
 process_show(Req, ExtraHeaders, _Default) ->
     Req:ok({?mime_text_html, ExtraHeaders, echessd_html:home()}).
 

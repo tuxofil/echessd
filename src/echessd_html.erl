@@ -10,6 +10,7 @@
          home/0,
          game/1,
          users/0,
+         user/1,
          test_table/0,
          notyet/0
         ]).
@@ -182,6 +183,13 @@ users() ->
                     "*&nbsp;<a href='?goto=user&name=" ++ User ++ "'>" ++
                         User ++ "</a>"
             end, Users), "<br>") ++
+        footer([]).
+
+user(User) ->
+    header("echessd - User '" ++ User ++ "'", []) ++
+        h1("User '" ++ User ++ "'") ++
+        navigation() ++
+        "<br>" ++
         footer([]).
 
 game(GameID) ->
