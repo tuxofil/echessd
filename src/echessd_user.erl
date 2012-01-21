@@ -1,12 +1,15 @@
 -module(echessd_user).
 
--export([add/2, del/1, auth/2, setprops/2]).
+-export([list/0, add/2, del/1, auth/2, getprops/1, setprops/2]).
 
 -include("echessd.hrl").
 
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
+
+list() ->
+    echessd_db:list_users().
 
 add(Name, Properties0) ->
     Result =
@@ -69,6 +72,9 @@ auth(Name, Password) when is_binary(Password) ->
             Error
     end.
 
+getprops(Name) ->
+    echessd_db:get_user_props(Name).
+
 setprops(Name, Properties0) ->
     Result =
         case check_properties(Properties0) of
@@ -93,14 +99,15 @@ setprops(Name, Properties0) ->
 
 is_valid_username([_ | _] = String) ->
     lists:all(
-      fun(C) when
-                is_integer(C),
-                (C >= $A andalso C =< $Z) orelse
-                (C >= $a andalso C =< $a) orelse
-                (C >= $0 andalso C =< $9) orelse
-                (C == $. orelse C == $_ orelse C == $-) ->
-              true;
-         (_) -> false
+      fun(C) ->
+              is_integer(C)
+                  andalso
+                    ((C >= $A andalso C =< $Z)
+                     orelse (C >= $a andalso C =< $z)
+                     orelse (C >= $0 andalso C =< $9)
+                     orelse C == $.
+                     orelse C == $_
+                     orelse C == $-)
       end, String);
 is_valid_username(_) -> false.
 
@@ -116,7 +123,7 @@ check_properties_([{K, _V} = I | Tail]) when is_atom(K) ->
     [check_property(I) | check_properties_(Tail)];
 check_properties_([H | _]) ->
     throw({error, {bad_property, H}});
-check_properties_([]) -> ok;
+check_properties_([]) -> [];
 check_properties_(Properties) ->
     throw({error, {not_a_list, Properties}}).
 

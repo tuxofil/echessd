@@ -1,7 +1,7 @@
 -module(echessd_db).
 
 -export([init/0, wait/0,
-         mksession_table/0,
+         list_users/0,
          adduser/2,
          deluser/1,
          get_user_props/1,
@@ -48,12 +48,14 @@ wait() ->
             throw(Reason)
     end.
 
-%% @doc Creates non-persistent storage of user current sessions.
-%% @spec mksession_table() -> ok
-mksession_table() ->
-    ?dbt_session =
-        ets:new(?dbt_session, [named_table, public, set]),
-    ok.
+list_users() ->
+    transaction(
+      fun() ->
+              mnesia:foldl(
+                fun(HRec, Acc) ->
+                        [HRec#hrec.key | Acc]
+                end, [], ?dbt_users)
+      end).
 
 adduser(Name, Props) ->
     transaction(
