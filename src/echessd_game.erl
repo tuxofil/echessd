@@ -1,6 +1,7 @@
 -module(echessd_game).
 
 -export([add/5,
+         fetch/1,
          getprops/1,
          new/1,
          move/2, move/3,
@@ -33,6 +34,29 @@ add(Type, Owner, OwnerColor, Opponent, OtherProps) ->
               "game creation failed: ~9999p (props=~99999p)",
               [Reason, Props]),
             Error
+    end.
+
+%% @doc Fetches game from database.
+%% @spec fetch(ID) -> {ok, GameInfo, {Table, TookedFigures}} | {error, Reason}
+%%     ID = integer(),
+%%     GameInfo = proplist(),
+%%     Table = chess_table(),
+%%     TookedFigures = [chess_figure()],
+%%     Reason = term()
+fetch(ID) ->
+    case echessd_db:get_game_props(ID) of
+        {ok, GameInfo} ->
+            GameType = proplists:get_value(type, GameInfo),
+            Moves = proplists:get_value(moves, GameInfo, []),
+            {ok,
+             GameInfo,
+             lists:foldl(
+               fun(Move, {Game, Tooked}) ->
+                       {NewGame, Took} =
+                           echessd_game:move(Game, Move),
+                       {NewGame, [Took | Tooked]}
+               end, {echessd_game:new(GameType), []}, Moves)};
+        Error -> Error
     end.
 
 getprops(ID) ->
