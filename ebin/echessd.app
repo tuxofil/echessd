@@ -13,7 +13,8 @@
                   echessd_game,
                   echessd_db,
                   echessd_session,
-                  echessd_html
+                  echessd_html,
+                  echessd_rules
                  ]},
   {registered,   [echessd_sup, echessd_log, echessd_srv]},
   {applications, [mnesia]},

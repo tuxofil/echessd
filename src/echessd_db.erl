@@ -169,7 +169,7 @@ gamemove(Game, User, Move) ->
                       GameType = proplists:get_value(type, GameInfo),
                       Moves = proplists:get_value(moves, GameInfo, []),
                       {Table, _Tooked} = echessd_game:do_moves(GameType, Moves),
-                      case echessd_game:is_valid_move(
+                      case echessd_rules:is_valid_move(
                              GameType, Table, TurnColor, Move) of
                           ok ->
                               ll_replace_props(

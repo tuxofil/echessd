@@ -5,7 +5,6 @@
          who_must_turn/1,
          turn_color/1,
          do_moves/2,
-         is_valid_move/4,
          move/3,
          getprops/1,
          transpose/1,
@@ -69,36 +68,6 @@ do_moves(GameType, Moves) ->
               {NewGame, Took} = ll_move(Game, Move),
               {NewGame, [Took | Tooked]}
       end, {new(GameType), []}, Moves).
-
-is_valid_move(GameType, Game, TurnColor, Move) ->
-    try is_valid_move_(GameType, Game, TurnColor, Move) of
-        ok -> ok;
-        {error, _} = Error -> Error;
-        Other -> {error, Other}
-    catch
-        _:{error, _} = ExcError -> ExcError;
-        Type:Reason ->
-            {error, {Type, Reason, erlang:get_stacktrace()}}
-    end.
-is_valid_move_(?GAME_CLASSIC, Game, TurnColor, Move) ->
-    {C1, C2} =
-        case Move of
-            [A, B, C, D] -> {[A, B], [C, D]};
-            _ -> throw({error, badmove})
-        end,
-    Figure =
-        case getcell(Game, C1) of
-            ?empty -> throw({error, {cell_is_empty, C1}});
-            {TurnColor, Figure0} -> Figure0;
-            {_, _} -> throw({error, not_your_figure})
-        end,
-    case getcell(Game, C2) of
-        {TurnColor, _} -> throw({error, friendly_fire});
-        _ -> ok
-    end,
-    ok;
-is_valid_move_(_, _, _, _) ->
-    throw(game_type_unsupported).
 
 who_must_turn(GameInfo) ->
     Users =
