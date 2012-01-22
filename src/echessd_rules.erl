@@ -1,6 +1,6 @@
 -module(echessd_rules).
 
--export([is_valid_move/4]).
+-export([is_valid_move/5]).
 
 -include("echessd.hrl").
 
@@ -10,8 +10,8 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
-is_valid_move(GameType, Game, TurnColor, Move) ->
-    try is_valid_move_(GameType, Game, TurnColor, Move) of
+is_valid_move(GameType, Game, TurnColor, Move, History) ->
+    try is_valid_move_(GameType, Game, TurnColor, Move, History) of
         ok -> ok;
         {error, _} = Error -> Error;
         Other -> {error, Other}
@@ -25,7 +25,7 @@ is_valid_move(GameType, Game, TurnColor, Move) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move) ->
+is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move, History) ->
     {C1, C2} = move_dec(Move),
     {MyColor, Figure} =
         case cell(Table, C1) of
@@ -38,23 +38,42 @@ is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move) ->
         {_, ?king} -> throw({error, cannot_take_king});
         _ -> ok
     end,
-    Possible = possible(Table, C1, MyColor, Figure),
+    MyKingIndex =
+        if Figure == ?king -> C1;
+           true -> whereis_my_king(Table, MyColor)
+        end,
+    Possible = possible(Table, C1, MyColor, Figure, History),
     echessd_log:debug(
       "Fig ~w from ~s can move to: ~9999p",
       [{MyColor, Figure}, crd_enc(C1),
        [crd_enc(I) || I <- Possible]]),
     case lists:member(C2, Possible) of
         true ->
-            ok;
+            {Table2, _Took} =
+                echessd_game:ll_move(
+                  Table, crd_enc(C1), crd_enc(C2)),
+            MyKingIndex2 =
+                if Figure == ?king -> C2;
+                   true -> MyKingIndex
+                end,
+            Enemies = all_enemies(Table2, MyColor),
+            case is_cell_under_attack(
+                   Table2, MyKingIndex2, Enemies) of
+                true ->
+                    throw({error, check});
+                _ -> ok
+            end;
         _ ->
             throw({error, badmove})
     end;
-is_valid_move_(_, _, _, _) ->
+is_valid_move_(_, _, _, _, _) ->
     throw(game_type_unsupported).
 
-possible(T, F, C, Fig) ->
-    lists:usort(lists:flatten(possible_(T, F, C, Fig))) -- [?null].
-possible_(T, F, C, ?pawn) ->
+possible(T, F, C, Fig, History) ->
+    lists:usort(
+      lists:flatten(
+        possible_(T, F, C, Fig, History))) -- [?null].
+possible_(T, F, C, ?pawn, History) ->
     {StartRow, Direction} =
         if C == ?white -> {2, 1};
            true -> {7, -1}
@@ -84,20 +103,20 @@ possible_(T, F, C, ?pawn) ->
             {_, _} -> [FR];
             _ -> []
         end;
-possible_(T, F, C, ?rook) ->
+possible_(T, F, C, ?rook, _History) ->
     [nexts(T, C, F, {0, 1}),
      nexts(T, C, F, {0, -1}),
      nexts(T, C, F, {1, 0}),
      nexts(T, C, F, {-1, 0})];
-possible_(T, F, C, ?bishop) ->
+possible_(T, F, C, ?bishop, _History) ->
     [nexts(T, C, F, {-1, -1}),
      nexts(T, C, F, {1, -1}),
      nexts(T, C, F, {-1, 1}),
      nexts(T, C, F, {1, 1})];
-possible_(T, F, C, ?queen) ->
-    [possible_(T, F, C, ?bishop),
-     possible_(T, F, C, ?rook)];
-possible_(T, F, C, ?knight) ->
+possible_(T, F, C, ?queen, History) ->
+    [possible_(T, F, C, ?bishop, History),
+     possible_(T, F, C, ?rook, History)];
+possible_(T, F, C, ?knight, _History) ->
     [is_empty_or_enemy(T, C, crd_inc(F, {1, 2})),
      is_empty_or_enemy(T, C, crd_inc(F, {-1, 2})),
      is_empty_or_enemy(T, C, crd_inc(F, {1, -2})),
@@ -106,7 +125,7 @@ possible_(T, F, C, ?knight) ->
      is_empty_or_enemy(T, C, crd_inc(F, {-2, 1})),
      is_empty_or_enemy(T, C, crd_inc(F, {2, -1})),
      is_empty_or_enemy(T, C, crd_inc(F, {-2, -1}))];
-possible_(T, F, C, ?king) ->
+possible_(T, F, C, ?king, _History) ->
     [is_empty_or_enemy(T, C, crd_inc(F, {-1, -1})),
      is_empty_or_enemy(T, C, crd_inc(F, {-1, 0})),
      is_empty_or_enemy(T, C, crd_inc(F, {-1, 1})),
@@ -115,7 +134,7 @@ possible_(T, F, C, ?king) ->
      is_empty_or_enemy(T, C, crd_inc(F, {1, -1})),
      is_empty_or_enemy(T, C, crd_inc(F, {1, 0})),
      is_empty_or_enemy(T, C, crd_inc(F, {1, 1}))];
-possible_(_, _, _, _) -> [].
+possible_(_, _, _, _, _) -> [].
 
 %% ----------------------------------------------------------------------
 %% low level tools
@@ -140,6 +159,35 @@ nexts(Table, MyColor, Start, Step) ->
             end
     end.
 
+is_cell_under_attack(Table, Crd, Enemies) ->
+    lists:any(
+      fun({I, {C, F}}) ->
+              lists:member(
+                Crd,
+                possible(Table, I, C, F, []))
+      end, Enemies).
+
+-define(seq_1_8, [1,2,3,4,5,6,7,8]).
+all_enemies(Table, MyColor) ->
+    lists:flatmap(
+      fun(Crd) ->
+              case cell(Table, Crd) of
+                  {Color, _} = F when Color /= MyColor ->
+                      [{Crd, F}];
+                  _ -> []
+              end
+      end, [{C, R} || C <- ?seq_1_8, R <- ?seq_1_8]).
+
+whereis_my_king(Table, MyColor) ->
+    whereis_my_king(
+      Table, MyColor,
+      [{C, R} || C <- ?seq_1_8, R <- ?seq_1_8]).
+whereis_my_king(Table, MyColor, [H | Tail]) ->
+    case cell(Table, H) of
+        {MyColor, ?king} -> H;
+        _ -> whereis_my_king(Table, MyColor, Tail)
+    end.
+
 cell(Table, {C, R})
   when R >= 1 andalso R =< 8 andalso
        C >= 1 andalso C =< 8 ->
@@ -160,7 +208,6 @@ move_dec(_) ->
 
 crd_dec(C, R) ->
     Crd = {C - $a + 1, R - $1 + 1},
-    echessd_log:debug("COORD ~s DECODED to ~w", [[C, R], Crd]),
     case crd_ok(Crd) of
         true -> Crd;
         _ -> ?null

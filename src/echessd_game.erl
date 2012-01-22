@@ -9,7 +9,8 @@
          getprops/1,
          transpose/1,
          new/1,
-         getcell/2, setcell/3
+         getcell/2, setcell/3,
+         ll_move/3
         ]).
 
 -include("echessd.hrl").
