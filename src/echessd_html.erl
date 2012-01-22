@@ -302,11 +302,10 @@ table_rows(Game) ->
     table_rows(tuple_to_list(Game), 8, []).
 table_rows([Row | Tail], N, Result) ->
     StrRow =
-        "<tr>\n"
-        "<td class=crd_l>" ++ tt(integer_to_list(N)) ++ "\n"
-        ++ table_row(Row, N) ++
-        "<td class=crd_r>" ++ tt(integer_to_list(N)) ++ "\n",
-    table_rows(Tail, N - 1, [StrRow | Result]);
+        tag("td", ["class=crd_l"], tt(integer_to_list(N))) ++
+        table_row(Row, N) ++
+        tag("td", ["class=crd_r"], tt(integer_to_list(N))),
+    table_rows(Tail, N - 1, [tr(StrRow) | Result]);
 table_rows(_, _, Result) ->
     lists:reverse(Result).
 
