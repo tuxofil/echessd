@@ -284,31 +284,18 @@ td(String) ->
 tr(String) ->
     "<tr>" ++ String ++ "</tr>".
 
+tag(Tag, Attrs, Value) ->
+    "<" ++ Tag ++
+        [" " ++ V || V <- Attrs] ++
+        ">" ++ Value ++ "</" ++ Tag ++ ">".
+
 table(Game) ->
-    "<table cellpadding=0 cellspacing=0>\n"
-        "<tr>\n"
-        "<td>\n"
-        "<td class=crd_t><tt>a</tt>\n"
-        "<td class=crd_t><tt>b</tt>\n"
-        "<td class=crd_t><tt>c</tt>\n"
-        "<td class=crd_t><tt>d</tt>\n"
-        "<td class=crd_t><tt>e</tt>\n"
-        "<td class=crd_t><tt>f</tt>\n"
-        "<td class=crd_t><tt>g</tt>\n"
-        "<td class=crd_t><tt>h</tt>\n"
-        "<td>\n"
-        ++ table_rows(Game) ++
-        "<tr>\n"
-        "<td>\n"
-        "<td class=crd_b><tt>a</tt>\n"
-        "<td class=crd_b><tt>b</tt>\n"
-        "<td class=crd_b><tt>c</tt>\n"
-        "<td class=crd_b><tt>d</tt>\n"
-        "<td class=crd_b><tt>e</tt>\n"
-        "<td class=crd_b><tt>f</tt>\n"
-        "<td class=crd_b><tt>g</tt>\n"
-        "<td class=crd_b><tt>h</tt>\n"
-        "<td>\n"
+    "<table cellpadding=0 cellspacing=0>\n" ++
+        tr(td("") ++ [tag("td", ["class=crd_t"], tt([C])) ||
+                         C <- "abcdefgh"] ++ td("")) ++
+        table_rows(Game) ++
+        tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
+                         C <- "abcdefgh"] ++ td("")) ++
         "</table>\n".
 
 table_rows(Game) ->
