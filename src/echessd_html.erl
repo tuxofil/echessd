@@ -55,9 +55,13 @@ error(String) ->
 eaccess() -> ?MODULE:error("ACCESS DENIED").
 
 home() ->
+    User = get(username),
+    {ok, UserInfo} = echessd_user:getprops(User),
     header("echessd - Home", []) ++
-        h1("Logged in as \"" ++ get(username) ++ "\"") ++
+        h1("Logged in as \"" ++ User ++ "\"") ++
         navigation() ++
+        "<br>" ++
+        user_games(User, UserInfo) ++
         "" ++
         footer([]).
 
@@ -71,8 +75,7 @@ users() ->
         string:join(
           lists:map(
             fun(User) ->
-                    "*&nbsp;<a href='?goto=" ++ ?SECTION_USER ++ "&name=" ++
-                        User ++ "'>" ++ User ++ "</a>"
+                    "*&nbsp;" ++ userlink(User)
             end, Users), "<br>") ++
         footer([]).
 
@@ -101,6 +104,8 @@ user(User, UserInfo) ->
                (_) ->
                     []
             end, UserInfo), "<br>") ++
+        "<br>" ++
+        user_games(User, UserInfo) ++
         "<br>" ++
         navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ User,
                       "Start new game"}]) ++
@@ -183,8 +188,46 @@ notyet() ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-user_games(User) ->
-    ok.
+user_games(User, UserInfo) ->
+    case proplists:get_value(games, UserInfo) of
+        [_ | _] = Games ->
+            h2("User games:") ++
+                string:join(
+                  lists:flatmap(
+                    fun(Game) ->
+                            case echessd_game:getprops(Game) of
+                                {ok, GameProps} ->
+                                    [user_games_(Game, GameProps)];
+                                {error, Reason} ->
+                                    echessd_log:err(
+                                      "Failed to fetch game #~w props: "
+                                      "~9999p (reference from ~9999p user)",
+                                      [Game, Reason, User]),
+                                    []
+                            end
+                    end, Games), "<br>");
+        _ -> ""
+    end.
+user_games_(Game, GameInfo) ->
+    "*&nbsp;" ++ gamelink(Game) ++ "&nbsp;(" ++
+        string:join(
+          lists:flatmap(
+            fun({User, Color}) when Color == ?white orelse Color == ?black ->
+                    [userlink(User) ++ " as " ++
+                         if Color == ?white -> "white";
+                            true -> "black"
+                         end];
+               (_) -> []
+            end, proplists:get_value(users, GameInfo)), ", ") ++ ")".
+
+userlink(User) ->
+    "<a href='?goto=" ++ ?SECTION_USER ++
+        "&name=" ++ User ++ "'>" ++ User ++ "</a>".
+
+gamelink(Game) ->
+    StrID = integer_to_list(Game),
+    "<a href='?goto=" ++ ?SECTION_GAME ++
+        "&game=" ++ StrID ++ "'>#" ++ StrID ++ "</a>".
 
 header(Title, _Options) ->
     "<html>\n\n"
