@@ -7,9 +7,9 @@
          home/0,
          game/1,
          users/0,
-         user/0,
+         user/1,
          newgame/0,
-         test_table/0,
+         test_table/1,
          notyet/0
         ]).
 
@@ -76,11 +76,10 @@ users() ->
             end, Users), "<br>") ++
         footer([]).
 
-user() ->
-    Iam = get(username),
-    case proplists:get_value("name", get(query_proplist)) of
-        Iam -> home();
-        User ->
+user(User) ->
+    case get(username) of
+        User -> home();
+        _ ->
             case echessd_user:getprops(User) of
                 {ok, UserInfo} ->
                     user(User, UserInfo);
@@ -143,15 +142,24 @@ newgame(User, UserInfo) ->
         footer([]).
 
 game(GameID) ->
-    header("echessd - Game", []) ++
-        h1("Logged in as " ++ get(username)) ++
-        navigation() ++
-        "" ++
-        footer([]).
+    case echessd_game:getprops(GameID) of
+        {ok, GameProps} ->
+            header("echessd - Game", []) ++
+                h1("Game #" ++ integer_to_list(GameID)) ++
+                navigation() ++
+                navig_links(
+                  [{"?goto=" ++ ?SECTION_GAME ++
+                        "&game=" ++ integer_to_list(GameID), "Refresh"}]) ++
+                "" ++
+                footer([]);
+        {error, Reason} ->
+            format_error(
+              "Unable to fetch game #~9999p properties:<br>" ++ tt("~p"),
+              [GameID, Reason])
+    end.
 
-test_table() ->
+test_table(Moves) ->
     Game0 = echessd_game:new(?GAME_CLASSIC),
-    Moves = string:tokens(proplists:get_value("moves", get(query_proplist), ""), ","),
     Game =
         lists:foldl(
           fun(Move, Acc) ->
@@ -174,6 +182,9 @@ notyet() ->
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+user_games(User) ->
+    ok.
 
 header(Title, _Options) ->
     "<html>\n\n"

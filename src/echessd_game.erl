@@ -1,6 +1,7 @@
 -module(echessd_game).
 
 -export([add/5,
+         getprops/1,
          new/1,
          move/2, move/3,
          getcell/2, setcell/3
@@ -33,6 +34,9 @@ add(Type, Owner, OwnerColor, Opponent, OtherProps) ->
               [Reason, Props]),
             Error
     end.
+
+getprops(ID) ->
+    echessd_db:get_game_props(ID).
 
 new(?GAME_CLASSIC) ->
     {{?brook,?bknight,?bbishop,?bqueen,?bking,?bbishop,?bknight,?brook}, %% 8

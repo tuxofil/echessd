@@ -113,6 +113,7 @@ process_get(?SECTION_EXIT, _Query, true) ->
     echessd_html:login();
 process_get(_, Query, true) ->
     process_goto(Query),
+    put(query_proplist, Query),
     process_show();
 process_get(_, Query, _) ->
     case proplists:get_value("goto", Query) of
@@ -190,7 +191,10 @@ process_post(?SECTION_NEWGAME, Query, true) ->
         end,
     case echessd_game:add(GameType, get(username), Color, User, []) of
         {ok, ID} ->
-            process_show(?SECTION_GAME);
+            process_get(
+              ?SECTION_GAME,
+              [{"goto", ?SECTION_GAME},
+               {"game", integer_to_list(ID)}], true);
         {error, Reason} ->
             echessd_html:error(
               io_lib:format(
@@ -204,16 +208,18 @@ process_post(_, _, _) ->
     echessd_html:eaccess().
 
 process_show() ->
-    Section = echessd_session:get_val(section),
-    process_show(Section).
+    process_show(
+      echessd_session:get_val(section)).
 process_show(?SECTION_GAME) ->
-    echessd_html:game(undefined);
+    echessd_html:game(
+      list_to_integer(get_query_item("game")));
 process_show(?SECTION_USERS) ->
     echessd_html:users();
 process_show(?SECTION_TEST) ->
-    echessd_html:test_table();
+    echessd_html:test_table(
+      string:tokens(get_query_item("moves"), ","));
 process_show(?SECTION_USER) ->
-    echessd_html:user();
+    echessd_html:user(get_query_item("name"));
 process_show(?SECTION_NEWGAME) ->
     echessd_html:newgame();
 process_show(_Default) ->
@@ -227,4 +233,7 @@ process_goto(Query) ->
             _ -> ?SECTION_HOME
         end,
     echessd_session:set_val(section, Section).
+
+get_query_item(Key) ->
+    proplists:get_value(Key, get(query_proplist), "").
 
