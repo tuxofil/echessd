@@ -64,7 +64,8 @@ home() ->
         user_info(User, UserInfo) ++
         "<br>" ++
         user_games(User, UserInfo) ++
-        "" ++
+        "<br>" ++
+        newgame_link(User) ++
         footer([]).
 
 users() ->
@@ -103,8 +104,7 @@ user(User, UserInfo) ->
         "<br>" ++
         user_games(User, UserInfo) ++
         "<br>" ++
-        navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ User,
-                      "Start new game"}]) ++
+        newgame_link(User) ++
         footer([]).
 
 newgame() ->
@@ -268,6 +268,10 @@ gamelink(Game) ->
     StrID = integer_to_list(Game),
     "<a href='?goto=" ++ ?SECTION_GAME ++
         "&game=" ++ StrID ++ "'>#" ++ StrID ++ "</a>".
+
+newgame_link(WithUser) ->
+    navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUser,
+                  "Start new game"}]).
 
 header(Title, _Options) ->
     "<html>\n\n"
