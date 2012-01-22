@@ -238,7 +238,7 @@ user_games(User, UserInfo) ->
                                       [Game, Reason, User]),
                                     []
                             end
-                    end, Games), "<br>");
+                    end, Games), "<br>") ++ "<br>";
         _ -> ""
     end.
 user_games_(Game, GameInfo) ->
