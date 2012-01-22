@@ -3,10 +3,12 @@
 -export([add/5,
          fetch/1,
          who_must_turn/1,
+         turn_color/1,
          do_moves/2,
          is_valid_move/3,
          move/3,
          getprops/1,
+         transpose/1,
          new/1,
          getcell/2, setcell/3
         ]).
@@ -79,12 +81,13 @@ who_must_turn(GameInfo) ->
         [{C, N} || {users, L} <- GameInfo,
                    {N, C} <- L,
                    lists:member(C, [?black, ?white])],
-    TurnColor =
-        case length(proplists:get_value(moves, GameInfo, [])) rem 2 of
-            0 -> ?white;
-            _ -> ?black
-        end,
-    proplists:get_value(TurnColor, Users).
+    proplists:get_value(turn_color(GameInfo), Users).
+
+turn_color(GameInfo) ->
+    case length(proplists:get_value(moves, GameInfo, [])) rem 2 of
+        0 -> ?white;
+        _ -> ?black
+    end.
 
 move(Game, User, Move) ->
     case echessd_db:gamemove(Game, User, Move) of
@@ -102,6 +105,14 @@ move(Game, User, Move) ->
 
 getprops(ID) ->
     echessd_db:get_game_props(ID).
+
+transpose(Game) ->
+    list_to_tuple(
+      lists:reverse(
+        [list_to_tuple(
+           lists:reverse(
+             tuple_to_list(R))) ||
+            R <- tuple_to_list(Game)])).
 
 new(?GAME_CLASSIC) ->
     {{?brook,?bknight,?bbishop,?bqueen,?bking,?bbishop,?bknight,?brook}, %% 8

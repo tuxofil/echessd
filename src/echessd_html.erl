@@ -146,14 +146,19 @@ game(GameID) ->
     Iam = get(username),
     case echessd_game:fetch(GameID) of
         {ok, GameInfo, {Table, Tooked}} ->
+            MyColor =
+                proplists:get_value(
+                  Iam, proplists:get_value(users, GameInfo, [])),
+            TurnUser = echessd_game:who_must_turn(GameInfo),
+            IsRotated = MyColor == ?black,
             header("echessd - Game", []) ++
                 h1("Game #" ++ integer_to_list(GameID)) ++
                 navigation() ++
                 navig_links(
                   [{"?goto=" ++ ?SECTION_GAME ++
                         "&game=" ++ integer_to_list(GameID), "Refresh"}]) ++
-                table(Table, Tooked) ++
-                case echessd_game:who_must_turn(GameInfo) of
+                table(Table, Tooked, IsRotated) ++
+                case TurnUser of
                     Iam ->
                         "<form method=post>"
                             "Move:&nbsp;"
@@ -183,7 +188,7 @@ test_table(Moves) ->
     header("echessd - Test table", []) ++
         h1("Test table") ++
         navigation() ++
-        table(Game, Tooked) ++
+        table(Game, Tooked, false) ++
         footer([]).
 
 notyet() ->
@@ -302,13 +307,18 @@ tag(Tag, Attrs, Value) ->
         [" " ++ V || V <- Attrs] ++
         ">" ++ Value ++ "</" ++ Tag ++ ">".
 
-table(Game, Tooked) ->
+table(Game, Tooked, IsRotated) ->
+    Letters0 = "abcdefgh",
+    Letters =
+        if IsRotated -> lists:reverse(Letters0);
+           true -> Letters0
+        end,
     "<table cellpadding=0 cellspacing=0>\n" ++
         tr(td("") ++ [tag("td", ["class=crd_t"], tt([C])) ||
-                         C <- "abcdefgh"] ++ td("")) ++
-        table_rows(Game) ++
+                         C <- Letters] ++ td("")) ++
+        table_rows(Game, IsRotated) ++
         tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
-                         C <- "abcdefgh"] ++ td("")) ++
+                         C <- Letters] ++ td("")) ++
         "</table>\n" ++
         tooked(Tooked).
 tooked([_ | _] = Tooked) ->
@@ -328,32 +338,35 @@ tooked([_ | _] = Tooked) ->
         "</table>";
 tooked(_) -> "".
 
-table_rows(Game) ->
-    table_rows(tuple_to_list(Game), 8, []).
-table_rows([Row | Tail], N, Result) ->
+table_rows(Game, false) ->
+    table_rows(tuple_to_list(Game), 8, -1, []);
+table_rows(Game, true) ->
+    table_rows(tuple_to_list(echessd_game:transpose(Game)), 1, 1, []).
+table_rows([Row | Tail], N, Step, Result) ->
     StrRow =
         tag("td", ["class=crd_l"], tt(integer_to_list(N))) ++
-        table_row(Row, N) ++
+        table_row(Row, N, Step) ++
         tag("td", ["class=crd_r"], tt(integer_to_list(N))),
-    table_rows(Tail, N - 1, [tr(StrRow) | Result]);
-table_rows(_, _, Result) ->
+    table_rows(Tail, N + Step, Step, [tr(StrRow) | Result]);
+table_rows(_, _, _, Result) ->
     lists:reverse(Result).
 
-table_row(Row, N) when is_tuple(Row) ->
+table_row(Row, N, Step) when is_tuple(Row) ->
     table_row(
       tuple_to_list(Row),
-      if N rem 2 == 0 -> "wc";
-         true -> "bc"
-      end);
+      first_chess_cell_class(N, Step > 0)).
 table_row([Figure | Tail], CellClass) ->
-    NewCellClass =
-        case CellClass of
-            "bc" -> "wc";
-            "wc" -> "bc"
-        end,
     "<td class=" ++ CellClass ++ ">" ++ figure(Figure) ++ "\n" ++
-        table_row(Tail, NewCellClass);
+        table_row(Tail, next_chess_cell_class(CellClass));
 table_row(_, _) -> "".
+
+first_chess_cell_class(Row, false) when Row rem 2 == 0 -> "wc";
+first_chess_cell_class(_, false) -> "bc";
+first_chess_cell_class(Row, _) ->
+    next_chess_cell_class(first_chess_cell_class(Row, false)).
+
+next_chess_cell_class("wc") -> "bc";
+next_chess_cell_class("bc") -> "wc".
 
 figure(?empty) -> "&nbsp;";
 figure(Fig) ->
