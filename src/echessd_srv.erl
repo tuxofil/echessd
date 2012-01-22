@@ -204,7 +204,7 @@ process_post(?SECTION_NEWGAME, Query, true) ->
 process_post(?SECTION_MOVE, Query, true) ->
     User = get(username),
     Game = list_to_integer(get_query_item("game")),
-    Move = proplists:get_value("move", Query),
+    Move = string:to_lower(proplists:get_value("move", Query)),
     case echessd_game:move(Game, User, Move) of
         ok -> process_show(?SECTION_GAME);
         {error, Reason} ->
