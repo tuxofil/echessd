@@ -75,11 +75,26 @@ classic_move(Table, {Color, ?pawn}, From, To) ->
             {_, _} -> [FR];
             _ -> []
         end,
-    echessd_log:debug("PAWN CAN MOVE TO: ~9999p", [Possible]),
     case lists:member(To, Possible) of
         true -> ok;
         _ ->
             throw({error, pawn_cannot_do_that})
+    end;
+classic_move(_Table, {_Color, ?knight}, From, To) ->
+    Possible =
+        [crd_inc(From, {1, 2}),
+         crd_inc(From, {-1, 2}),
+         crd_inc(From, {1, -2}),
+         crd_inc(From, {-1, -2}),
+         crd_inc(From, {2, 1}),
+         crd_inc(From, {-2, 1}),
+         crd_inc(From, {2, -1}),
+         crd_inc(From, {-2, -1})
+        ],
+    case lists:member(To, Possible) of
+        true -> ok;
+        _ ->
+            throw({error, knight_cannot_do_that})
     end;
 classic_move(Game, {Color, Figure}, From, To) ->
     ok.
