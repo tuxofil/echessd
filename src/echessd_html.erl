@@ -61,6 +61,8 @@ home() ->
         h1("Logged in as \"" ++ User ++ "\"") ++
         navigation() ++
         "<br>" ++
+        user_info(User, UserInfo) ++
+        "<br>" ++
         user_games(User, UserInfo) ++
         "" ++
         footer([]).
@@ -97,13 +99,7 @@ user(User, UserInfo) ->
         h1("User '" ++ User ++ "'") ++
         navigation() ++
         "<br>" ++
-        string:join(
-          lists:flatmap(
-            fun({created, Time}) ->
-                    ["<b>Registered:</b> " ++ echessd_lib:timestamp(Time)];
-               (_) ->
-                    []
-            end, UserInfo), "<br>") ++
+        user_info(User, UserInfo) ++
         "<br>" ++
         user_games(User, UserInfo) ++
         "<br>" ++
@@ -188,6 +184,32 @@ notyet() ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
+user_info(User, UserInfo) ->
+    "<table cellpadding=0 cellspacing=0><tr>\n" ++
+        string:join(
+          [tr(td(b(K ++ ":&nbsp;")) ++ td(V)) ||
+              {K, V} <- user_info_cells(User, UserInfo)]
+          , "\n") ++
+        "</tr></table>\n".
+user_info_cells(User, UserInfo) ->
+    lists:flatmap(
+      fun(login) -> [{"Login", User}];
+         (fullname = Key) ->
+              [{"Full name",
+                case proplists:get_value(Key, UserInfo) of
+                    [_ | _] = Value -> Value;
+                    _ -> "Not Sure"
+                end}];
+         (created = Key) ->
+              [{"Registered",
+                case proplists:get_value(Key, UserInfo) of
+                    Value when ?is_now(Value) ->
+                        echessd_lib:timestamp(Value);
+                    _ -> "unknown"
+                end}];
+         (_) -> []
+      end, [login, fullname, created]).
+
 user_games(User, UserInfo) ->
     case proplists:get_value(games, UserInfo) of
         [_ | _] = Games ->
@@ -255,6 +277,12 @@ b(String) ->
 
 tt(String) ->
     "<tt>" ++ String ++ "</tt>".
+
+td(String) ->
+    "<td>" ++ String ++ "</td>".
+
+tr(String) ->
+    "<tr>" ++ String ++ "</tr>".
 
 table(Game) ->
     "<table cellpadding=0 cellspacing=0>\n"
