@@ -27,7 +27,7 @@ is_valid_move(GameType, Game, TurnColor, Move) ->
 
 is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move) ->
     {C1, C2} = move_dec(Move),
-    Figure =
+    {MyColor, Figure} =
         case cell(Table, C1) of
             ?empty -> throw({error, {cell_is_empty, C1}});
             {TurnColor, _} = Figure0 -> Figure0;
@@ -38,76 +38,107 @@ is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move) ->
         {_, ?king} -> throw({error, cannot_take_king});
         _ -> ok
     end,
-    ok = classic_move(Table, Figure, C1, C2),
-    %% todo: check post-cases
-    ok;
+    Possible = possible(Table, C1, MyColor, Figure),
+    echessd_log:debug(
+      "Fig ~w from ~s can move to: ~9999p",
+      [{MyColor, Figure}, crd_enc(C1),
+       [crd_enc(I) || I <- Possible]]),
+    case lists:member(C2, Possible) of
+        true ->
+            ok;
+        _ ->
+            throw({error, badmove})
+    end;
 is_valid_move_(_, _, _, _) ->
     throw(game_type_unsupported).
 
-classic_move(Table, {Color, ?pawn}, From, To) ->
+possible(T, F, C, Fig) ->
+    lists:usort(lists:flatten(possible_(T, F, C, Fig))) -- [?null].
+possible_(T, F, C, ?pawn) ->
     {StartRow, Direction} =
-        if Color == ?white -> {2, 1};
+        if C == ?white -> {2, 1};
            true -> {7, -1}
         end,
-    F1 = crd_inc(From, {0, Direction}),
-    F2 = crd_inc(From, {0, Direction * 2}),
-    FL = crd_inc(From, {-1, Direction}),
-    FR = crd_inc(From, {1, Direction}),
-    Possible =
-        case cell(Table, F1) of
-            ?empty ->
-                [F1] ++
-                    case crd_row(From) of
-                        StartRow ->
-                            case cell(Table, F2) of
-                                ?empty -> [F2];
-                                _ -> []
-                            end;
-                        _ -> []
-                    end;
-            _ -> []
-        end ++
-        case cell(Table, FL) of
+    F1 = crd_inc(F, {0, Direction}),
+    F2 = crd_inc(F, {0, Direction * 2}),
+    FL = crd_inc(F, {-1, Direction}),
+    FR = crd_inc(F, {1, Direction}),
+    case cell(T, F1) of
+        ?empty ->
+            [F1] ++
+                case crd_row(F) of
+                    StartRow ->
+                        case cell(T, F2) of
+                            ?empty -> [F2];
+                            _ -> []
+                        end;
+                    _ -> []
+                end;
+        _ -> []
+    end ++
+        case cell(T, FL) of
             {_, _} -> [FL];
             _ -> []
         end ++
-        case cell(Table, FR) of
+        case cell(T, FR) of
             {_, _} -> [FR];
             _ -> []
-        end,
-    case lists:member(To, Possible) of
-        true -> ok;
-        _ ->
-            throw({error, pawn_cannot_do_that})
-    end;
-classic_move(_Table, {_Color, ?knight}, From, To) ->
-    Possible =
-        [crd_inc(From, {1, 2}),
-         crd_inc(From, {-1, 2}),
-         crd_inc(From, {1, -2}),
-         crd_inc(From, {-1, -2}),
-         crd_inc(From, {2, 1}),
-         crd_inc(From, {-2, 1}),
-         crd_inc(From, {2, -1}),
-         crd_inc(From, {-2, -1})
-        ],
-    case lists:member(To, Possible) of
-        true -> ok;
-        _ ->
-            throw({error, knight_cannot_do_that})
-    end;
-classic_move(Game, {Color, Figure}, From, To) ->
-    ok.
+        end;
+possible_(T, F, C, ?rook) ->
+    [nexts(T, C, F, {0, 1}),
+     nexts(T, C, F, {0, -1}),
+     nexts(T, C, F, {1, 0}),
+     nexts(T, C, F, {-1, 0})];
+possible_(T, F, C, ?bishop) ->
+    [nexts(T, C, F, {-1, -1}),
+     nexts(T, C, F, {1, -1}),
+     nexts(T, C, F, {-1, 1}),
+     nexts(T, C, F, {1, 1})];
+possible_(T, F, C, ?queen) ->
+    [possible_(T, F, C, ?bishop),
+     possible_(T, F, C, ?rook)];
+possible_(T, F, C, ?knight) ->
+    [is_empty_or_enemy(T, C, crd_inc(F, {1, 2})),
+     is_empty_or_enemy(T, C, crd_inc(F, {-1, 2})),
+     is_empty_or_enemy(T, C, crd_inc(F, {1, -2})),
+     is_empty_or_enemy(T, C, crd_inc(F, {-1, -2})),
+     is_empty_or_enemy(T, C, crd_inc(F, {2, 1})),
+     is_empty_or_enemy(T, C, crd_inc(F, {-2, 1})),
+     is_empty_or_enemy(T, C, crd_inc(F, {2, -1})),
+     is_empty_or_enemy(T, C, crd_inc(F, {-2, -1}))];
+possible_(T, F, C, ?king) ->
+    [is_empty_or_enemy(T, C, crd_inc(F, {-1, -1})),
+     is_empty_or_enemy(T, C, crd_inc(F, {-1, 0})),
+     is_empty_or_enemy(T, C, crd_inc(F, {-1, 1})),
+     is_empty_or_enemy(T, C, crd_inc(F, {0, -1})),
+     is_empty_or_enemy(T, C, crd_inc(F, {0, 1})),
+     is_empty_or_enemy(T, C, crd_inc(F, {1, -1})),
+     is_empty_or_enemy(T, C, crd_inc(F, {1, 0})),
+     is_empty_or_enemy(T, C, crd_inc(F, {1, 1}))];
+possible_(_, _, _, _) -> [].
 
 %% ----------------------------------------------------------------------
 %% low level tools
 %% ----------------------------------------------------------------------
 
-same_col({C, _}, {C, _}) -> true;
-same_col(_, _) -> false.
+is_empty_or_enemy(Table, MyColor, Coord) ->
+    case cell(Table, Coord) of
+        ?empty -> Coord;
+        {Color, _} when Color /= MyColor -> Coord;
+        _ -> ?null
+    end.
 
-same_row({_, R}, {_, R}) -> true;
-same_row(_, _) -> false.
+nexts(Table, MyColor, Start, Step) ->
+    case crd_inc(Start, Step) of
+        ?null -> [];
+        Crd ->
+            case cell(Table, Crd) of
+                ?empty ->
+                    [Crd | nexts(Table, MyColor, Crd, Step)];
+                {MyColor, _} -> [];
+                _ -> [Crd]
+            end
+    end.
 
 cell(Table, {C, R})
   when R >= 1 andalso R =< 8 andalso
@@ -135,6 +166,9 @@ crd_dec(C, R) ->
         _ -> ?null
     end.
 
+crd_enc({C, R}) ->
+    [$a + C - 1, $1 + R - 1].
+
 crd_inc({C, R}, {CS, RS}) ->
     Crd = {C + CS, R + RS},
     case crd_ok(Crd) of
@@ -143,7 +177,6 @@ crd_inc({C, R}, {CS, RS}) ->
     end.
 
 crd_row({_, R}) -> R.
-crd_col({C, _}) -> C.
 
 crd_ok({C, R})
   when C >= 1 andalso C =< 8 andalso
