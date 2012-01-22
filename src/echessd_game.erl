@@ -2,6 +2,7 @@
 
 -export([add/5,
          fetch/1,
+         who_must_turn/1,
          getprops/1,
          new/1,
          move/2, move/3,
@@ -58,6 +59,18 @@ fetch(ID) ->
                end, {echessd_game:new(GameType), []}, Moves)};
         Error -> Error
     end.
+
+who_must_turn(GameInfo) ->
+    Users =
+        [{C, N} || {users, L} <- GameInfo,
+                   {N, C} <- L,
+                   lists:member(C, [?black, ?white])],
+    TurnColor =
+        case length(proplists:get_value(moves, GameInfo, [])) rem 2 of
+            0 -> ?white;
+            _ -> ?black
+        end,
+    proplists:get_value(TurnColor, Users).
 
 getprops(ID) ->
     echessd_db:get_game_props(ID).

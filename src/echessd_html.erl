@@ -143,6 +143,7 @@ newgame(User, UserInfo) ->
         footer([]).
 
 game(GameID) ->
+    Iam = get(username),
     case echessd_game:fetch(GameID) of
         {ok, GameInfo, {Table, Tooked}} ->
             header("echessd - Game", []) ++
@@ -152,7 +153,16 @@ game(GameID) ->
                   [{"?goto=" ++ ?SECTION_GAME ++
                         "&game=" ++ integer_to_list(GameID), "Refresh"}]) ++
                 table(Table, Tooked) ++
-                "" ++
+                case echessd_game:who_must_turn(GameInfo) of
+                    Iam ->
+                        "<form method=post>"
+                            "Move:&nbsp;"
+                            "<input name=action type=hidden value=move>"
+                            "<input name=move type=text size=4>"
+                            "<input type=submit value=Move>"
+                            "</form>";
+                    _ -> ""
+                end ++
                 footer([]);
         {error, Reason} ->
             format_error(
