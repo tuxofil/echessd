@@ -143,14 +143,15 @@ newgame(User, UserInfo) ->
         footer([]).
 
 game(GameID) ->
-    case echessd_game:getprops(GameID) of
-        {ok, GameProps} ->
+    case echessd_game:fetch(GameID) of
+        {ok, GameInfo, {Table, Tooked}} ->
             header("echessd - Game", []) ++
                 h1("Game #" ++ integer_to_list(GameID)) ++
                 navigation() ++
                 navig_links(
                   [{"?goto=" ++ ?SECTION_GAME ++
                         "&game=" ++ integer_to_list(GameID), "Refresh"}]) ++
+                table(Table, Tooked) ++
                 "" ++
                 footer([]);
         {error, Reason} ->
@@ -161,16 +162,16 @@ game(GameID) ->
 
 test_table(Moves) ->
     Game0 = echessd_game:new(?GAME_CLASSIC),
-    Game =
+    {Game, Tooked} =
         lists:foldl(
-          fun(Move, Acc) ->
-                  {T, _} = echessd_game:move(Acc, Move),
-                  T
-          end, Game0, Moves),
+          fun(Move, {G0, T0}) ->
+                  {G, T} = echessd_game:move(G0, Move),
+                  {G, [T | T0]}
+          end, {Game0, []}, Moves),
     header("echessd - Test table", []) ++
         h1("Test table") ++
         navigation() ++
-        table(Game) ++
+        table(Game, Tooked) ++
         footer([]).
 
 notyet() ->
@@ -289,14 +290,31 @@ tag(Tag, Attrs, Value) ->
         [" " ++ V || V <- Attrs] ++
         ">" ++ Value ++ "</" ++ Tag ++ ">".
 
-table(Game) ->
+table(Game, Tooked) ->
     "<table cellpadding=0 cellspacing=0>\n" ++
         tr(td("") ++ [tag("td", ["class=crd_t"], tt([C])) ||
                          C <- "abcdefgh"] ++ td("")) ++
         table_rows(Game) ++
         tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
                          C <- "abcdefgh"] ++ td("")) ++
-        "</table>\n".
+        "</table>\n" ++
+        tooked(Tooked).
+tooked([_ | _] = Tooked) ->
+    "<table cellpadding=0 cellspacing=0>\n" ++
+        case [figure(F) || {?black, _} = F <- Tooked] of
+            [_ | _] = Black ->
+                tr(tag("td", ["class=tooked"],
+                       lists:reverse(Black)));
+            _ -> ""
+        end ++
+        case [figure(F) || {?white, _} = F <- Tooked] of
+            [_ | _] = White ->
+                tr(tag("td", ["class=tooked"],
+                       lists:reverse(White)));
+            _ -> ""
+        end ++
+        "</table>";
+tooked(_) -> "".
 
 table_rows(Game) ->
     table_rows(tuple_to_list(Game), 8, []).

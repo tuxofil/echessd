@@ -32,6 +32,11 @@ td.wc, td.bc {
     font-size: 30px;
 }
 
+td.tooked {
+    background-color: #808080;
+    font-size: 30px;
+}
+
 td.bc {
     background-color: #505050;
 }
