@@ -4,6 +4,8 @@
 
 -include("echessd.hrl").
 
+-define(null, '*null').
+
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
@@ -23,24 +25,114 @@ is_valid_move(GameType, Game, TurnColor, Move) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-is_valid_move_(?GAME_CLASSIC, Game, TurnColor, Move) ->
-    {C1, C2} =
-        case Move of
-            [A, B, C, D] -> {[A, B], [C, D]};
-            _ -> throw({error, badmove})
-        end,
+is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move) ->
+    {C1, C2} = move_dec(Move),
     Figure =
-        case echessd_game:getcell(Game, C1) of
+        case cell(Table, C1) of
             ?empty -> throw({error, {cell_is_empty, C1}});
-            {TurnColor, Figure0} -> Figure0;
+            {TurnColor, _} = Figure0 -> Figure0;
             {_, _} -> throw({error, not_your_figure})
         end,
-    case echessd_game:getcell(Game, C2) of
+    case cell(Table, C2) of
         {TurnColor, _} -> throw({error, friendly_fire});
         {_, ?king} -> throw({error, cannot_take_king});
         _ -> ok
     end,
+    ok = classic_move(Table, Figure, C1, C2),
+    %% todo: check post-cases
     ok;
 is_valid_move_(_, _, _, _) ->
     throw(game_type_unsupported).
+
+classic_move(Table, {Color, ?pawn}, From, To) ->
+    {StartRow, Direction} =
+        if Color == ?white -> {2, 1};
+           true -> {7, -1}
+        end,
+    F1 = crd_inc(From, {0, Direction}),
+    F2 = crd_inc(From, {0, Direction * 2}),
+    FL = crd_inc(From, {-1, Direction}),
+    FR = crd_inc(From, {1, Direction}),
+    Possible =
+        case cell(Table, F1) of
+            ?empty ->
+                [F1] ++
+                    case crd_row(From) of
+                        StartRow ->
+                            case cell(Table, F2) of
+                                ?empty -> [F2];
+                                _ -> []
+                            end;
+                        _ -> []
+                    end;
+            _ -> []
+        end ++
+        case cell(Table, FL) of
+            {_, _} -> [FL];
+            _ -> []
+        end ++
+        case cell(Table, FR) of
+            {_, _} -> [FR];
+            _ -> []
+        end,
+    echessd_log:debug("PAWN CAN MOVE TO: ~9999p", [Possible]),
+    case lists:member(To, Possible) of
+        true -> ok;
+        _ ->
+            throw({error, pawn_cannot_do_that})
+    end;
+classic_move(Game, {Color, Figure}, From, To) ->
+    ok.
+
+%% ----------------------------------------------------------------------
+%% low level tools
+%% ----------------------------------------------------------------------
+
+same_col({C, _}, {C, _}) -> true;
+same_col(_, _) -> false.
+
+same_row({_, R}, {_, R}) -> true;
+same_row(_, _) -> false.
+
+cell(Table, {C, R})
+  when R >= 1 andalso R =< 8 andalso
+       C >= 1 andalso C =< 8 ->
+    element(C, element(9 - R, Table));
+cell(_, _) -> ?null.
+
+move_dec([A, B, C, D])
+  when is_integer(A), is_integer(B),
+       is_integer(C), is_integer(D) ->
+    case {crd_dec(A, B), crd_dec(C, D)} of
+        {{_,_}, {_,_}} = Coords ->
+            Coords;
+        _ ->
+            throw({error, badmove})
+    end;
+move_dec(_) ->
+    throw({error, badmove}).
+
+crd_dec(C, R) ->
+    Crd = {C - $a + 1, R - $1 + 1},
+    echessd_log:debug("COORD ~s DECODED to ~w", [[C, R], Crd]),
+    case crd_ok(Crd) of
+        true -> Crd;
+        _ -> ?null
+    end.
+
+crd_inc({C, R}, {CS, RS}) ->
+    Crd = {C + CS, R + RS},
+    case crd_ok(Crd) of
+        true -> Crd;
+        _ -> ?null
+    end.
+
+crd_row({_, R}) -> R.
+crd_col({C, _}) -> C.
+
+crd_ok({C, R})
+  when C >= 1 andalso C =< 8 andalso
+       R >= 1 andalso R =< 8 ->
+    true;
+crd_ok(_) -> false.
 
