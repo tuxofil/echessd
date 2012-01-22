@@ -146,11 +146,23 @@ game(GameID) ->
     Iam = get(username),
     case echessd_game:fetch(GameID) of
         {ok, GameInfo, {Table, Tooked}} ->
-            MyColor =
-                proplists:get_value(
-                  Iam, proplists:get_value(users, GameInfo, [])),
-            TurnUser = echessd_game:who_must_turn(GameInfo),
-            IsRotated = MyColor == ?black,
+            Players =
+                [I || {users, L} <- GameInfo, {_, C} = I <- L,
+                      lists:member(C, [?black, ?white])],
+            Users = lists:usort([N || {N, _} <- Players]),
+            MyColors = [C || {N, C} <- Players, N == Iam],
+            TurnColor = echessd_game:turn_color(GameInfo),
+            TurnUser = hd([N || {N, C} <- Players, C == TurnColor]),
+            OppColor = hd([?black, ?white] -- [TurnColor]),
+            OppUser = hd([N || {N, C} <- Players, C == OppColor]),
+            IsRotated =
+                if TurnUser == OppUser andalso
+                   OppUser == Iam ->
+                        TurnColor == ?black;
+                   true ->
+                        lists:member(Iam, Users) andalso
+                            lists:member(?black, MyColors)
+                end,
             header("echessd - Game", []) ++
                 h1("Game #" ++ integer_to_list(GameID)) ++
                 navigation() ++
