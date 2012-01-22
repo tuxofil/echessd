@@ -201,9 +201,18 @@ process_post(?SECTION_NEWGAME, Query, true) ->
                 "Failed to create new game:<br><tt>~9999p</tt>",
                 [Reason]))
     end;
-process_post("move", Query, true) ->
-    process_goto(Query),
-    process_show();
+process_post(?SECTION_MOVE, Query, true) ->
+    User = get(username),
+    Game = list_to_integer(get_query_item("game")),
+    Move = proplists:get_value("move", Query),
+    case echessd_game:move(Game, User, Move) of
+        ok -> process_show();
+        {error, Reason} ->
+            echessd_html:error(
+              io_lib:format(
+                "Failed to make move:<br><tt>~9999p</tt>",
+                [Reason]))
+    end;
 process_post(_, _, _) ->
     echessd_html:eaccess().
 

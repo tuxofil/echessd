@@ -3,9 +3,11 @@
 -export([add/5,
          fetch/1,
          who_must_turn/1,
+         do_moves/2,
+         is_valid_move/3,
+         move/3,
          getprops/1,
          new/1,
-         move/2, move/3,
          getcell/2, setcell/3
         ]).
 
@@ -49,16 +51,28 @@ fetch(ID) ->
         {ok, GameInfo} ->
             GameType = proplists:get_value(type, GameInfo),
             Moves = proplists:get_value(moves, GameInfo, []),
-            {ok,
-             GameInfo,
-             lists:foldl(
-               fun(Move, {Game, Tooked}) ->
-                       {NewGame, Took} =
-                           echessd_game:move(Game, Move),
-                       {NewGame, [Took | Tooked]}
-               end, {echessd_game:new(GameType), []}, Moves)};
+            {ok, GameInfo, do_moves(GameType, Moves)};
         Error -> Error
     end.
+
+%% @doc Do all moves in game.
+%% @spec do_moves(GameType, Moves) -> {Game, Tooked}
+%%     GameType = game_type(),
+%%     Moves = [chess_move()],
+%%     Game = chess_game(),
+%%     Tooked = [chess_figure()]
+do_moves(GameType, Moves) ->
+    lists:foldl(
+      fun(Move, {Game, Tooked}) ->
+              {NewGame, Took} = ll_move(Game, Move),
+              {NewGame, [Took | Tooked]}
+      end, {new(GameType), []}, Moves).
+
+is_valid_move(?GAME_CLASSIC, Game, Move) ->
+    %% todo: implement
+    true;
+is_valid_move(_, _, _) ->
+    false.
 
 who_must_turn(GameInfo) ->
     Users =
@@ -71,6 +85,20 @@ who_must_turn(GameInfo) ->
             _ -> ?black
         end,
     proplists:get_value(TurnColor, Users).
+
+move(Game, User, Move) ->
+    case echessd_db:gamemove(Game, User, Move) of
+        {ok, _} ->
+            echessd_log:info(
+              "game ~9999p: user ~9999p moved ~9999p",
+              [Game, User, Move]),
+            ok;
+        {error, Reason} = Error ->
+            echessd_log:err(
+              "game ~9999p: user ~9999p failed to move ~9999p: ~99999p",
+              [Game, User, Move, Reason]),
+            Error
+    end.
 
 getprops(ID) ->
     echessd_db:get_game_props(ID).
@@ -92,9 +120,9 @@ new(Other) ->
       [Other]),
     throw({unsupported_game_style, Other}).
 
-move(Game, [A, B, C, D]) ->
-    move(Game, [A, B], [C, D]).
-move(Game, Coord1, Coord2) ->
+ll_move(Game, [A, B, C, D]) ->
+    ll_move(Game, [A, B], [C, D]).
+ll_move(Game, Coord1, Coord2) ->
     case {decode_coord(Coord1), decode_coord(Coord2)} of
         {{R, C1}, {R, C2}} ->
             Row = element(R, Game),

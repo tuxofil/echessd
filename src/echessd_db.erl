@@ -9,7 +9,8 @@
          addgame/1,
          get_game_props/1,
          set_game_props/2,
-         delgame/1
+         delgame/1,
+         gamemove/3
         ]).
 
 -include("echessd.hrl").
@@ -154,6 +155,37 @@ delgame(ID) ->
                         end, Users),
                       mnesia:delete({?dbt_games, ID});
                   _ -> ok
+              end
+      end).
+
+gamemove(Game, User, Move) ->
+    transaction(
+      fun() ->
+              GameInfo = ll_get_props(?dbt_games, Game),
+              _UserInfo = ll_get_props(?dbt_users, User),
+              case echessd_game:who_must_turn(GameInfo) of
+                  User ->
+                      GameType = proplists:get_value(type, GameInfo),
+                      Moves = proplists:get_value(moves, GameInfo, []),
+                      {Table, _Tooked} = echessd_game:do_moves(GameType, Moves),
+                      case echessd_game:is_valid_move(GameType, Table, Move) of
+                          true ->
+                              ll_replace_props(
+                                ?dbt_games, Game, GameInfo,
+                                [{moves, Moves ++ [Move]}]);
+                          _ ->
+                              mnesia:abort(wrong_move)
+                      end;
+                  _ ->
+                      case lists:member(
+                             User, [N || {users, L} <- GameInfo,
+                                         {N, Role} <- L,
+                                         lists:member(Role, [?white, ?black])]) of
+                          true ->
+                              mnesia:abort(not_your_turn);
+                          _ ->
+                              mnesia:abort(not_your_game)
+                      end
               end
       end).
 

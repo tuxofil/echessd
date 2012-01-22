@@ -158,6 +158,8 @@ game(GameID) ->
                         "<form method=post>"
                             "Move:&nbsp;"
                             "<input name=action type=hidden value=move>"
+                            "<input name=game type=hidden value=" ++
+                            integer_to_list(GameID) ++ ">"
                             "<input name=move type=text size=4>"
                             "<input type=submit value=Move>"
                             "</form>";

@@ -44,6 +44,7 @@
 -define(SECTION_REG, "register").
 -define(SECTION_LOGIN, "login").
 -define(SECTION_EXIT, "exit").
+-define(SECTION_MOVE, "move").
 
 -define(SECTIONS,
         [?SECTION_HOME, ?SECTION_GAME, ?SECTION_TEST,
