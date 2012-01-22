@@ -9,7 +9,6 @@
          users/0,
          user/1,
          newgame/0,
-         test_table/1,
          notyet/0
         ]).
 
@@ -183,20 +182,6 @@ game(GameID) ->
               "Unable to fetch game #~9999p properties:<br>" ++ tt("~p"),
               [GameID, Reason])
     end.
-
-test_table(Moves) ->
-    Game0 = echessd_game:new(?GAME_CLASSIC),
-    {Game, Tooked} =
-        lists:foldl(
-          fun(Move, {G0, T0}) ->
-                  {G, T} = echessd_game:move(G0, Move),
-                  {G, [T | T0]}
-          end, {Game0, []}, Moves),
-    header("echessd - Test table", []) ++
-        h1("Test table") ++
-        navigation() ++
-        table(Game, Tooked, false) ++
-        footer([]).
 
 notyet() ->
     header("echessd - Under construction", []) ++
@@ -414,8 +399,7 @@ section_caption(Other) -> Other.
 navigation() ->
     navig_links(
       [{"?goto=" ++ S, section_caption(S)} ||
-          S <- [?SECTION_HOME, ?SECTION_USERS,
-                ?SECTION_TEST]] ++
+          S <- [?SECTION_HOME, ?SECTION_USERS]] ++
           [{"?action=" ++ ?SECTION_EXIT, "Logout"}],
       section_caption(echessd_session:get_val(section))).
 

@@ -224,9 +224,6 @@ process_show(?SECTION_GAME) ->
       list_to_integer(get_query_item("game")));
 process_show(?SECTION_USERS) ->
     echessd_html:users();
-process_show(?SECTION_TEST) ->
-    echessd_html:test_table(
-      string:tokens(get_query_item("moves"), ","));
 process_show(?SECTION_USER) ->
     echessd_html:user(get_query_item("name"));
 process_show(?SECTION_NEWGAME) ->
