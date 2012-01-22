@@ -108,19 +108,14 @@ user(User, UserInfo) ->
         footer([]).
 
 newgame() ->
-    Iam = get(username),
-    case proplists:get_value("user", get(query_proplist)) of
-        Iam ->
-            format_error("You cannot play with yourself at now!", []);
-        User ->
-            case echessd_user:getprops(User) of
-                {ok, UserInfo} ->
-                    newgame(User, UserInfo);
-                {error, Reason} ->
-                    format_error(
-                      "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
-                      [User, Reason])
-            end
+    User = proplists:get_value("user", get(query_proplist)),
+    case echessd_user:getprops(User) of
+        {ok, UserInfo} ->
+            newgame(User, UserInfo);
+        {error, Reason} ->
+            format_error(
+              "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
+              [User, Reason])
     end.
 newgame(User, UserInfo) ->
     echessd_session:set_val(opponent, {User, UserInfo}),
