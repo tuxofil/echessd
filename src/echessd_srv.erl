@@ -206,7 +206,7 @@ process_post(?SECTION_MOVE, Query, true) ->
     Game = list_to_integer(get_query_item("game")),
     Move = proplists:get_value("move", Query),
     case echessd_game:move(Game, User, Move) of
-        ok -> process_show();
+        ok -> process_show(?SECTION_GAME);
         {error, Reason} ->
             echessd_html:error(
               io_lib:format(
