@@ -38,10 +38,6 @@ is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move, History) ->
         {_, ?king} -> throw({error, cannot_take_king});
         _ -> ok
     end,
-    MyKingIndex =
-        if Figure == ?king -> C1;
-           true -> whereis_my_king(Table, MyColor)
-        end,
     Possible = possible(Table, C1, MyColor, Figure, History),
     echessd_log:debug(
       "Fig ~w from ~s can move to: ~9999p",
@@ -52,13 +48,15 @@ is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move, History) ->
             {Table2, _Took} =
                 echessd_game:ll_move(
                   Table, crd_enc(C1), crd_enc(C2)),
-            MyKingIndex2 =
+            MyKingIndex =
                 if Figure == ?king -> C2;
-                   true -> MyKingIndex
+                   true ->
+                        whereis_my_king(History, MyColor)
                 end,
+            %% fixme: need to use more efficient way
             Enemies = all_enemies(Table2, MyColor),
             case is_cell_under_attack(
-                   Table2, MyKingIndex2, Enemies) of
+                   Table2, MyKingIndex, Enemies) of
                 true ->
                     throw({error, check});
                 _ -> ok
@@ -82,6 +80,9 @@ possible_(T, F, C, ?pawn, History) ->
     F2 = crd_inc(F, {0, Direction * 2}),
     FL = crd_inc(F, {-1, Direction}),
     FR = crd_inc(F, {1, Direction}),
+    EnPassL = crd_inc(F, {-1, 0}),
+    EnPassR = crd_inc(F, {1, 0}),
+    OppPawn = {hd([?black, ?white] -- [C]), ?pawn},
     case cell(T, F1) of
         ?empty ->
             [F1] ++
@@ -101,6 +102,24 @@ possible_(T, F, C, ?pawn, History) ->
         end ++
         case cell(T, FR) of
             {_, _} -> [FR];
+            _ -> []
+        end ++
+        case cell(T, EnPassL) of
+            OppPawn ->
+                case is_en_passant(History, EnPassL) of
+                    true ->
+                        [crd_inc(F, {-1, Direction})];
+                    _ -> []
+                end;
+            _ -> []
+        end ++
+        case cell(T, EnPassR) of
+            OppPawn ->
+                case is_en_passant(History, EnPassR) of
+                    true ->
+                        [crd_inc(F, {1, Direction})];
+                    _ -> []
+                end;
             _ -> []
         end;
 possible_(T, F, C, ?rook, _History) ->
@@ -140,6 +159,19 @@ possible_(_, _, _, _, _) -> [].
 %% low level tools
 %% ----------------------------------------------------------------------
 
+is_en_passant([_ | _] = History, {C2, R2} = OppPawnCoord) ->
+    [A, B, C, D] = lists:last(History),
+    case crd_dec(C, D) of
+        OppPawnCoord ->
+            case crd_dec(A, B) of
+                {C2, R1} when abs(abs(R1) - abs(R2)) == 2 ->
+                    true;
+                _ -> false
+            end;
+        _ -> false
+    end;
+is_en_passant(_, _) -> false.
+
 is_empty_or_enemy(Table, MyColor, Coord) ->
     case cell(Table, Coord) of
         ?empty -> Coord;
@@ -178,15 +210,16 @@ all_enemies(Table, MyColor) ->
               end
       end, [{C, R} || C <- ?seq_1_8, R <- ?seq_1_8]).
 
-whereis_my_king(Table, MyColor) ->
-    whereis_my_king(
-      Table, MyColor,
-      [{C, R} || C <- ?seq_1_8, R <- ?seq_1_8]).
-whereis_my_king(Table, MyColor, [H | Tail]) ->
-    case cell(Table, H) of
-        {MyColor, ?king} -> H;
-        _ -> whereis_my_king(Table, MyColor, Tail)
-    end.
+whereis_my_king(History, ?white) ->
+    whereis_my_king(History, "e1");
+whereis_my_king(History, ?black) ->
+    whereis_my_king(History, "e8");
+whereis_my_king([[A, B, C, D] | Tail], [A, B]) ->
+    whereis_my_king(Tail, [C, D]);
+whereis_my_king([_ | Tail], Pos) ->
+    whereis_my_king(Tail, Pos);
+whereis_my_king(_, [A, B]) ->
+    crd_dec(A, B).
 
 cell(Table, {C, R})
   when R >= 1 andalso R =< 8 andalso
