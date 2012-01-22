@@ -260,10 +260,7 @@ user_games_(Game, GameInfo) ->
         string:join(
           lists:flatmap(
             fun({User, Color}) when Color == ?white orelse Color == ?black ->
-                    [userlink(User) ++ " as " ++
-                         if Color == ?white -> "white";
-                            true -> "black"
-                         end];
+                    [userlink(User) ++ " " ++ figure({Color, ?king})];
                (_) -> []
             end, proplists:get_value(users, GameInfo)), ", ") ++ ")".
 
