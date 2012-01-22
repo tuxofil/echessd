@@ -165,16 +165,18 @@ gamemove(Game, User, Move) ->
               _UserInfo = ll_get_props(?dbt_users, User),
               case echessd_game:who_must_turn(GameInfo) of
                   User ->
+                      TurnColor = echessd_game:turn_color(GameInfo),
                       GameType = proplists:get_value(type, GameInfo),
                       Moves = proplists:get_value(moves, GameInfo, []),
                       {Table, _Tooked} = echessd_game:do_moves(GameType, Moves),
-                      case echessd_game:is_valid_move(GameType, Table, Move) of
-                          true ->
+                      case echessd_game:is_valid_move(
+                             GameType, Table, TurnColor, Move) of
+                          ok ->
                               ll_replace_props(
                                 ?dbt_games, Game, GameInfo,
                                 [{moves, Moves ++ [Move]}]);
-                          _ ->
-                              mnesia:abort(wrong_move)
+                          {error, Reason} ->
+                              mnesia:abort({wrong_move, Reason})
                       end;
                   _ ->
                       case lists:member(
