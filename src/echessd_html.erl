@@ -247,7 +247,11 @@ user_games_(Game, GameInfo) ->
             fun({User, Color}) when Color == ?white orelse Color == ?black ->
                     [userlink(User) ++ " " ++ figure({Color, ?king})];
                (_) -> []
-            end, proplists:get_value(users, GameInfo)), ", ") ++ ")".
+            end, proplists:get_value(users, GameInfo)), ", ") ++ ")" ++
+        case get(username) == echessd_game:who_must_turn(GameInfo) of
+            true -> " !!!";
+            _ -> ""
+        end.
 
 userlink(User) ->
     "<a href='?goto=" ++ ?SECTION_USER ++
