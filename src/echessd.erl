@@ -13,9 +13,23 @@
 
 -include("echessd.hrl").
 
+%% ----------------------------------------------------------------------
+%% API functions
+%% ----------------------------------------------------------------------
+
+%% @doc Load and start echessd.
+%% @spec start() -> ok | {error, Reason}
+%%     Reason = term()
 start() ->
     application:start(?MODULE, permanent).
 
+%% @doc Stop echessd.
+%% @spec stop() -> ok | {error, Reason}
+%%     Reason = term()
 stop() ->
     application:stop(?MODULE).
+
+%% ----------------------------------------------------------------------
+%% Internal functions
+%% ----------------------------------------------------------------------
 

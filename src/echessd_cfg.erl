@@ -17,6 +17,9 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
+%% @doc Read configuration file (obtained via VM command line argument)
+%%      and store configuration items in ETS table.
+%% @spec read() -> ok
 read() ->
     echessd_log:info("Reading configurations..."),
     Args = init:get_arguments(),
@@ -51,7 +54,7 @@ read() ->
             throw({cfg_read_error, Reason})
     end.
 
-%% @doc Fetch configuration parameter from config.
+%% @doc Fetch configuration parameter from config (ETS).
 %% @spec get(CfgName) -> Value
 %%     CfgName = atom(),
 %%     Value = term()
@@ -68,6 +71,10 @@ get(CfgName) ->
             end
     end.
 
+%% @doc Return default value for configuration item.
+%% @spec default(CfgName) -> {ok, Value} | undefined
+%%     CfgName = atom(),
+%%     Value = term()
 default(?CFG_LOGLEVEL) ->
     {ok, ?LOG_INFO};
 default(?CFG_BIND_ADDR) ->

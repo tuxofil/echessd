@@ -22,6 +22,8 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
+%% @doc Start mochiweb HTTP server.
+%% @spec start_link() -> {ok, pid()}
 start_link() ->
     BindAddr = echessd_cfg:get(?CFG_BIND_ADDR),
     BindPort = echessd_cfg:get(?CFG_BIND_PORT),
@@ -37,16 +39,20 @@ start_link() ->
       [echessd_lib:ip2str(BindAddr), BindPort]),
     Ok.
 
-loop(Req) ->
+%% @doc Callback for HTTP request handling
+%%      (Request is a parameterized module).
+%% @spec loop(Request) -> term()
+%%     Request = mochiweb_request()
+loop(Request) ->
     {ok, IP} =
-        case inet_parse:address(Req:get(peer)) of
+        case inet_parse:address(Request:get(peer)) of
             {ok, _} = Ok -> Ok;
             {error, PeerReason} ->
                 throw(PeerReason)
         end,
-    Method = Req:get(method),
-    Path = Req:get(path),
-    Cookie = Req:parse_cookie(),
+    Method = Request:get(method),
+    Path = Request:get(path),
+    Cookie = Request:parse_cookie(),
     echessd_log:debug(
       "~s> Method=~9999p; Path=~9999p; Cookie=~9999p",
       [echessd_lib:ip2str(IP), Method, Path, Cookie]),
@@ -56,14 +62,14 @@ loop(Req) ->
             case lists:prefix("/res/", Path) of
                 true ->
                     "/res/" ++ ResName = Path,
-                    Req:serve_file(ResName, DocRoot);
+                    Request:serve_file(ResName, DocRoot);
                 _ ->
-                    safe_handle(Req, fun process_get/1)
+                    safe_handle(Request, fun process_get/1)
             end;
        Method == ?HTTP_POST ->
-            safe_handle(Req, fun process_post/1);
+            safe_handle(Request, fun process_post/1);
        true ->
-            Req:respond({501, [], []})
+            Request:respond({501, [], []})
     end.
 
 %% ----------------------------------------------------------------------
@@ -200,11 +206,11 @@ process_post(?SECTION_NEWGAME, Query, true) ->
             _ -> ?GAME_CLASSIC
         end,
     case echessd_game:add(GameType, get(username), Color, User, []) of
-        {ok, ID} ->
+        {ok, GameID} ->
             process_get(
               ?SECTION_GAME,
               [{"goto", ?SECTION_GAME},
-               {"game", integer_to_list(ID)}], true);
+               {"game", integer_to_list(GameID)}], true);
         {error, Reason} ->
             echessd_html:error(
               io_lib:format(
@@ -213,9 +219,9 @@ process_post(?SECTION_NEWGAME, Query, true) ->
     end;
 process_post(?SECTION_MOVE, Query, true) ->
     User = get(username),
-    Game = list_to_integer(get_query_item("game")),
+    GameID = list_to_integer(get_query_item("game")),
     Move = string:to_lower(proplists:get_value("move", Query)),
-    case echessd_game:move(Game, User, Move) of
+    case echessd_game:move(GameID, User, Move) of
         ok -> nop;
         Error -> put(error, Error)
     end,

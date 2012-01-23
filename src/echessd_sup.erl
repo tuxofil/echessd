@@ -15,9 +15,19 @@
 
 -include("echessd.hrl").
 
+%% ----------------------------------------------------------------------
+%% API functions
+%% ----------------------------------------------------------------------
+
+%% @doc Starts supervisor as part of a supervision tree.
+%% @spec start_link() -> {ok, pid()}
 start_link() ->
     supervisor:start_link(?MODULE, no_args).
 
+%% @doc Calls initialisation procedures and return child workers spec.
+%% @spec init(StartArgs) -> {ok, WorkersSpec}
+%%     StartArgs = term(),
+%%     WorkersSpec = tuple()
 init(_StartArgs) ->
     true = register(?MODULE, self()),
     ok = echessd_cfg:read(),
@@ -36,4 +46,8 @@ init(_StartArgs) ->
          {echessd_srv, start_link, []},
          permanent, 100, worker, dynamic}
        ]}}.
+
+%% ----------------------------------------------------------------------
+%% Internal functions
+%% ----------------------------------------------------------------------
 
