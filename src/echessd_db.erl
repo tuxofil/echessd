@@ -113,10 +113,11 @@ deluser(Username) ->
 %%     Username = echessd_user:echessd_user(),
 %%     UserProperties = echessd_user:echessd_user_info(),
 %%     Reason = term()
-get_user_props(Name) ->
+get_user_props(Username) ->
     transaction(
       fun() ->
-              ll_get_props(?dbt_users, Name)
+              [{login, Username} |
+               ll_get_props(?dbt_users, Username)]
       end).
 
 %% @doc Set user properties.
