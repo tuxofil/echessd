@@ -117,7 +117,7 @@ is_valid_move(GameType, _, _, _, _) ->
 %%     Reason = term()
 move(GameID, User, Move) ->
     case echessd_db:gamemove(GameID, User, Move) of
-        {ok, _} ->
+        ok ->
             echessd_log:info(
               "game ~9999p: user ~9999p moved ~9999p",
               [GameID, User, Move]),

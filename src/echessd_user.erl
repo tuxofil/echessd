@@ -45,11 +45,8 @@ add(Username, UserProperties0) ->
                 case check_properties(UserProperties0) of
                     {error, _} = Error -> Error;
                     UserProperties ->
-                        case echessd_db:adduser(
-                               Username, UserProperties) of
-                            {ok, _} -> ok;
-                            Error -> Error
-                        end
+                        echessd_db:adduser(
+                          Username, UserProperties)
                 end;
             _ ->
                 {error, {bad_username, Username}}
@@ -72,7 +69,7 @@ add(Username, UserProperties0) ->
 %%     Reason = term()
 del(Username) ->
     case echessd_db:deluser(Username) of
-        {ok, _} ->
+        ok ->
             echessd_log:info("user ~9999p removed", [Username]),
             ok;
         {error, Reason} = Error ->
@@ -134,7 +131,7 @@ setprops(Username, UserProperties0) ->
                   Username, UserProperties)
         end,
     case Result of
-        {ok, _} ->
+        ok ->
             echessd_log:info("user ~9999p props updated", [Username]),
             ok;
         {error, Reason} = FinalError ->

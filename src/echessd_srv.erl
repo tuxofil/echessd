@@ -153,11 +153,11 @@ process_post(?SECTION_LOGIN, Query, LoggedIn) ->
         _ ->
             ok = echessd_session:del(get(sid)),
             case echessd_user:auth(Username, Password) of
-                {ok, UserInfo} ->
+                {ok, UserProperties} ->
                     SID = echessd_session:mk(Username),
                     echessd_session:read([{"sid", SID}]),
                     echessd_session:set_val(section, ?SECTION_HOME),
-                    echessd_session:set_val(userinfo, UserInfo),
+                    echessd_session:set_val(userinfo, UserProperties),
                     echessd_log:debug(
                       "session ~9999p created for user ~9999p",
                       [SID, Username]),
@@ -193,7 +193,7 @@ process_post(?SECTION_REG, Query, false) ->
             end
     end;
 process_post(?SECTION_NEWGAME, Query, true) ->
-    {User, _UserInfo} = echessd_session:get_val(opponent),
+    {User, _UserProperties} = echessd_session:get_val(opponent),
     Color =
         case proplists:get_value("color", Query) of
             "white" -> ?white;

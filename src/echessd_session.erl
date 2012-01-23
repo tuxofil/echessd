@@ -9,13 +9,19 @@
 
 -module(echessd_session).
 
--export([init/0, sid/0, mk/1, get/1, del/1,
+-export([init/0,
+         mk/1,
+         get/1,
+         del/1,
          read/1,
          get_val/1,
          set_val/2
         ]).
 
 -include("echessd.hrl").
+
+%% @doc User session ID format definition.
+%% @type echessd_session_id() = string()
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -28,14 +34,18 @@ init() ->
         ets:new(?dbt_session, [named_table, public, set]),
     ok.
 
-sid() ->
-    random:seed(now()),
-    integer_to_list(random:uniform(1000000000000000000)).
-
+%% @doc Creates new session for user.
+%% @spec mk(Username) -> echessd_session_id()
+%%     Username = echessd_user:echessd_user()
 mk(User) ->
     ets:insert(?dbt_session, [{SID = sid(), User, ""}]),
     SID.
 
+%% @doc Fetch session data.
+%% @spec get(SID) -> {ok, Username, SessionVars} | undefined
+%%     SID = echessd_session_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     SessionVars = proplist()
 get(SID) ->
     case ets:lookup(?dbt_session, SID) of
         [{_, User, Vars}] ->
@@ -44,10 +54,17 @@ get(SID) ->
             undefined
     end.
 
+%% @doc Removes session (logout user).
+%% @spec del(SID) -> ok
+%%     SID = echessd_session_id()
 del(SID) ->
     true = ets:delete(?dbt_session, SID),
     ok.
 
+%% @doc Read session data according to cookie contents and
+%%      write such data in process dictionary.
+%% @spec read(Cookie) -> ok
+%%     Cookie = proplist()
 read(Cookie) ->
     put(logged_in, false),
     erase(sid),
@@ -73,9 +90,15 @@ read(Cookie) ->
         _ -> nop
     end, ok.
 
+%% @doc Get session variable value.
+%% @spec get_val(Key) -> Value
+%%     Key = Value = term()
 get_val(Key) ->
     erlang:get({session_var, Key}).
 
+%% @doc Set session variable value.
+%% @spec set_val(Key, Value) -> ok
+%%     Key = Value = term()
 set_val(Key, Val) ->
     SID = erlang:get(sid),
     case ?MODULE:get(SID) of
@@ -91,4 +114,10 @@ set_val(Key, Val) ->
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+%% @doc Generates user session ID.
+%% @spec sid() -> echessd_session_id()
+sid() ->
+    random:seed(now()),
+    integer_to_list(random:uniform(1000000000000000000)).
 
