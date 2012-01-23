@@ -329,13 +329,13 @@ captured([_ | _] = Captured) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         case [figure(F) || {?black, _} = F <- Captured] of
             [_ | _] = Black ->
-                tr(tag("td", ["class=tooked"],
+                tr(tag("td", ["class=captured"],
                        lists:reverse(Black)));
             _ -> ""
         end ++
         case [figure(F) || {?white, _} = F <- Captured] of
             [_ | _] = White ->
-                tr(tag("td", ["class=tooked"],
+                tr(tag("td", ["class=captured"],
                        lists:reverse(White)));
             _ -> ""
         end);
