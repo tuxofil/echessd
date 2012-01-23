@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd.app
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : application resource file
+%%%
+%%%-------------------------------------------------------------------
+
 {application, echessd,
  [
   {description,  "Online chess server"},
