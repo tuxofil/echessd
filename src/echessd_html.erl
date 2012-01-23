@@ -157,7 +157,8 @@ newgame(Opponent, OpponentInfo) ->
 game(GameID) ->
     Iam = get(username),
     case echessd_game:fetch(GameID) of
-        {ok, GameInfo, {Table, Captured}} ->
+        {ok, GameInfo, {Board, Captures}} ->
+            GameType = proplists:get_value(type, GameInfo),
             Players =
                 [I || {users, L} <- GameInfo, {_, C} = I <- L,
                       lists:member(C, [?black, ?white])],
@@ -182,7 +183,7 @@ game(GameID) ->
                 navig_links(
                   [{"?goto=" ++ ?SECTION_GAME ++
                         "&game=" ++ integer_to_list(GameID), "Refresh"}]) ++
-                chess_table(Table, Captured, IsRotated) ++
+                chess_table(GameType, Board, Captures, IsRotated) ++
                 case TurnUser of
                     Iam ->
                         "<form method=post>"
@@ -244,15 +245,15 @@ user_games(User, UserInfo) ->
             h2("User games:") ++
                 string:join(
                   lists:flatmap(
-                    fun(Game) ->
-                            case echessd_game:getprops(Game) of
+                    fun(GameID) ->
+                            case echessd_game:getprops(GameID) of
                                 {ok, GameProps} ->
-                                    [user_games_(Game, GameProps)];
+                                    [user_games_(GameID, GameProps)];
                                 {error, Reason} ->
                                     echessd_log:err(
                                       "Failed to fetch game #~w props: "
                                       "~9999p (reference from ~9999p user)",
-                                      [Game, Reason, User]),
+                                      [GameID, Reason, User]),
                                     []
                             end
                     end, Games), "<br>") ++ "<br>";
@@ -321,7 +322,7 @@ newgame_link(WithUser) ->
     navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUser,
                   "Start new game"}]).
 
-chess_table(Game, Captured, IsRotated) ->
+chess_table(GameType, Board, Captures, IsRotated) ->
     Letters0 = "abcdefgh",
     Letters =
         if IsRotated -> lists:reverse(Letters0);
@@ -330,30 +331,32 @@ chess_table(Game, Captured, IsRotated) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         tr(td("") ++ [tag("td", ["class=crd_t"], tt([C])) ||
                          C <- Letters] ++ td("")) ++
-            chess_table_rows(Game, IsRotated) ++
+            chess_table_rows(GameType, Board, IsRotated) ++
             tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
                              C <- Letters] ++ td(""))) ++
-        captured(Captured).
-captured([_ | _] = Captured) ->
+        captures(Captures).
+captures([_ | _] = Captures) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
-        case [figure(F) || {?black, _} = F <- Captured] of
+        case [figure(F) || {?black, _} = F <- Captures] of
             [_ | _] = Black ->
                 tr(tag("td", ["class=captured"],
                        lists:reverse(Black)));
             _ -> ""
         end ++
-        case [figure(F) || {?white, _} = F <- Captured] of
+        case [figure(F) || {?white, _} = F <- Captures] of
             [_ | _] = White ->
                 tr(tag("td", ["class=captured"],
                        lists:reverse(White)));
             _ -> ""
         end);
-captured(_) -> "".
+captures(_) -> "".
 
-chess_table_rows(Game, false) ->
-    chess_table_rows(tuple_to_list(Game), 8, -1, []);
-chess_table_rows(Game, true) ->
-    chess_table_rows(tuple_to_list(echessd_game:transpose(Game)), 1, 1, []).
+chess_table_rows(_GameType, Board, false) ->
+    chess_table_rows(tuple_to_list(Board), 8, -1, []);
+chess_table_rows(GameType, Board, true) ->
+    chess_table_rows(
+      tuple_to_list(
+        echessd_game:transpose(GameType, Board)), 1, 1, []).
 chess_table_rows([Row | Tail], N, Step, Result) ->
     StrRow =
         tag("td", ["class=crd_l"], tt(integer_to_list(N))) ++

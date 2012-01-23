@@ -167,23 +167,24 @@ delgame(ID) ->
               end
       end).
 
-gamemove(Game, User, Move) ->
+gamemove(GameID, User, Move) ->
     transaction(
       fun() ->
-              GameInfo = ll_get_props(?dbt_games, Game),
+              GameInfo = ll_get_props(?dbt_games, GameID),
               _UserInfo = ll_get_props(?dbt_users, User),
               case echessd_game:who_must_turn(GameInfo) of
                   User ->
                       TurnColor = echessd_game:turn_color(GameInfo),
                       GameType = proplists:get_value(type, GameInfo),
-                      Moves = proplists:get_value(moves, GameInfo, []),
-                      {Table, _Tooked} = echessd_game:do_moves(GameType, Moves),
-                      case echessd_rules:is_valid_move(
-                             GameType, Table, TurnColor, Move, Moves) of
+                      History = proplists:get_value(moves, GameInfo, []),
+                      {Board, _Captures} =
+                          echessd_game:from_scratch(GameType, History),
+                      case echessd_game:is_valid_move(
+                             GameType, Board, TurnColor, Move, History) of
                           ok ->
                               ll_replace_props(
-                                ?dbt_games, Game, GameInfo,
-                                [{moves, Moves ++ [Move]}]);
+                                ?dbt_games, GameID, GameInfo,
+                                [{moves, History ++ [Move]}]);
                           {error, Reason} ->
                               mnesia:abort({wrong_move, Reason})
                       end;
