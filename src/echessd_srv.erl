@@ -169,6 +169,7 @@ process_post(?SECTION_LOGIN, Query, LoggedIn) ->
     end;
 process_post(?SECTION_REG, Query, false) ->
     Username = proplists:get_value("regusername", Query),
+    Fullname = proplists:get_value("regfullname", Query),
     Password1 = proplists:get_value("regpassword1", Query),
     Password2 = proplists:get_value("regpassword2", Query),
     if Password1 /= Password2 ->
@@ -177,6 +178,7 @@ process_post(?SECTION_REG, Query, false) ->
             case echessd_user:add(
                    Username,
                    [{password, Password1},
+                    {fullname, Fullname},
                     {created, now()}]) of
                 ok ->
                     process_post(

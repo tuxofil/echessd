@@ -16,60 +16,88 @@
 %% @doc Username format definition.
 %% @type echessd_user() = string()
 
+%% @doc User properties format definition.
+%% @spec echessd_user_info() = [UserProperty],
+%%     UserProperty = {password, Password} | {created, now()} |
+%%                    {login, echessd_user()} |
+%%                    {fullname, string()} |
+%%                    {games, [echessd_game:echessd_game_id()]},
+%%     Password = string()
+
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
 
+%% @doc Return list of all users registered.
+%% @spec list() -> [echessd_user()]
 list() ->
     echessd_db:list_users().
 
-add(Name, Properties0) ->
+%% @doc Adds new user to database.
+%% @spec add(Username, UserProperties) -> ok | {error, Reason}
+%%     Username = echessd_user(),
+%%     UserProperties = echessd_user_info(),
+%%     Reason = term()
+add(Username, UserProperties0) ->
     Result =
-        case is_valid_username(Name) of
+        case is_valid_username(Username) of
             true ->
-                case check_properties(Properties0) of
+                case check_properties(UserProperties0) of
                     {error, _} = Error -> Error;
-                    Properties ->
-                        case echessd_db:adduser(Name, Properties) of
+                    UserProperties ->
+                        case echessd_db:adduser(
+                               Username, UserProperties) of
                             {ok, _} -> ok;
                             Error -> Error
                         end
                 end;
             _ ->
-                {error, {bad_username, Name}}
+                {error, {bad_username, Username}}
         end,
     case Result of
         ok ->
             echessd_log:info(
               "user ~9999p added (~9999p)",
-              [Name, Properties0]);
+              [Username, UserProperties0]);
         {error, Reason} ->
             echessd_log:err(
               "user ~9999p add failed: ~9999p",
-              [Name, Reason])
+              [Username, Reason])
     end,
     Result.
 
-del(Name) ->
-    case echessd_db:deluser(Name) of
+%% @doc Completely removes user from database.
+%% @spec del(Username) -> ok | {error, Reason}
+%%     Username = echessd_user(),
+%%     Reason = term()
+del(Username) ->
+    case echessd_db:deluser(Username) of
         {ok, _} ->
-            echessd_log:info("user ~9999p removed", [Name]),
+            echessd_log:info("user ~9999p removed", [Username]),
             ok;
         {error, Reason} = Error ->
             echessd_log:err(
               "user ~9999p remove failed: ~9999p",
-              [Name, Reason]),
+              [Username, Reason]),
             Error
     end.
 
-auth(Name, Password) when is_list(Password) ->
-    auth(Name, crypto:sha(Password));
-auth(Name, Password) when is_binary(Password) ->
-    case echessd_db:get_user_props(Name) of
-        {ok, Props} = Ok ->
-            case proplists:get_value(password, Props) of
+%% @doc Make user authentication. Return user properties on success.
+%% @spec auth(Username, Password) -> {ok, UserProperties} | {error, Reason}
+%%     Username = echessd_user(),
+%%     Password = string(),
+%%     UserProperties = echessd_user_info(),
+%%     Reason = term()
+auth(Username, Password) when is_list(Password) ->
+    auth(Username, crypto:sha(Password));
+auth(Username, Password) when is_binary(Password) ->
+    case getprops(Username) of
+        {ok, UserProperties} = Ok ->
+            case proplists:get_value(password, UserProperties) of
                 Password ->
-                    echessd_log:info("user ~9999p authenticated", [Name]),
+                    echessd_log:info(
+                      "user ~9999p authenticated",
+                      [Username]),
                     Ok;
                 _ ->
                     echessd_log:err(
@@ -80,28 +108,39 @@ auth(Name, Password) when is_binary(Password) ->
         {error, Reason} = Error ->
             echessd_log:err(
               "user ~9999p authentication failed: ~9999p",
-              [Name, Reason]),
+              [Username, Reason]),
             Error
     end.
 
-getprops(Name) ->
-    echessd_db:get_user_props(Name).
+%% @doc Fetch user properties from database.
+%% @spec getprops(Username) -> {ok, UserProperties} | {error, Reason}
+%%     Username = echessd_user(),
+%%     UserProperties = echessd_user_info(),
+%%     Reason = term()
+getprops(Username) ->
+    echessd_db:get_user_props(Username).
 
-setprops(Name, Properties0) ->
+%% @doc Sets user properties.
+%% @spec setprops(Username, UserProperties) -> ok | {error, Reason}
+%%     Username = echessd_user(),
+%%     UserProperties = echessd_user_info(),
+%%     Reason = term()
+setprops(Username, UserProperties0) ->
     Result =
-        case check_properties(Properties0) of
+        case check_properties(UserProperties0) of
             {error, _} = Error -> Error;
-            Properties ->
-                echessd_db:set_user_props(Name, Properties)
+            UserProperties ->
+                echessd_db:set_user_props(
+                  Username, UserProperties)
         end,
     case Result of
         {ok, _} ->
-            echessd_log:info("user ~9999p props updated", [Name]),
+            echessd_log:info("user ~9999p props updated", [Username]),
             ok;
         {error, Reason} = FinalError ->
             echessd_log:err(
               "user ~9999p props update failed: ~9999p",
-              [Name, Reason]),
+              [Username, Reason]),
             FinalError
     end.
 

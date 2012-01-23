@@ -27,6 +27,8 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
+%% @doc Makes 'login' page content.
+%% @spec login() -> io_list()
 login() ->
     html_page_header("echessd - Login", [{h1, "echessd login"}]) ++
         navig_links([{"?goto=" ++ ?SECTION_REG, "Register new user"}]) ++
@@ -38,6 +40,8 @@ login() ->
         "</form>" ++
         html_page_footer([]).
 
+%% @doc Makes 'register new user' page content.
+%% @spec register() -> io_list()
 register() ->
     html_page_header("echessd - Register new user",
                      [{h1, "echessd register form"}]) ++
@@ -45,35 +49,31 @@ register() ->
         "<form method=post>"
         "<input name=action type=hidden value=register>"
         "Login:    <input name=regusername type=text><br>"
+        "Full name: <input name=regfullname type=text> (optional)<br>"
         "Password: <input name=regpassword1 type=password><br>"
         "Confirm password: <input name=regpassword2 type=password><br>"
         "<input type=submit value='Register'>"
         "</form>" ++
         html_page_footer([]).
 
-error(String) ->
-    html_page_header("echessd - Error", [{h1, "echessd error"}]) ++
-        tag("div", ["class=error"], String) ++
-        "<br>" ++
-        navig_links([{"javascript: history.back();", "Back"}]) ++
-        html_page_footer([]).
-
-eaccess() -> ?MODULE:error("ACCESS DENIED").
-
+%% @doc Makes 'home' page content.
+%% @spec home() -> io_list()
 home() ->
-    User = get(username),
-    {ok, UserInfo} = echessd_user:getprops(User),
+    Username = get(username),
+    {ok, UserProperties} = echessd_user:getprops(Username),
     html_page_header(
-      "echessd - Home", [{h1, "Logged in as '" ++ User ++ "'"}]) ++
+      "echessd - Home", [{h1, "Logged in as '" ++ Username ++ "'"}]) ++
         navigation() ++
         "<br>" ++
-        user_info(User, UserInfo) ++
+        user_info(Username, UserProperties) ++
         "<br>" ++
-        user_games(User, UserInfo) ++
+        user_games(Username, UserProperties) ++
         "<br>" ++
-        newgame_link(User) ++
+        newgame_link(Username) ++
         html_page_footer([]).
 
+%% @doc Makes 'registered users list' page content.
+%% @spec users() -> io_list()
 users() ->
     {ok, Users0} = echessd_user:list(),
     Users = lists:usort(Users0) -- get(username),
@@ -83,48 +83,54 @@ users() ->
         "<br>" ++
         string:join(
           lists:map(
-            fun(User) ->
-                    "*&nbsp;" ++ userlink(User)
+            fun(Username) ->
+                    "*&nbsp;" ++ userlink(Username)
             end, Users), "<br>") ++
         html_page_footer([]).
 
-user(User) ->
+%% @doc Makes 'user details' page content.
+%% @spec user(Username) -> io_list()
+%%     Username = echessd_user:echessd_user()
+user(Username) ->
     case get(username) of
-        User -> home();
+        Username -> home();
         _ ->
-            case echessd_user:getprops(User) of
-                {ok, UserInfo} ->
-                    user(User, UserInfo);
+            case echessd_user:getprops(Username) of
+                {ok, UserProperties} ->
+                    user(Username, UserProperties);
                 {error, Reason} ->
                     formatted_error_page(
                       "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
-                      [User, Reason])
+                      [Username, Reason])
             end
     end.
-user(User, UserInfo) ->
-    Title = "User '" ++ User ++ "'",
+user(Username, UserProperties) ->
+    Title = "User '" ++ Username ++ "'",
     html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
         navigation() ++
         "<br>" ++
-        user_info(User, UserInfo) ++
+        user_info(Username, UserProperties) ++
         "<br>" ++
-        user_games(User, UserInfo) ++
+        user_games(Username, UserProperties) ++
         "<br>" ++
-        newgame_link(User) ++
+        newgame_link(Username) ++
         html_page_footer([]).
 
+%% @doc Makes 'create new game' page content.
+%% @spec newgame() -> io_list()
 newgame() ->
     Opponent = proplists:get_value("user", get(query_proplist)),
     case echessd_user:getprops(Opponent) of
-        {ok, OpponentInfo} ->
-            newgame(Opponent, OpponentInfo);
+        {ok, OpponentProperties} ->
+            newgame(Opponent, OpponentProperties);
         {error, Reason} ->
             formatted_error_page(
               "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
               [Opponent, Reason])
     end.
-newgame(Opponent, OpponentInfo) ->
-    echessd_session:set_val(opponent, {Opponent, OpponentInfo}),
+newgame(Opponent, OpponentProperties) ->
+    echessd_session:set_val(
+      opponent, {Opponent, OpponentProperties}),
     Iam = get(username),
     H2Title =
         if Iam == Opponent ->
@@ -146,14 +152,15 @@ newgame(Opponent, OpponentInfo) ->
         h2(H2Title) ++
         "<form method=post>"
         "<input name=action type=hidden value=" ++ ?SECTION_NEWGAME ++ ">"
-        "Game type: <select name=gametype>"
-        "<option value='classic'>Classic chess</option>"
-        "</select><br>"
+        "<input name=gametype type=hidden value=classic>"
         ++ ColorSelector ++
         "<input type=submit value='Create'>"
         "</form>" ++
         html_page_footer([]).
 
+%% @doc Makes 'game' page content.
+%% @spec game(GameID) -> io_list()
+%%     GameID = echessd_game:echessd_game_id()
 game(GameID) ->
     Iam = get(username),
     case echessd_game:fetch(GameID) of
@@ -203,35 +210,52 @@ game(GameID) ->
               [GameID, Reason])
     end.
 
+%% @doc Makes 'under construction' page content.
+%% @spec notyet() -> io_list()
 notyet() ->
     html_page_header("echessd - Under construction",
                      [{h1, "Not implemented yet"}]) ++
         navig_links([{"javascript: history.back();", "Back"}]) ++
         html_page_footer([]).
 
+%% @doc Makes 'error' page content.
+%% @spec error(Message) -> io_list()
+%%     Message = io_list()
+error(Message) ->
+    html_page_header("echessd - Error", [{h1, "echessd error"}]) ++
+        tag("div", ["class=error"], Message) ++
+        "<br>" ++
+        navig_links([{"javascript: history.back();", "Back"}]) ++
+        html_page_footer([]).
+
+%% @doc Makes 'access denied' page content.
+%% @spec eaccess() -> io_list()
+eaccess() ->
+    ?MODULE:error("ACCESS DENIED").
+
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-user_info(User, UserInfo) ->
-    "<table cellpadding=0 cellspacing=0><tr>\n" ++
-        string:join(
-          [tr(td(b(K ++ ":&nbsp;")) ++ td(V)) ||
-              {K, V} <- user_info_cells(User, UserInfo)]
-          , "\n") ++
-        "</tr></table>\n".
-user_info_cells(User, UserInfo) ->
+user_info(Username, UserProperties) ->
+    tag("table", ["cellpadding=0", "cellspacing=0"],
+        tr(
+          string:join(
+            [tr(td(b(K ++ ":&nbsp;")) ++ td(V)) ||
+                {K, V} <- user_info_cells(Username, UserProperties)]
+            , "\n"))).
+user_info_cells(Username, UserProperties) ->
     lists:flatmap(
-      fun(login) -> [{"Login", User}];
+      fun(login) -> [{"Login", Username}];
          (fullname = Key) ->
               [{"Full name",
-                case proplists:get_value(Key, UserInfo) of
+                case proplists:get_value(Key, UserProperties) of
                     [_ | _] = Value -> Value;
                     _ -> "Not Sure"
                 end}];
          (created = Key) ->
               [{"Registered",
-                case proplists:get_value(Key, UserInfo) of
+                case proplists:get_value(Key, UserProperties) of
                     Value when ?is_now(Value) ->
                         echessd_lib:timestamp(Value);
                     _ -> "unknown"
@@ -239,8 +263,8 @@ user_info_cells(User, UserInfo) ->
          (_) -> []
       end, [login, fullname, created]).
 
-user_games(User, UserInfo) ->
-    case proplists:get_value(games, UserInfo) of
+user_games(Username, UserProperties) ->
+    case proplists:get_value(games, UserProperties) of
         [_ | _] = Games ->
             h2("User games:") ++
                 string:join(
@@ -253,18 +277,19 @@ user_games(User, UserInfo) ->
                                     echessd_log:err(
                                       "Failed to fetch game #~w props: "
                                       "~9999p (reference from ~9999p user)",
-                                      [GameID, Reason, User]),
+                                      [GameID, Reason, Username]),
                                     []
                             end
                     end, Games), "<br>") ++ "<br>";
         _ -> ""
     end.
-user_games_(Game, GameInfo) ->
-    "*&nbsp;" ++ gamelink(Game) ++ "&nbsp;(" ++
+user_games_(GameID, GameInfo) ->
+    "*&nbsp;" ++ gamelink(GameID) ++ "&nbsp;(" ++
         string:join(
           lists:flatmap(
-            fun({User, Color}) when Color == ?white orelse Color == ?black ->
-                    [userlink(User) ++ " " ++ figure({Color, ?king})];
+            fun({Username, Color})
+                  when Color == ?white orelse Color == ?black ->
+                    [userlink(Username) ++ " " ++ figure({Color, ?king})];
                (_) -> []
             end, proplists:get_value(users, GameInfo)), ", ") ++ ")" ++
         case get(username) == echessd_game:who_must_turn(GameInfo) of
@@ -311,16 +336,17 @@ tag(Tag, Attrs, Value) ->
         [" " ++ V || V <- Attrs] ++
         ">" ++ Value ++ "</" ++ Tag ++ ">".
 
-userlink(User) ->
-    a("?goto=" ++ ?SECTION_USER ++ "&name=" ++ User, User).
+userlink(Username) ->
+    a("?goto=" ++ ?SECTION_USER ++ "&name=" ++ Username, Username).
 
-gamelink(Game) ->
-    StrID = integer_to_list(Game),
+gamelink(GameID) ->
+    StrID = integer_to_list(GameID),
     a("?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, "#" ++ StrID).
 
-newgame_link(WithUser) ->
-    navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUser,
-                  "Start new game"}]).
+newgame_link(WithUsername) ->
+    navig_links(
+      [{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUsername,
+        "Start new game"}]).
 
 chess_table(GameType, Board, Captures, IsRotated) ->
     Letters0 = "abcdefgh",
