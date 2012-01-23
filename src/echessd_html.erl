@@ -107,21 +107,27 @@ user(User, UserInfo) ->
         footer([]).
 
 newgame() ->
-    User = proplists:get_value("user", get(query_proplist)),
-    case echessd_user:getprops(User) of
-        {ok, UserInfo} ->
-            newgame(User, UserInfo);
+    Opponent = proplists:get_value("user", get(query_proplist)),
+    case echessd_user:getprops(Opponent) of
+        {ok, OpponentInfo} ->
+            newgame(Opponent, OpponentInfo);
         {error, Reason} ->
             format_error(
               "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
-              [User, Reason])
+              [Opponent, Reason])
     end.
-newgame(User, UserInfo) ->
-    echessd_session:set_val(opponent, {User, UserInfo}),
+newgame(Opponent, OpponentInfo) ->
+    echessd_session:set_val(opponent, {Opponent, OpponentInfo}),
+    Iam = get(username),
+    H2Title =
+        if Iam == Opponent ->
+                "Test game: " ++ Iam ++ " vs " ++ Iam;
+           true -> "Game: " ++ Iam ++ " vs " ++ Opponent
+        end,
     header("echessd - New game", []) ++
         h1("New game") ++
         navigation() ++
-        h2("Your opponent: '" ++ User ++ "'") ++
+        h2(H2Title) ++
         "<form method=post>"
         "<input name=action type=hidden value=" ++ ?SECTION_NEWGAME ++ ">"
         "Game type: <select name=gametype>"
