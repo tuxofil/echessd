@@ -196,6 +196,9 @@ check_property({games, V} = I) ->
        true ->
             throw({error, {bad_games_list, V}})
     end;
+check_property({fullname, _V} = I) ->
+    %% todo: escape
+    I;
 check_property({K, _V}) ->
     throw({error, {unknown_property, K}}).
 
