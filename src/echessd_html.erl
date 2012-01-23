@@ -366,13 +366,13 @@ captures([_ | _] = Captures) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         case [figure(F) || {?black, _} = F <- Captures] of
             [_ | _] = Black ->
-                tr(tag("td", ["class=captured"],
+                tr(tag("td", ["class=captures"],
                        lists:reverse(Black)));
             _ -> ""
         end ++
         case [figure(F) || {?white, _} = F <- Captures] of
             [_ | _] = White ->
-                tr(tag("td", ["class=captured"],
+                tr(tag("td", ["class=captures"],
                        lists:reverse(White)));
             _ -> ""
         end);
