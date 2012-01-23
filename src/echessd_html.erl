@@ -302,7 +302,7 @@ tag(Tag, Attrs, Value) ->
         ">" ++ Value ++ "</" ++ Tag ++ ">".
 
 userlink(User) ->
-    a("?goto=" ++ ?SECTION_USER ++ "&name='" ++ User ++ "'", User).
+    a("?goto=" ++ ?SECTION_USER ++ "&name=" ++ User, User).
 
 gamelink(Game) ->
     StrID = integer_to_list(Game),
