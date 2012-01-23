@@ -128,6 +128,10 @@ new(Other) ->
 ll_move(Game, [A, B, C, D]) ->
     ll_move(Game, [A, B], [C, D]).
 ll_move(Game, Coord1, Coord2) ->
+    %% todo:
+    %%    - en passant
+    %%    - promotion
+    %%    - castling
     case {decode_coord(Coord1), decode_coord(Coord2)} of
         {{R, C1}, {R, C2}} ->
             Row = element(R, Game),
