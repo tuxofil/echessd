@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_sup.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : application supervisor
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_sup).
 
 -behaviour(supervisor).

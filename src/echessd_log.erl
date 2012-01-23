@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_log.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : logger process
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_log).
 
 -behaviour(gen_server).

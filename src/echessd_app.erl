@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_app.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : 'application' behaviour module
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_app).
 
 -behaviour(application).

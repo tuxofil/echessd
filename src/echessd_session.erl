@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_session.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : HTTP session implementation
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_session).
 
 -export([init/0, sid/0, mk/1, get/1, del/1,
@@ -7,6 +16,10 @@
         ]).
 
 -include("echessd.hrl").
+
+%% ----------------------------------------------------------------------
+%% API functions
+%% ----------------------------------------------------------------------
 
 %% @doc Creates non-persistent storage of user current sessions.
 %% @spec init() -> ok
@@ -74,4 +87,8 @@ set_val(Key, Val) ->
         _ ->
             throw(no_session)
     end.
+
+%% ----------------------------------------------------------------------
+%% Internal functions
+%% ----------------------------------------------------------------------
 

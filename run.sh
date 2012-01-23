@@ -1,5 +1,14 @@
 #!/bin/sh
 
+###-------------------------------------------------------------------
+### File    : run.sh
+### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+### Created : 20 Jan 2012
+### License : FreeBSD
+### Description : starts echessd server
+###
+###-------------------------------------------------------------------
+
 exec erl -sname "echessd" \
     -boot start_sasl \
     -noshell -noinput \

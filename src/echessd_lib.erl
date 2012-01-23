@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_lib.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : common utilities used
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_lib).
 
 -export([ip2str/1, read_file/1,
@@ -5,6 +14,10 @@
          timestamp/1,
          random_elem/1
         ]).
+
+%% ----------------------------------------------------------------------
+%% API functions
+%% ----------------------------------------------------------------------
 
 ip2str({A, B, C, D}) ->
     io_lib:format("~B.~B.~B.~B", [A, B, C, D]).
@@ -38,4 +51,8 @@ timestamp(Time) ->
 random_elem([Item]) -> Item;
 random_elem(List) when is_list(List) ->
     lists:nth(random:uniform(length(List)), List).
+
+%% ----------------------------------------------------------------------
+%% Internal functions
+%% ----------------------------------------------------------------------
 

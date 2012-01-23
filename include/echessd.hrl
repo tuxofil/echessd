@@ -1,8 +1,14 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd.hrl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : common constants definitions
+%%%
+%%%-------------------------------------------------------------------
+
 -ifndef(_ECHESSD).
 -define(_ECHESSD, true).
-
-%% Configuration storage (ETS) name
--define(echessd_cfg, echessd_cfg).
 
 %% Configuration items names
 -define(CFG_LOGLEVEL, loglevel).
@@ -16,6 +22,9 @@
                ?CFG_DOC_ROOT]).
 
 -define(MANDATORY_CFGS, []).
+
+%% Configuration storage (ETS) name
+-define(echessd_cfg, echessd_cfg).
 
 %% database tables
 -define(dbt_users, echessd_dbt_users).

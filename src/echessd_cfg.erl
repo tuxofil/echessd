@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_cfg.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : configuration file parsing and configuration
+%%%               items accessing tools
+%%%-------------------------------------------------------------------
+
 -module(echessd_cfg).
 
 -export([read/0, get/1, default/1]).

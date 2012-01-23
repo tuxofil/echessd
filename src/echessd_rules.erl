@@ -1,10 +1,17 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_rules.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : Chess rules implementation
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_rules).
 
 -export([is_valid_move/5]).
 
 -include("echessd.hrl").
-
--define(null, '*null').
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -24,6 +31,8 @@ is_valid_move(GameType, Game, TurnColor, Move, History) ->
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+-define(null, '*null').
 
 is_valid_move_(?GAME_CLASSIC, Table, TurnColor, Move, History) ->
     {C1, C2} = move_dec(Move),

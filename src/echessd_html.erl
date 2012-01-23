@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_html.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : HTML pages generation
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_html).
 
 -export([login/0,

@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_game.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : upper level game processing tools
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_game).
 
 -export([add/5,

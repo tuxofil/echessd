@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_srv.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : HTTP request handler
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_srv).
 
 -export([start_link/0, loop/1]).

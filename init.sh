@@ -1,5 +1,14 @@
 #!/bin/sh
 
+###-------------------------------------------------------------------
+### File    : init.sh
+### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+### Created : 20 Jan 2012
+### License : FreeBSD
+### Description : initiates echessd persistent storage
+###               Warning: all existing data will be lost!
+###-------------------------------------------------------------------
+
 exec erl -sname "echessd" \
     -boot start_sasl \
     -noshell -noinput \

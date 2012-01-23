@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% File    : echessd_user.erl
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 20 Jan 2012
+%%% License : FreeBSD
+%%% Description : upper level user management tools
+%%%
+%%%-------------------------------------------------------------------
+
 -module(echessd_user).
 
 -export([list/0, add/2, del/1, auth/2, getprops/1, setprops/2]).
