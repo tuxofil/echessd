@@ -314,7 +314,8 @@ html_page_header(Title, Options) ->
         case get(error) of
             undefined -> "";
             Error ->
-                tag("div", ["class=error"], pre(format_error(Error)))
+                tag("div", ["class=error"],
+                    pre("ERROR: " ++ format_error(Error)))
         end.
 
 html_page_footer(_Options) ->
@@ -458,5 +459,5 @@ formatted_error_page(F, A) ->
 format_error({error, Reason}) ->
     format_error(Reason);
 format_error(Term) ->
-    io_lib:format("~p", [Term]).
+    io_lib:format("~120p", [Term]).
 
