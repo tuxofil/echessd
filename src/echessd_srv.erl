@@ -63,6 +63,7 @@ loop(Req) ->
 
 safe_handle(Req, Fun) ->
     erase(extra_headers),
+    erase(error),
     Content =
         try Fun(Req)
         catch

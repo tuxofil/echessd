@@ -19,8 +19,7 @@
 %% ----------------------------------------------------------------------
 
 login() ->
-    header("echessd - Login", []) ++
-        h1("echessd login") ++
+    html_page_header("echessd - Login", [{h1, "echessd login"}]) ++
         navig_links([{"?goto=" ++ ?SECTION_REG, "Register new user"}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=login>"
@@ -28,11 +27,11 @@ login() ->
         "Password: <input name=password type=password><br>"
         "<input type=submit value='Login'>"
         "</form>" ++
-        footer([]).
+        html_page_footer([]).
 
 register() ->
-    header("echessd - Register new user", []) ++
-        h1("echessd register form") ++
+    html_page_header("echessd - Register new user",
+                     [{h1, "echessd register form"}]) ++
         navig_links([{"?goto=" ++ ?SECTION_LOGIN, "Return to login form"}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=register>"
@@ -41,23 +40,22 @@ register() ->
         "Confirm password: <input name=regpassword2 type=password><br>"
         "<input type=submit value='Register'>"
         "</form>" ++
-        footer([]).
+        html_page_footer([]).
 
 error(String) ->
-    header("echessd - Error", []) ++
-        h1("echessd error") ++
-        "<div class=error>" ++ String ++ "</div>"
+    html_page_header("echessd - Error", [{h1, "echessd error"}]) ++
+        tag("div", ["class=error"], String) ++
         "<br>" ++
         navig_links([{"javascript: history.back();", "Back"}]) ++
-        footer([]).
+        html_page_footer([]).
 
 eaccess() -> ?MODULE:error("ACCESS DENIED").
 
 home() ->
     User = get(username),
     {ok, UserInfo} = echessd_user:getprops(User),
-    header("echessd - Home", []) ++
-        h1("Logged in as \"" ++ User ++ "\"") ++
+    html_page_header(
+      "echessd - Home", [{h1, "Logged in as '" ++ User ++ "'"}]) ++
         navigation() ++
         "<br>" ++
         user_info(User, UserInfo) ++
@@ -65,13 +63,13 @@ home() ->
         user_games(User, UserInfo) ++
         "<br>" ++
         newgame_link(User) ++
-        footer([]).
+        html_page_footer([]).
 
 users() ->
     {ok, Users0} = echessd_user:list(),
     Users = lists:usort(Users0) -- get(username),
-    header("echessd - Users list", []) ++
-        h1("Users list") ++
+    Title = "User list",
+    html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
         navigation() ++
         "<br>" ++
         string:join(
@@ -79,7 +77,7 @@ users() ->
             fun(User) ->
                     "*&nbsp;" ++ userlink(User)
             end, Users), "<br>") ++
-        footer([]).
+        html_page_footer([]).
 
 user(User) ->
     case get(username) of
@@ -89,14 +87,14 @@ user(User) ->
                 {ok, UserInfo} ->
                     user(User, UserInfo);
                 {error, Reason} ->
-                    format_error(
+                    formatted_error_page(
                       "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
                       [User, Reason])
             end
     end.
 user(User, UserInfo) ->
-    header("echessd - User '" ++ User ++ "'", []) ++
-        h1("User '" ++ User ++ "'") ++
+    Title = "User '" ++ User ++ "'",
+    html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
         navigation() ++
         "<br>" ++
         user_info(User, UserInfo) ++
@@ -104,7 +102,7 @@ user(User, UserInfo) ->
         user_games(User, UserInfo) ++
         "<br>" ++
         newgame_link(User) ++
-        footer([]).
+        html_page_footer([]).
 
 newgame() ->
     Opponent = proplists:get_value("user", get(query_proplist)),
@@ -112,7 +110,7 @@ newgame() ->
         {ok, OpponentInfo} ->
             newgame(Opponent, OpponentInfo);
         {error, Reason} ->
-            format_error(
+            formatted_error_page(
               "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
               [Opponent, Reason])
     end.
@@ -134,8 +132,7 @@ newgame(Opponent, OpponentInfo) ->
                     "<option value='black'>Black</option>"
                     "</select><br>"
         end,
-    header("echessd - New game", []) ++
-        h1("New game") ++
+    html_page_header("echessd - New game", [{h1, "New game"}]) ++
         navigation() ++
         h2(H2Title) ++
         "<form method=post>"
@@ -146,12 +143,12 @@ newgame(Opponent, OpponentInfo) ->
         ++ ColorSelector ++
         "<input type=submit value='Create'>"
         "</form>" ++
-        footer([]).
+        html_page_footer([]).
 
 game(GameID) ->
     Iam = get(username),
     case echessd_game:fetch(GameID) of
-        {ok, GameInfo, {Table, Tooked}} ->
+        {ok, GameInfo, {Table, Captured}} ->
             Players =
                 [I || {users, L} <- GameInfo, {_, C} = I <- L,
                       lists:member(C, [?black, ?white])],
@@ -169,13 +166,14 @@ game(GameID) ->
                         lists:member(Iam, Users) andalso
                             lists:member(?black, MyColors)
                 end,
-            header("echessd - Game", []) ++
-                h1("Game #" ++ integer_to_list(GameID)) ++
+            html_page_header(
+              "echessd - Game",
+              [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
                 navigation() ++
                 navig_links(
                   [{"?goto=" ++ ?SECTION_GAME ++
                         "&game=" ++ integer_to_list(GameID), "Refresh"}]) ++
-                table(Table, Tooked, IsRotated) ++
+                chess_table(Table, Captured, IsRotated) ++
                 case TurnUser of
                     Iam ->
                         "<form method=post>"
@@ -188,19 +186,18 @@ game(GameID) ->
                             "</form>";
                     _ -> ""
                 end ++
-                footer([]);
+                html_page_footer([]);
         {error, Reason} ->
-            format_error(
+            formatted_error_page(
               "Unable to fetch game #~9999p properties:<br>" ++ tt("~p"),
               [GameID, Reason])
     end.
 
 notyet() ->
-    header("echessd - Under construction", []) ++
-        h1("Not implemented yet") ++
-        "" ++
+    html_page_header("echessd - Under construction",
+                     [{h1, "Not implemented yet"}]) ++
         navig_links([{"javascript: history.back();", "Back"}]) ++
-        footer([]).
+        html_page_footer([]).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
@@ -265,20 +262,7 @@ user_games_(Game, GameInfo) ->
             _ -> ""
         end.
 
-userlink(User) ->
-    "<a href='?goto=" ++ ?SECTION_USER ++
-        "&name=" ++ User ++ "'>" ++ User ++ "</a>".
-
-gamelink(Game) ->
-    StrID = integer_to_list(Game),
-    "<a href='?goto=" ++ ?SECTION_GAME ++
-        "&game=" ++ StrID ++ "'>#" ++ StrID ++ "</a>".
-
-newgame_link(WithUser) ->
-    navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUser,
-                  "Start new game"}]).
-
-header(Title, _Options) ->
+html_page_header(Title, Options) ->
     "<html>\n\n"
         "<head>\n"
         "<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>\n"
@@ -287,87 +271,97 @@ header(Title, _Options) ->
         "<title>" ++ Title ++ "</title>\n"
         "<link rel='stylesheet' href='res/styles.css'>\n"
         "</head>\n\n"
-        "<body>\n\n".
+        "<body>\n\n" ++
+        case [S || {h1, S} <- Options] of
+            [H1 | _] -> h1(H1);
+            _ -> ""
+        end ++
+        case get(error) of
+            undefined -> "";
+            Error ->
+                tag("div", ["class=error"], pre(format_error(Error)))
+        end.
 
-footer(_Options) ->
+html_page_footer(_Options) ->
     "\n\n</body>\n"
         "</html>\n".
 
-h1(String) ->
-    "<h1>" ++ String ++ "</h1>".
+h1(String)  -> tag("h1", String).
+h2(String)  -> tag("h2", String).
+b(String)   -> tag("b", String).
+tt(String)  -> tag("tt", String).
+td(String)  -> tag("td", String).
+tr(String)  -> tag("tr", String).
+pre(String) -> tag("pre", String).
+a(URL, Caption) -> tag("a", ["href='" ++ URL ++ "'"], Caption).
 
-h2(String) ->
-    "<h2>" ++ String ++ "</h2>".
-
-b(String) ->
-    "<b>" ++ String ++ "</b>".
-
-tt(String) ->
-    "<tt>" ++ String ++ "</tt>".
-
-td(String) ->
-    "<td>" ++ String ++ "</td>".
-
-tr(String) ->
-    "<tr>" ++ String ++ "</tr>".
-
+tag(Tag, Value) -> tag(Tag, [], Value).
 tag(Tag, Attrs, Value) ->
     "<" ++ Tag ++
         [" " ++ V || V <- Attrs] ++
         ">" ++ Value ++ "</" ++ Tag ++ ">".
 
-table(Game, Tooked, IsRotated) ->
+userlink(User) ->
+    a("?goto=" ++ ?SECTION_USER ++ "&name='" ++ User ++ "'", User).
+
+gamelink(Game) ->
+    StrID = integer_to_list(Game),
+    a("?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, "#" ++ StrID).
+
+newgame_link(WithUser) ->
+    navig_links([{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUser,
+                  "Start new game"}]).
+
+chess_table(Game, Captured, IsRotated) ->
     Letters0 = "abcdefgh",
     Letters =
         if IsRotated -> lists:reverse(Letters0);
            true -> Letters0
         end,
-    "<table cellpadding=0 cellspacing=0>\n" ++
+    tag("table", ["cellpadding=0", "cellspacing=0"],
         tr(td("") ++ [tag("td", ["class=crd_t"], tt([C])) ||
                          C <- Letters] ++ td("")) ++
-        table_rows(Game, IsRotated) ++
-        tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
-                         C <- Letters] ++ td("")) ++
-        "</table>\n" ++
-        tooked(Tooked).
-tooked([_ | _] = Tooked) ->
-    "<table cellpadding=0 cellspacing=0>\n" ++
-        case [figure(F) || {?black, _} = F <- Tooked] of
+            chess_table_rows(Game, IsRotated) ++
+            tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
+                             C <- Letters] ++ td(""))) ++
+        captured(Captured).
+captured([_ | _] = Captured) ->
+    tag("table", ["cellpadding=0", "cellspacing=0"],
+        case [figure(F) || {?black, _} = F <- Captured] of
             [_ | _] = Black ->
                 tr(tag("td", ["class=tooked"],
                        lists:reverse(Black)));
             _ -> ""
         end ++
-        case [figure(F) || {?white, _} = F <- Tooked] of
+        case [figure(F) || {?white, _} = F <- Captured] of
             [_ | _] = White ->
                 tr(tag("td", ["class=tooked"],
                        lists:reverse(White)));
             _ -> ""
-        end ++
-        "</table>";
-tooked(_) -> "".
+        end);
+captured(_) -> "".
 
-table_rows(Game, false) ->
-    table_rows(tuple_to_list(Game), 8, -1, []);
-table_rows(Game, true) ->
-    table_rows(tuple_to_list(echessd_game:transpose(Game)), 1, 1, []).
-table_rows([Row | Tail], N, Step, Result) ->
+chess_table_rows(Game, false) ->
+    chess_table_rows(tuple_to_list(Game), 8, -1, []);
+chess_table_rows(Game, true) ->
+    chess_table_rows(tuple_to_list(echessd_game:transpose(Game)), 1, 1, []).
+chess_table_rows([Row | Tail], N, Step, Result) ->
     StrRow =
         tag("td", ["class=crd_l"], tt(integer_to_list(N))) ++
-        table_row(Row, N, Step) ++
+        chess_table_row(Row, N, Step) ++
         tag("td", ["class=crd_r"], tt(integer_to_list(N))),
-    table_rows(Tail, N + Step, Step, [tr(StrRow) | Result]);
-table_rows(_, _, _, Result) ->
+    chess_table_rows(Tail, N + Step, Step, [tr(StrRow) | Result]);
+chess_table_rows(_, _, _, Result) ->
     lists:reverse(Result).
 
-table_row(Row, N, Step) when is_tuple(Row) ->
-    table_row(
+chess_table_row(Row, N, Step) when is_tuple(Row) ->
+    chess_table_row(
       tuple_to_list(Row),
       first_chess_cell_class(N, Step > 0)).
-table_row([Figure | Tail], CellClass) ->
-    "<td class=" ++ CellClass ++ ">" ++ figure(Figure) ++ "\n" ++
-        table_row(Tail, next_chess_cell_class(CellClass));
-table_row(_, _) -> "".
+chess_table_row([Figure | Tail], CellClass) ->
+    tag("td", ["class=" ++ CellClass], figure(Figure)) ++
+        chess_table_row(Tail, next_chess_cell_class(CellClass));
+chess_table_row(_, _) -> "".
 
 first_chess_cell_class(Row, false) when Row rem 2 == 0 -> "wc";
 first_chess_cell_class(_, false) -> "bc";
@@ -396,17 +390,18 @@ figure_(?bpawn  ) -> 9823.
 navig_links(List) -> navig_links(List, undefined).
 navig_links([], _Current) -> "";
 navig_links(List, Current) ->
-    "<div class=navig>[&nbsp;" ++
-        string:join(
-          lists:map(
-            fun({URL, Caption}) ->
-                    "<a href='" ++ URL ++ "'>" ++
-                        if Caption == Current ->
-                                b(Caption);
-                           true -> Caption
-                        end ++ "</a>"
-            end, List), "&nbsp;|&nbsp;") ++
-        "&nbsp;]</div>".
+    tag("div", ["class=navig"],
+        "[&nbsp;" ++
+            string:join(
+              lists:map(
+                fun({URL, Caption}) ->
+                        a(URL,
+                          if Caption == Current ->
+                                  b(Caption);
+                             true -> Caption
+                          end)
+                end, List), "&nbsp;|&nbsp;") ++
+            "&nbsp;]").
 
 section_caption(?SECTION_HOME) -> "Home";
 section_caption(?SECTION_USERS) -> "Users";
@@ -419,6 +414,11 @@ navigation() ->
           [{"?action=" ++ ?SECTION_EXIT, "Logout"}],
       section_caption(echessd_session:get_val(section))).
 
-format_error(F, A) ->
+formatted_error_page(F, A) ->
     ?MODULE:error(io_lib:format(F, A)).
+
+format_error({error, Reason}) ->
+    format_error(Reason);
+format_error(Term) ->
+    io_lib:format("~p", [Term]).
 
