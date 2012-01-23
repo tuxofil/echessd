@@ -124,6 +124,16 @@ newgame(Opponent, OpponentInfo) ->
                 "Test game: " ++ Iam ++ " vs " ++ Iam;
            true -> "Game: " ++ Iam ++ " vs " ++ Opponent
         end,
+    ColorSelector =
+        if Iam == Opponent ->
+                "<input name=color type=hidden value=white>";
+           true ->
+                "Color: <select name=color>"
+                    "<option value='random'>Choose randomly</option>"
+                    "<option value='white'>White</option>"
+                    "<option value='black'>Black</option>"
+                    "</select><br>"
+        end,
     header("echessd - New game", []) ++
         h1("New game") ++
         navigation() ++
@@ -133,11 +143,7 @@ newgame(Opponent, OpponentInfo) ->
         "Game type: <select name=gametype>"
         "<option value='classic'>Classic chess</option>"
         "</select><br>"
-        "Color: <select name=color>"
-        "<option value='random'>Choose randomly</option>"
-        "<option value='white'>White</option>"
-        "<option value='black'>Black</option>"
-        "</select><br>"
+        ++ ColorSelector ++
         "<input type=submit value='Create'>"
         "</form>" ++
         footer([]).
