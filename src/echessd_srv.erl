@@ -207,13 +207,10 @@ process_post(?SECTION_MOVE, Query, true) ->
     Game = list_to_integer(get_query_item("game")),
     Move = string:to_lower(proplists:get_value("move", Query)),
     case echessd_game:move(Game, User, Move) of
-        ok -> process_show(?SECTION_GAME);
-        {error, Reason} ->
-            echessd_html:error(
-              io_lib:format(
-                "Failed to make move:<br><tt>~9999p</tt>",
-                [Reason]))
-    end;
+        ok -> nop;
+        Error -> put(error, Error)
+    end,
+    process_show(?SECTION_GAME);
 process_post(_, _, _) ->
     echessd_html:eaccess().
 
