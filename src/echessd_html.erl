@@ -15,6 +15,7 @@
          eaccess/0,
          home/0,
          game/1,
+         history/1,
          users/0,
          user/1,
          newgame/0,
@@ -187,9 +188,7 @@ game(GameID) ->
               "echessd - Game",
               [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
                 navigation() ++
-                navig_links(
-                  [{"?goto=" ++ ?SECTION_GAME ++
-                        "&game=" ++ integer_to_list(GameID), "Refresh"}]) ++
+                game_navigation(GameID) ++
                 chess_table(GameType, Board, Captures, IsRotated) ++
                 case TurnUser of
                     Iam ->
@@ -203,6 +202,44 @@ game(GameID) ->
                             "</form>";
                     _ -> ""
                 end ++
+                html_page_footer([]);
+        {error, Reason} ->
+            formatted_error_page(
+              "Unable to fetch game #~9999p properties:<br>" ++ tt("~p"),
+              [GameID, Reason])
+    end.
+
+%% @doc Makes 'game history' page content.
+%% @spec history(GameID) -> io_list()
+%%     GameID = echessd_game:echessd_game_id()
+history(GameID) ->
+    case echessd_game:getprops(GameID) of
+        {ok, GameInfo} ->
+            GameType = proplists:get_value(type, GameInfo),
+            FullHistory = proplists:get_value(moves, GameInfo),
+            FullHistoryLen = length(FullHistory),
+            StrStep = proplists:get_value("step", get(query_proplist)),
+            Step =
+                try list_to_integer(StrStep) of
+                    Int when Int >= 0 andalso Int =< FullHistoryLen ->
+                        Int;
+                    _ -> FullHistoryLen
+                catch
+                    _:_ -> FullHistoryLen
+                end,
+            History = lists:sublist(FullHistory, Step),
+            {Board, Captures} =
+                echessd_game:from_scratch(GameType, History),
+            html_page_header(
+              "echessd - Game history",
+              [{h1, "Game #" ++ integer_to_list(GameID) ++ " history"}]) ++
+                navigation() ++
+                navig_links(
+                  [{"?goto=" ++ ?SECTION_GAME ++
+                        "&game=" ++ integer_to_list(GameID),
+                    "Return to game"}]) ++
+                history_navigation(GameID, Step, FullHistoryLen) ++
+                chess_table(GameType, Board, Captures, false) ++
                 html_page_footer([]);
         {error, Reason} ->
             formatted_error_page(
@@ -452,6 +489,25 @@ navigation() ->
           S <- [?SECTION_HOME, ?SECTION_USERS]] ++
           [{"?action=" ++ ?SECTION_EXIT, "Logout"}],
       section_caption(echessd_session:get_val(section))).
+
+game_navigation(GameID) ->
+    StrID = integer_to_list(GameID),
+    navig_links(
+      [{"?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, "Refresh"},
+       {"?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID, "History"}]).
+
+history_navigation(GameID, Step, MaxStep) ->
+    StrID = integer_to_list(GameID),
+    BaseURL = "?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID ++ "&step=",
+    navig_links(
+      if Step > 0 ->
+              [{BaseURL ++ integer_to_list(Step - 1), "Previous"}];
+         true -> []
+      end ++
+          if Step < MaxStep ->
+                  [{BaseURL ++ integer_to_list(Step + 1), "Next"}];
+             true -> []
+          end).
 
 formatted_error_page(F, A) ->
     ?MODULE:error(io_lib:format(F, A)).

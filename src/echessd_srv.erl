@@ -237,6 +237,9 @@ process_show() ->
 process_show(?SECTION_GAME) ->
     echessd_html:game(
       list_to_integer(get_query_item("game")));
+process_show(?SECTION_HISTORY) ->
+    echessd_html:history(
+      list_to_integer(get_query_item("game")));
 process_show(?SECTION_USERS) ->
     echessd_html:users();
 process_show(?SECTION_USER) ->

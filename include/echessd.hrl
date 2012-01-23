@@ -46,6 +46,7 @@
 %% site sections
 -define(SECTION_HOME, "home").
 -define(SECTION_GAME, "game").
+-define(SECTION_HISTORY, "history").
 -define(SECTION_USERS, "users").
 -define(SECTION_USER, "user").
 -define(SECTION_NEWGAME, "newgame").
@@ -57,7 +58,7 @@
 -define(SECTIONS,
         [?SECTION_HOME, ?SECTION_GAME,
          ?SECTION_USERS, ?SECTION_USER,
-         ?SECTION_NEWGAME]).
+         ?SECTION_NEWGAME, ?SECTION_HISTORY]).
 
 %% colors
 -define(white, w).
