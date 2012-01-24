@@ -75,8 +75,8 @@ move_figure(Board, C1, C2, Tail) ->
                 {ok, FigureType} ->
                     {Color, _} = F1,
                     move_figure_normal(
-                      Board, C1, C2, F1,
-                      {Color, FigureType});
+                      Board, C1, C2,
+                      {Color, FigureType}, ?empty);
                 _ ->
                     case is_castling(C1, C2, F1, F2) of
                         {ok, RookMove} ->
@@ -113,7 +113,7 @@ transpose(Board) ->
 
 is_valid_move_(Board, TurnColor, Move, History) ->
     {C1, C2, Tail} = move_dec(Move),
-    {MyColor, FigureType} = Figure =
+    {MyColor, FigureType} =
         case cell(Board, C1) of
             ?empty -> throw({error, {cell_is_empty, C1}});
             {TurnColor, _} = Figure0 -> Figure0;
@@ -125,9 +125,6 @@ is_valid_move_(Board, TurnColor, Move, History) ->
         _ -> ok
     end,
     Possible = possible(Board, C1, MyColor, FigureType, History),
-    echessd_log:debug(
-      "Fig ~w from ~s can move to: ~9999p",
-      [Figure, crd_enc(C1), [crd_enc(I) || I <- Possible]]),
     case lists:member(C2, Possible) of
         true ->
             {Board2, _Capture} = move_figure(Board, C1, C2, Tail),
@@ -249,12 +246,12 @@ possible_castlings(Board, Color, History) ->
             PossibleCastlings =
                 %% far castling
                 case search_rook(Board, KingStart, {-1, 0}, Color) of
-                    {1, _} = FC -> [FC];
+                    {1, _} -> [crd_inc(KingStart, {-2, 0})];
                     _ -> []
                 end ++
                 %% near castling
-                case search_rook(Board, KingStart, {-1, 0}, Color) of
-                    {8, _} = NC -> [NC];
+                case search_rook(Board, KingStart, {1, 0}, Color) of
+                    {8, _} -> [crd_inc(KingStart, {2, 0})];
                     _ -> []
                 end,
             case PossibleCastlings of
