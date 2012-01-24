@@ -133,10 +133,8 @@ is_valid_move_(Board, TurnColor, Move, History) ->
                    true ->
                         whereis_my_king(History, MyColor)
                 end,
-            %% fixme: need to use more efficient way
-            Enemies = all_enemies(Board2, MyColor),
             case is_cell_under_attack(
-                   Board2, MyKingIndex, Enemies) of
+                   Board2, MyKingIndex, MyColor) of
                 true ->
                     throw({error, check});
                 _ -> ok
@@ -214,14 +212,8 @@ possible_(B, F, C, ?queen, History) ->
     [possible_(B, F, C, ?bishop, History),
      possible_(B, F, C, ?rook, History)];
 possible_(B, F, C, ?knight, _History) ->
-    [is_empty_or_enemy(B, C, crd_inc(F, {1, 2})),
-     is_empty_or_enemy(B, C, crd_inc(F, {-1, 2})),
-     is_empty_or_enemy(B, C, crd_inc(F, {1, -2})),
-     is_empty_or_enemy(B, C, crd_inc(F, {-1, -2})),
-     is_empty_or_enemy(B, C, crd_inc(F, {2, 1})),
-     is_empty_or_enemy(B, C, crd_inc(F, {-2, 1})),
-     is_empty_or_enemy(B, C, crd_inc(F, {2, -1})),
-     is_empty_or_enemy(B, C, crd_inc(F, {-2, -1}))];
+    [is_empty_or_enemy(B, C, crd_inc(F, Step)) ||
+        Step <- knight_steps()];
 possible_(B, F, C, ?king, History) ->
     [is_empty_or_enemy(B, C, crd_inc(F, {-1, -1})),
      is_empty_or_enemy(B, C, crd_inc(F, {-1, 0})),
@@ -243,7 +235,6 @@ possible_castlings(Board, Color, History) ->
                   if Color == ?white -> "e1";
                      true -> "e8"
                   end),
-            Enemies = all_enemies(Board, Color),
             PossibleCastlings =
                 %% castling long
                 case search_rook(Board, KingStart, {-1, 0}, Color) of
@@ -254,7 +245,7 @@ possible_castlings(Board, Color, History) ->
                             _ ->
                                 case is_cell_under_attack(
                                        Board, crd_inc(KingStart, {-1, 0}),
-                                       Enemies) of
+                                       Color) of
                                     true -> [];
                                     _ ->
                                         [crd_inc(KingStart, {-2, 0})]
@@ -271,7 +262,7 @@ possible_castlings(Board, Color, History) ->
                             _ ->
                                 case is_cell_under_attack(
                                        Board, crd_inc(KingStart, {1, 0}),
-                                       Enemies) of
+                                       Color) of
                                     true -> [];
                                     _ ->
                                         [crd_inc(KingStart, {2, 0})]
@@ -283,7 +274,7 @@ possible_castlings(Board, Color, History) ->
                 [_ | _] ->
                     %% is there is check?
                     case is_cell_under_attack(
-                           Board, KingStart, Enemies) of
+                           Board, KingStart, Color) of
                         true -> [];
                         _ -> PossibleCastlings
                     end;
@@ -372,24 +363,66 @@ free_cells_until_enemy(Board, MyColor, Start, Step) ->
             end
     end.
 
-is_cell_under_attack(Board, Crd, Enemies) ->
-    lists:any(
-      fun({I, {C, F}}) ->
-              lists:member(
-                Crd,
-                possible(Board, I, C, F, []))
-      end, Enemies).
+knight_steps() ->
+    [{1, 2}, {-1, 2}, {1, -2}, {-1, -2},
+     {2, 1}, {-2, 1}, {2, -1}, {-2, -1}].
 
--define(seq_1_8, [1,2,3,4,5,6,7,8]).
-all_enemies(Board, MyColor) ->
-    lists:flatmap(
-      fun(Crd) ->
-              case cell(Board, Crd) of
-                  {Color, _} = F when Color /= MyColor ->
-                      [{Crd, F}];
-                  _ -> []
+is_cell_under_attack(Board, I, Color) ->
+    EnemyColor = not_color(Color),
+    lists:any(
+      fun(Step) ->
+              case cell(Board, crd_inc(I, Step)) of
+                  {EnemyColor, ?knight} -> true;
+                  _ -> false
               end
-      end, [{C, R} || C <- ?seq_1_8, R <- ?seq_1_8]).
+      end, knight_steps())
+        orelse
+        lists:any(
+          fun({DC, DR} = Step) ->
+                  case find_enemy(
+                         Board, I, Step, EnemyColor) of
+                      {?pawn, 1}
+                        when EnemyColor == ?black
+                             andalso abs(DC) == 1
+                             andalso DR == 1 ->
+                          true;
+                      {?pawn, 1}
+                        when EnemyColor == ?white
+                             andalso abs(DC) == 1
+                             andalso DR == -1 ->
+                          true;
+                      {?king, 1} ->
+                          true;
+                      {?queen, _} ->
+                          true;
+                      {?bishop, _}
+                        when abs(DC) == abs(DR) ->
+                          true;
+                      {?rook, _}
+                        when abs(DC) /= abs(DR) ->
+                          true;
+                      _ -> false
+                  end
+          end,
+          [{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
+           {0, 1}, {1, -1}, {1, 0}, {1, 1}]).
+
+find_enemy(Board, I, Step, EnemyColor) ->
+    find_enemy(Board, I, Step, EnemyColor, 1).
+find_enemy(Board, I, Step, EnemyColor, Distance) ->
+    I2 = crd_inc(I, Step),
+    case cell(Board, I2) of
+        {EnemyColor, ChessmanType} ->
+            {ChessmanType, Distance};
+        ?empty ->
+            find_enemy(
+              Board, I2, Step,
+              EnemyColor, Distance + 1);
+        _ ->
+            %% board end reached or
+            %% friendly chessman found
+            undefined
+    end.
 
 is_king_have_been_moved(History, ?white) ->
     lists:any(fun(Move) -> lists:prefix("e1", Move) end, History);
