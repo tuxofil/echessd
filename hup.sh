@@ -1,22 +1,18 @@
 #!/bin/sh
 
 ###-------------------------------------------------------------------
-### File    : run.sh
+### File    : hup.sh
 ### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
-### Created : 20 Jan 2012
+### Created : 24 Jan 2012
 ### License : FreeBSD
-### Description : starts echessd server
-###
+### Description : makes echessd re-read configuration file and re-open
+###               log file (use it after logrotate)
 ###-------------------------------------------------------------------
 
-exec erl -sname "echessd" \
+exec erl -sname "echessd_hupper" \
     -setcookie echessd_secret_cookie \
-    -boot start_sasl \
     -noshell -noinput \
     -pa ./ebin \
-    -pa ./contrib/mochiweb/ebin \
-    -mnesia dir \"./tmp/mnesia\" \
-    -echessd_config ./echessd.conf \
-    -s mnesia \
-    -s echessd
+    -s echessd hup \
+    -s init stop
 
