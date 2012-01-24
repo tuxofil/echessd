@@ -83,6 +83,8 @@ default(?CFG_BIND_PORT) ->
     {ok, 8888};
 default(?CFG_DOC_ROOT) ->
     {ok, "www"};
+default(?CFG_LOGFILE) ->
+    {ok, "echessd.log"};
 default(_) ->
     undefined.
 
