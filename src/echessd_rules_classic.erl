@@ -243,23 +243,47 @@ possible_castlings(Board, Color, History) ->
                   if Color == ?white -> "e1";
                      true -> "e8"
                   end),
+            Enemies = all_enemies(Board, Color),
             PossibleCastlings =
-                %% far castling
+                %% castling long
                 case search_rook(Board, KingStart, {-1, 0}, Color) of
-                    {1, _} -> [crd_inc(KingStart, {-2, 0})];
+                    {1, _} = LongRookC ->
+                        case is_rook_have_been_moved(
+                               History, LongRookC) of
+                            true -> [];
+                            _ ->
+                                case is_cell_under_attack(
+                                       Board, crd_inc(KingStart, {-1, 0}),
+                                       Enemies) of
+                                    true -> [];
+                                    _ ->
+                                        [crd_inc(KingStart, {-2, 0})]
+                                end
+                        end;
                     _ -> []
                 end ++
-                %% near castling
+                %% castling short
                 case search_rook(Board, KingStart, {1, 0}, Color) of
-                    {8, _} -> [crd_inc(KingStart, {2, 0})];
+                    {8, _} = ShortRookC ->
+                        case is_rook_have_been_moved(
+                               History, ShortRookC) of
+                            true -> [];
+                            _ ->
+                                case is_cell_under_attack(
+                                       Board, crd_inc(KingStart, {1, 0}),
+                                       Enemies) of
+                                    true -> [];
+                                    _ ->
+                                        [crd_inc(KingStart, {2, 0})]
+                                end
+                        end;
                     _ -> []
                 end,
             case PossibleCastlings of
                 [_ | _] ->
                     %% is there is check?
                     case is_cell_under_attack(
-                           Board, KingStart,
-                           all_enemies(Board, Color)) of
+                           Board, KingStart, Enemies) of
                         true -> [];
                         _ -> PossibleCastlings
                     end;
@@ -371,6 +395,9 @@ is_king_have_been_moved(History, ?white) ->
     lists:any(fun(Move) -> lists:prefix("e1", Move) end, History);
 is_king_have_been_moved(History, ?black) ->
     lists:any(fun(Move) -> lists:prefix("e8", Move) end, History).
+
+is_rook_have_been_moved(History, C) ->
+    lists:any(fun(Move) -> lists:prefix(crd_enc(C), Move) end, History).
 
 whereis_my_king(History, ?white) ->
     whereis_my_king(History, "e1");
