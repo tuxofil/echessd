@@ -61,13 +61,36 @@ is_valid_move(Board, TurnColor, Move, History) ->
 move_figure(Board, Move) ->
     {C1, C2, Tail} = move_dec(Move),
     move_figure(Board, C1, C2, Tail).
-move_figure(Board, C1, C2, _Tail) ->
-    %% todo:
-    %%    - en passant
-    %%    - promotion
-    %%    - castling
+move_figure(Board, C1, C2, Tail) ->
     F1 = cell(Board, C1),
     F2 = cell(Board, C2),
+    case is_en_passant_simple(Board, C1, C2, F1, F2) of
+        {ok, EnemyPawnIndex, EnemyPawn} ->
+            Board2 = setcell(Board, EnemyPawnIndex, ?empty),
+            {Board3, ?empty} =
+                move_figure_normal(Board2, C1, C2, F1, F2),
+            {Board3, EnemyPawn};
+        _ ->
+            case is_promotion(C2, F1, Tail) of
+                {ok, FigureType} ->
+                    {Color, _} = F1,
+                    move_figure_normal(
+                      Board, C1, C2, F1,
+                      {Color, FigureType});
+                _ ->
+                    case is_castling(C1, C2, F1, F2) of
+                        {ok, RookMove} ->
+                            {Board2, _} =
+                                move_figure_normal(
+                                  Board, C1, C2, F1, F2),
+                            move_figure(Board2, RookMove);
+                        _ ->
+                            move_figure_normal(
+                              Board, C1, C2, F1, F2)
+                    end
+            end
+    end.
+move_figure_normal(Board, C1, C2, F1, F2) ->
     {setcell(setcell(Board, C1, ?empty), C2, F1), F2}.
 
 %% @doc Turns internal board representation at 180 degrees.
@@ -140,7 +163,7 @@ possible_(B, F, C, ?pawn, History) ->
     FR = crd_inc(F, {1, Direction}),
     EnPassL = crd_inc(F, {-1, 0}),
     EnPassR = crd_inc(F, {1, 0}),
-    OppPawn = {hd([?black, ?white] -- [C]), ?pawn},
+    OppPawn = {not_color(C), ?pawn},
     case cell(B, F1) of
         ?empty ->
             [F1] ++
@@ -181,15 +204,15 @@ possible_(B, F, C, ?pawn, History) ->
             _ -> []
         end;
 possible_(B, F, C, ?rook, _History) ->
-    [nexts(B, C, F, {0, 1}),
-     nexts(B, C, F, {0, -1}),
-     nexts(B, C, F, {1, 0}),
-     nexts(B, C, F, {-1, 0})];
+    [free_cells_until_enemy(B, C, F, {0, 1}),
+     free_cells_until_enemy(B, C, F, {0, -1}),
+     free_cells_until_enemy(B, C, F, {1, 0}),
+     free_cells_until_enemy(B, C, F, {-1, 0})];
 possible_(B, F, C, ?bishop, _History) ->
-    [nexts(B, C, F, {-1, -1}),
-     nexts(B, C, F, {1, -1}),
-     nexts(B, C, F, {-1, 1}),
-     nexts(B, C, F, {1, 1})];
+    [free_cells_until_enemy(B, C, F, {-1, -1}),
+     free_cells_until_enemy(B, C, F, {1, -1}),
+     free_cells_until_enemy(B, C, F, {-1, 1}),
+     free_cells_until_enemy(B, C, F, {1, 1})];
 possible_(B, F, C, ?queen, History) ->
     [possible_(B, F, C, ?bishop, History),
      possible_(B, F, C, ?rook, History)];
@@ -202,7 +225,7 @@ possible_(B, F, C, ?knight, _History) ->
      is_empty_or_enemy(B, C, crd_inc(F, {-2, 1})),
      is_empty_or_enemy(B, C, crd_inc(F, {2, -1})),
      is_empty_or_enemy(B, C, crd_inc(F, {-2, -1}))];
-possible_(B, F, C, ?king, _History) ->
+possible_(B, F, C, ?king, History) ->
     [is_empty_or_enemy(B, C, crd_inc(F, {-1, -1})),
      is_empty_or_enemy(B, C, crd_inc(F, {-1, 0})),
      is_empty_or_enemy(B, C, crd_inc(F, {-1, 1})),
@@ -210,8 +233,50 @@ possible_(B, F, C, ?king, _History) ->
      is_empty_or_enemy(B, C, crd_inc(F, {0, 1})),
      is_empty_or_enemy(B, C, crd_inc(F, {1, -1})),
      is_empty_or_enemy(B, C, crd_inc(F, {1, 0})),
-     is_empty_or_enemy(B, C, crd_inc(F, {1, 1}))];
+     is_empty_or_enemy(B, C, crd_inc(F, {1, 1}))] ++
+        possible_castlings(B, C, History);
 possible_(_, _, _, _, _) -> [].
+
+possible_castlings(Board, Color, History) ->
+    case is_king_have_been_moved(History, Color) of
+        true -> [];
+        _ ->
+            KingStart =
+                crd_dec(
+                  if Color == ?white -> "e1";
+                     true -> "e8"
+                  end),
+            PossibleCastlings =
+                %% far castling
+                case search_rook(Board, KingStart, {-1, 0}, Color) of
+                    {1, _} = FC -> [FC];
+                    _ -> []
+                end ++
+                %% near castling
+                case search_rook(Board, KingStart, {-1, 0}, Color) of
+                    {8, _} = NC -> [NC];
+                    _ -> []
+                end,
+            case PossibleCastlings of
+                [_ | _] ->
+                    %% is there is check?
+                    case is_cell_under_attack(
+                           Board, KingStart,
+                           all_enemies(Board, Color)) of
+                        true -> [];
+                        _ -> PossibleCastlings
+                    end;
+                _ -> []
+            end
+    end.
+
+search_rook(Board, I, Step, Color) ->
+    I2 = crd_inc(I, Step),
+    case cell(Board, I2) of
+        {Color, ?rook} -> I2;
+        ?empty -> search_rook(Board, I2, Step, Color);
+        _ -> ?null
+    end.
 
 %% ----------------------------------------------------------------------
 %% low level tools
@@ -230,6 +295,41 @@ is_en_passant([_ | _] = History, {C2, R2} = OppPawnCoord) ->
     end;
 is_en_passant(_, _) -> false.
 
+is_en_passant_simple(
+  Board, {IC1, IR} = _I1, {IC2, IR} = _I2,
+  {C1, ?pawn} = _SrcFig, ?empty = _DstFig)
+  when abs(IC2 - IC1) == 1 ->
+    EnemyPawnIndex = {IC2, IR},
+    EnemyPawn = {not_color(C1), ?pawn},
+    case cell(Board, EnemyPawnIndex) == EnemyPawn of
+        true ->
+            {ok, EnemyPawnIndex, EnemyPawn};
+        _ -> false
+    end;
+is_en_passant_simple(_, _, _, _, _) -> false.
+
+is_promotion({_IC2, 1 = _IR2} = _I2, ?bpawn = _SrcFig, MoveTail) ->
+    {ok, promotion_dec(MoveTail)};
+is_promotion({_IC2, 8 = _IR2} = _I2, ?wpawn = _SrcFig, MoveTail) ->
+    {ok, promotion_dec(MoveTail)};
+is_promotion(_, _, _) -> false.
+
+is_castling(
+  {IC1, IR} = _I1, {IC2, IR} = _I2,
+  {C, ?king} = _SrcFig, ?empty = _DstFig)
+  when abs(IC2 - IC1) == 2
+       andalso
+       ((C == ?black andalso IR == 8 andalso IC1 == 5)
+        orelse
+          (C == ?white andalso IR == 1 andalso IC1 == 5)) ->
+    case {C, IC2 - IC1} of
+        {?black, -2} -> {ok, "a8d8"};
+        {?black, 2}  -> {ok, "h8f8"};
+        {?white, -2} -> {ok, "a1d1"};
+        {?white, 2}  -> {ok, "h1f1"}
+    end;
+is_castling(_, _, _, _) -> false.
+
 is_empty_or_enemy(Board, MyColor, Coord) ->
     case cell(Board, Coord) of
         ?empty -> Coord;
@@ -237,13 +337,15 @@ is_empty_or_enemy(Board, MyColor, Coord) ->
         _ -> ?null
     end.
 
-nexts(Board, MyColor, Start, Step) ->
+free_cells_until_enemy(Board, MyColor, Start, Step) ->
     case crd_inc(Start, Step) of
         ?null -> [];
         Crd ->
             case cell(Board, Crd) of
                 ?empty ->
-                    [Crd | nexts(Board, MyColor, Crd, Step)];
+                    [Crd |
+                     free_cells_until_enemy(
+                       Board, MyColor, Crd, Step)];
                 {MyColor, _} -> [];
                 _ -> [Crd]
             end
@@ -267,6 +369,11 @@ all_enemies(Board, MyColor) ->
                   _ -> []
               end
       end, [{C, R} || C <- ?seq_1_8, R <- ?seq_1_8]).
+
+is_king_have_been_moved(History, ?white) ->
+    lists:any(fun(Move) -> lists:prefix("e1", Move) end, History);
+is_king_have_been_moved(History, ?black) ->
+    lists:any(fun(Move) -> lists:prefix("e8", Move) end, History).
 
 whereis_my_king(History, ?white) ->
     whereis_my_king(History, "e1");
@@ -302,6 +409,8 @@ move_dec([A, B, C, D | Tail])
 move_dec(_) ->
     throw({error, badmove}).
 
+crd_dec([C, R]) ->
+    crd_dec(C, R).
 crd_dec(C, R) ->
     Crd = {C - $a + 1, R - $1 + 1},
     case crd_ok(Crd) of
@@ -326,4 +435,16 @@ crd_ok({C, R})
        R >= 1 andalso R =< 8 ->
     true;
 crd_ok(_) -> false.
+
+not_color(Color) ->
+    hd([?white, ?black] -- [Color]).
+
+promotion_dec([$r | _]) -> ?rook;
+promotion_dec([$k | _]) -> ?knight;
+promotion_dec([$b | _]) -> ?bishop;
+promotion_dec([$q | _]) -> ?queen;
+promotion_dec([_ | _] = Str) ->
+    throw({error, {bad_promotion_type, Str}});
+promotion_dec(_) ->
+    throw({error, no_promotion_type_specified}).
 
