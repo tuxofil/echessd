@@ -9,10 +9,9 @@ ebin/%.beam: src/%.erl include/*.hrl
 	erlc -I ./include -o ./ebin $<
 
 clean:
-	find . -name '*.beam' \
-	  -o -name 'erl_crash.dump' \
-	  -o -name '*~' \
-	  -delete
+	rm -f -- ./ebin/*.beam
+	rm -f ./erl_crash.dump
+	find ./ -type f -name '*~' -print -delete
 
 cleanall: clean
 	rm -f ./echessd.log
