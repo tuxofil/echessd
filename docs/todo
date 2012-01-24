@@ -1,0 +1,14 @@
+- pawn moves: en passant, promotion;
+- move: castling;
+- handling endgame clauses;
+- show game status in game lists;
+- handling user proposed give up and draw;
+- time limitation for moves;
+- HUP/STOP/PING signals handling;
+- describe system architecture;
+- show timezone in log messages;
+- introduce 'timezone' user property;
+- edit user properties;
+- add users 'extra_info' property;
+- optimize echessd_rules_classic:is_cell_under_attack/3 fun.
+

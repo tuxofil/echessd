@@ -134,6 +134,11 @@ Details for echessd existing configuration parameters you can
 found in ./echessd.conf configuration file in top directory of
 echessd source tree.
 
+Developer guide.
+
+Detailed information about project architecture, implementation
+features and todo-lists can be found in ./docs directory.
+
 -----------------------------------------------------------------
               Aleksey Morarash <aleksey.morarash@gmail.com>, 2012
 
