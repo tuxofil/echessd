@@ -448,8 +448,8 @@ next_chess_cell_class("wc") -> "bc";
 next_chess_cell_class("bc") -> "wc".
 
 chessman(?empty) -> "&nbsp;";
-chessman(Fig) ->
-    "&#" ++ integer_to_list(chessman_(Fig)) ++ ";".
+chessman(Chessman) ->
+    "&#" ++ integer_to_list(chessman_(Chessman)) ++ ";".
 chessman_(?wking  ) -> 9812;
 chessman_(?wqueen ) -> 9813;
 chessman_(?wrook  ) -> 9814;
