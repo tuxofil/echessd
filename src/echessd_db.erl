@@ -19,7 +19,8 @@
          get_game_props/1,
          set_game_props/2,
          delgame/1,
-         gamemove/3
+         gamemove/3,
+         gamerewind/1
         ]).
 
 -include("echessd.hrl").
@@ -266,9 +267,28 @@ gamemove(GameID, Username, Move) ->
               end
       end).
 
+%% @doc Denies last move for specified game.
+%% @spec gamerewind(GameID) -> ok | {error, Reason}
+%%     GameID = echessd_game:echessd_game_id(),
+%%     Reason = term()
+gamerewind(GameID) ->
+    transaction_ok(
+      fun() ->
+              GameInfo = ll_get_props(?dbt_games, GameID),
+              History = proplists:get_value(moves, GameInfo, []),
+              NewHistory = all_except_last(History),
+              ll_replace_props(
+                ?dbt_games, GameID, GameInfo,
+                [{moves, NewHistory}])
+      end).
+
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+all_except_last([]) -> [];
+all_except_last([_]) -> [];
+all_except_last([H | Tail]) -> [H | all_except_last(Tail)].
 
 transaction_ok(Fun) ->
     case transaction(Fun) of
