@@ -296,11 +296,11 @@ is_en_passant([_ | _] = History, {C2, R2} = OppPawnCoord) ->
 is_en_passant(_, _) -> false.
 
 is_en_passant_simple(
-  Board, {IC1, IR} = _I1, {IC2, IR} = _I2,
-  {C1, ?pawn} = _SrcFig, ?empty = _DstFig)
+  Board, {IC1, IR1} = _I1, {IC2, _IR2} = _I2,
+  {C, ?pawn} = _SrcFig, ?empty = _DstFig)
   when abs(IC2 - IC1) == 1 ->
-    EnemyPawnIndex = {IC2, IR},
-    EnemyPawn = {not_color(C1), ?pawn},
+    EnemyPawnIndex = {IC2, IR1},
+    EnemyPawn = {not_color(C), ?pawn},
     case cell(Board, EnemyPawnIndex) == EnemyPawn of
         true ->
             {ok, EnemyPawnIndex, EnemyPawn};
