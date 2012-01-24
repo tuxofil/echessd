@@ -21,7 +21,7 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Creates chess board with all figures at start point.
+%% @doc Creates chess board with all chessmans at start point.
 %% @spec new() -> echessd_game:echessd_board()
 new() ->
     {{?brook,?bknight,?bbishop,?bqueen,?bking,?bbishop,?bknight,?brook}, %% 8
@@ -35,12 +35,12 @@ new() ->
      %% a,b,c,d,e,f,g,h
     }.
 
-%% @doc Checks if move is valid.
-%% @spec is_valid_move(Board, TurnColor, Move, History) ->
+%% @doc Checks if ply is valid.
+%% @spec is_valid_ply(Board, TurnColor, Ply, History) ->
 %%                 ok | {error, Reason}
 %%     Board = echessd_game:echessd_board(),
 %%     TurnColor = echessd_game:echessd_color(),
-%%     Move = echessd_game:echessd_ply(),
+%%     Ply = echessd_game:echessd_ply(),
 %%     History = echessd_game:echessd_history(),
 %%     Reason = term()
 is_valid_ply(Board, TurnColor, Ply, History) ->
@@ -55,11 +55,12 @@ is_valid_ply(Board, TurnColor, Ply, History) ->
     end.
 
 %% @doc Make chessman move.
-%% @spec move_chessman(Board, Move) -> {NewBoard, Capture}
+%% @spec move_chessman(Board, Ply) -> {NewBoard, Capture}
 %%     Board = NewBoard = echessd_game:echessd_board(),
+%%     Ply = echessd_game:echessd_ply(),
 %%     Capture = echessd_game:echessd_chessman()
-move_chessman(Board, Move) ->
-    {I1, I2, Tail} = ply_dec(Move),
+move_chessman(Board, Ply) ->
+    {I1, I2, Tail} = ply_dec(Ply),
     move_chessman(Board, I1, I2, Tail).
 move_chessman(Board, I1, I2, Tail) ->
     F1 = cell(Board, I1),
@@ -72,18 +73,18 @@ move_chessman(Board, I1, I2, Tail) ->
             {Board3, EnemyPawn};
         _ ->
             case is_promotion(I2, F1, Tail) of
-                {ok, FigureType} ->
+                {ok, ChessmanType} ->
                     {Color, _} = F1,
                     move_chessman_normal(
                       Board, I1, I2,
-                      {Color, FigureType}, ?empty);
+                      {Color, ChessmanType}, ?empty);
                 _ ->
                     case is_castling(I1, I2, F1, F2) of
-                        {ok, RookMove} ->
+                        {ok, RookPly} ->
                             {Board2, _} =
                                 move_chessman_normal(
                                   Board, I1, I2, F1, F2),
-                            move_chessman(Board2, RookMove);
+                            move_chessman(Board2, RookPly);
                         _ ->
                             move_chessman_normal(
                               Board, I1, I2, F1, F2)
@@ -116,8 +117,8 @@ is_valid_ply_(Board, TurnColor, Ply, History) ->
     {MyColor, ChessmanType} =
         case cell(Board, I1) of
             ?empty -> throw({error, {cell_is_empty, I1}});
-            {TurnColor, _} = Figure0 -> Figure0;
-            {_, _} -> throw({error, not_your_figure})
+            {TurnColor, _} = Chessman0 -> Chessman0;
+            {_, _} -> throw({error, not_your_chessman})
         end,
     case cell(Board, I2) of
         {TurnColor, _} -> throw({error, friendly_fire});
@@ -309,7 +310,7 @@ is_en_passant(_, _) -> false.
 
 is_en_passant_simple(
   Board, {IC1, IR1} = _I1, {IC2, _IR2} = _I2,
-  {C, ?pawn} = _SrcFig, ?empty = _DstFig)
+  {C, ?pawn} = _SrcChm, ?empty = _DstChm)
   when abs(IC2 - IC1) == 1 ->
     EnemyPawnIndex = {IC2, IR1},
     EnemyPawn = {not_color(C), ?pawn},
@@ -320,15 +321,15 @@ is_en_passant_simple(
     end;
 is_en_passant_simple(_, _, _, _, _) -> false.
 
-is_promotion({_IC2, 1 = _IR2} = _I2, ?bpawn = _SrcFig, PlyTail) ->
+is_promotion({_IC2, 1 = _IR2} = _I2, ?bpawn = _SrcChm, PlyTail) ->
     {ok, promotion_dec(PlyTail)};
-is_promotion({_IC2, 8 = _IR2} = _I2, ?wpawn = _SrcFig, PlyTail) ->
+is_promotion({_IC2, 8 = _IR2} = _I2, ?wpawn = _SrcChm, PlyTail) ->
     {ok, promotion_dec(PlyTail)};
 is_promotion(_, _, _) -> false.
 
 is_castling(
   {IC1, IR} = _I1, {IC2, IR} = _I2,
-  {C, ?king} = _SrcFig, ?empty = _DstFig)
+  {C, ?king} = _SrcChm, ?empty = _DstChm)
   when abs(IC2 - IC1) == 2
        andalso
        ((C == ?black andalso IR == 8 andalso IC1 == 5)
@@ -449,9 +450,9 @@ cell(Board, {C, R})
     element(C, element(9 - R, Board));
 cell(_, _) -> ?null.
 
-setcell(Board, {C, R}, Figure) ->
+setcell(Board, {C, R}, Chessman) ->
     Row = element(9 - R, Board),
-    NewRow = setelement(C, Row, Figure),
+    NewRow = setelement(C, Row, Chessman),
     setelement(9 - R, Board, NewRow).
 
 ply_dec([A, B, C, D | Tail])

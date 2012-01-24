@@ -64,7 +64,7 @@
 -define(white, w).
 -define(black, b).
 
-%% figures
+%% chessman types
 -define(pawn, p).
 -define(rook, r).
 -define(knight, h).
@@ -72,6 +72,7 @@
 -define(queen, q).
 -define(king, k).
 
+%% chessmans
 -define(wpawn, {?white, ?pawn}).
 -define(bpawn, {?black, ?pawn}).
 -define(wrook, {?white, ?rook}).
