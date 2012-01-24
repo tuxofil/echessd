@@ -225,13 +225,13 @@ delgame(GameID) ->
               end
       end).
 
-%% @doc Makes game move for user.
-%% @spec gamemove(GameID, Username, Move) -> ok | {error, Reason}
+%% @doc Makes turn for user.
+%% @spec gameply(GameID, Username, Ply) -> ok | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
 %%     Username = echessd_user:echessd_user(),
-%%     Move = echessd_game:echessd_ply(),
+%%     Ply = echessd_game:echessd_ply(),
 %%     Reason = term()
-gamemove(GameID, Username, Move) ->
+gamemove(GameID, Username, Ply) ->
     transaction_ok(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
@@ -244,12 +244,12 @@ gamemove(GameID, Username, Move) ->
                       History = proplists:get_value(moves, GameInfo, []),
                       {Board, _Captures} =
                           echessd_game:from_scratch(GameType, History),
-                      case echessd_game:is_valid_move(
-                             GameType, Board, TurnColor, Move, History) of
+                      case echessd_game:is_valid_ply(
+                             GameType, Board, TurnColor, Ply, History) of
                           ok ->
                               ll_replace_props(
                                 ?dbt_games, GameID, GameInfo,
-                                [{moves, History ++ [Move]}]);
+                                [{moves, History ++ [Ply]}]);
                           {error, Reason} ->
                               mnesia:abort({wrong_move, Reason})
                       end;

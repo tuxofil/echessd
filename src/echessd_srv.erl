@@ -222,8 +222,8 @@ process_post(?SECTION_NEWGAME, Query, true) ->
 process_post(?SECTION_MOVE, Query, true) ->
     User = get(username),
     GameID = list_to_integer(get_query_item("game")),
-    Move = string:to_lower(proplists:get_value("move", Query)),
-    case echessd_game:move(GameID, User, Move) of
+    Ply = string:to_lower(proplists:get_value("move", Query)),
+    case echessd_game:ply(GameID, User, Ply) of
         ok -> nop;
         Error -> put(error, Error)
     end,

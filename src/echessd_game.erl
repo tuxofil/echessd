@@ -10,8 +10,8 @@
 -module(echessd_game).
 
 -export([add/5,
-         is_valid_move/5,
-         move/3,
+         is_valid_ply/5,
+         ply/3,
          fetch/1,
          getprops/1,
          who_must_turn/1,
@@ -45,16 +45,16 @@
 %%      Examples: "e2e4", "b7c6".
 %% @type echessd_ply() = string()
 
-%% @doc Sequence of moves from first to last.
+%% @doc Sequence of plies from first to last.
 %% @type echessd_history() = [echessd_ply()]
 
 %% @doc Game identifier (in persistent storage).
 %% @type echessd_game_id() = integer()
 
-%% @doc Chess figure type format definition.
+%% @doc Chessman type format definition.
 %% @type echessd_chessman_type() = atom().
 
-%% @doc Chess figure format definition.
+%% @doc Chessman format definition.
 %% @type echessd_chessman() = {echessd_color(), echessd_chessman_type()}
 
 %% ----------------------------------------------------------------------
@@ -93,8 +93,8 @@ add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
             Error
     end.
 
-%% @doc Checks if move is valid.
-%% @spec is_valid_move(GameType, Board, TurnColor, Ply, History) ->
+%% @doc Checks if half-move is valid.
+%% @spec is_valid_ply(GameType, Board, TurnColor, Ply, History) ->
 %%                 ok | {error, Reason}
 %%     GameType = echessd_game_type(),
 %%     Board = echessd_board(),
@@ -102,30 +102,30 @@ add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
 %%     Ply = echessd_ply(),
 %%     History = echessd_history(),
 %%     Reason = term()
-is_valid_move(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
+is_valid_ply(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
     echessd_rules_classic:is_valid_ply(
       Board, TurnColor, Ply, History);
-is_valid_move(GameType, _, _, _, _) ->
+is_valid_ply(GameType, _, _, _, _) ->
     soft_unsupported(GameType).
 
 %% @doc Tries to save user turn to database.
-%%      Move supplied will be checked for validity.
-%% @spec move(GameID, User, Move) -> ok | {error, Reason}
+%%      Turn supplied will be checked for validity.
+%% @spec ply(GameID, User, Ply) -> ok | {error, Reason}
 %%     GameID = echessd_game_id(),
 %%     User = echessd_user:echessd_username(),
-%%     Move = echessd_ply(),
+%%     Ply = echessd_ply(),
 %%     Reason = term()
-move(GameID, User, Move) ->
-    case echessd_db:gamemove(GameID, User, Move) of
+ply(GameID, User, Ply) ->
+    case echessd_db:gameply(GameID, User, Ply) of
         ok ->
             echessd_log:info(
               "game ~9999p: user ~9999p moved ~9999p",
-              [GameID, User, Move]),
+              [GameID, User, Ply]),
             ok;
         {error, Reason} = Error ->
             echessd_log:err(
               "game ~9999p: user ~9999p failed to move ~9999p: ~99999p",
-              [GameID, User, Move, Reason]),
+              [GameID, User, Ply, Reason]),
             Error
     end.
 
@@ -153,7 +153,7 @@ fetch(GameID) ->
 getprops(GameID) ->
     echessd_db:get_game_props(GameID).
 
-%% @doc Tells username who must move now.
+%% @doc Tells username who must turn now.
 %% @spec who_must_turn(GameInfo) -> Username
 %%     GameInfo = echessd_game_props(),
 %%     Username = echessd_user:echessd_username()
@@ -164,7 +164,7 @@ who_must_turn(GameInfo) ->
                    lists:member(C, [?black, ?white])],
     proplists:get_value(turn_color(GameInfo), Users).
 
-%% @doc Tells color of the side which must move.
+%% @doc Tells color of the side which must turn.
 %% @spec turn_color(GameInfo) -> Color
 %%     GameInfo = echessd_game_props(),
 %%     Color = echessd_color()
@@ -175,17 +175,17 @@ turn_color(GameInfo) ->
     end.
 
 %% @doc Creates new board and makes all moves from history supplied.
-%%      Returns result chess board and all figures captured.
-%% @spec do_moves(GameType, History) -> {Board, Captures}
+%%      Returns result chess board and all chessmans captured.
+%% @spec from_scratch(GameType, History) -> {Board, Captures}
 %%     GameType = echessd_game_type(),
 %%     History = echessd_history(),
 %%     Board = echessd_board(),
 %%     Captures = [echessd_chessman()]
 from_scratch(GameType, History) ->
     lists:foldl(
-      fun(Move, {Board, Captures}) ->
+      fun(Ply, {Board, Captures}) ->
               {NewGame, Capture} =
-                  move_figure(GameType, Board, Move),
+                  move_chessman(GameType, Board, Ply),
               {NewGame, [Capture | Captures]}
       end, {new(GameType), []}, History).
 
@@ -202,7 +202,7 @@ transpose(GameType, _Board) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc Creates chess board with all figures at start point.
+%% @doc Creates chess board with all chessmans at start point.
 %% @spec new(GameType) -> Board
 %%     GameType = echessd_game_type(),
 %%     Board = echessd_board()
@@ -214,14 +214,14 @@ new(GameType) ->
       [GameType]),
     unsupported(GameType).
 
-%% @doc Make figure move by rules of specified game.
-%% @spec move_figure(GameType, Board, Move) -> {NewBoard, Capture}
+%% @doc Make chessman move by rules of specified game.
+%% @spec move_chessman(GameType, Board, Ply) -> {NewBoard, Capture}
 %%     GameType = echessd_game_type(),
 %%     Board = NewBoard = echessd_board(),
 %%     Capture = echessd_chessman()
-move_figure(?GAME_CLASSIC, Board, Move) ->
-    echessd_rules_classic:move_chessman(Board, Move);
-move_figure(GameType, _Board, _Move) ->
+move_chessman(?GAME_CLASSIC, Board, Ply) ->
+    echessd_rules_classic:move_chessman(Board, Ply);
+move_chessman(GameType, _Board, _Ply) ->
     unsupported(GameType).
 
 unsupported(GameType) -> throw(unsupported_reason(GameType)).
