@@ -196,9 +196,14 @@ check_property({games, V} = I) ->
        true ->
             throw({error, {bad_games_list, V}})
     end;
-check_property({fullname, _V} = I) ->
-    %% todo: escape
-    I;
+check_property({fullname, V}) ->
+    {fullname, drop_html(lists:sublist(V, 70))};
 check_property({K, _V}) ->
     throw({error, {unknown_property, K}}).
+
+drop_html(String) ->
+    lists:flatmap(
+      fun($<) -> "&lt;";
+         (C) -> [C]
+      end, String).
 
