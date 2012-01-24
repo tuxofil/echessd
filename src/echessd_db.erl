@@ -19,7 +19,7 @@
          get_game_props/1,
          set_game_props/2,
          delgame/1,
-         gamemove/3,
+         gameply/3,
          gamerewind/1
         ]).
 
@@ -231,7 +231,7 @@ delgame(GameID) ->
 %%     Username = echessd_user:echessd_user(),
 %%     Ply = echessd_game:echessd_ply(),
 %%     Reason = term()
-gamemove(GameID, Username, Ply) ->
+gameply(GameID, Username, Ply) ->
     transaction_ok(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
@@ -267,7 +267,7 @@ gamemove(GameID, Username, Ply) ->
               end
       end).
 
-%% @doc Denies last move for specified game.
+%% @doc Denies last ply for specified game.
 %% @spec gamerewind(GameID) -> ok | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
 %%     Reason = term()

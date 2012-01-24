@@ -198,7 +198,7 @@ game(GameID) ->
                             "<input name=game type=hidden value=" ++
                             integer_to_list(GameID) ++ ">"
                             "<input name=move type=text size=4>"
-                            "<input type=submit value=Move>"
+                            "<input type=submit value=OK>"
                             "</form>";
                     _ -> ""
                 end ++
@@ -326,7 +326,7 @@ user_games_(GameID, GameInfo) ->
           lists:flatmap(
             fun({Username, Color})
                   when Color == ?white orelse Color == ?black ->
-                    [userlink(Username) ++ " " ++ figure({Color, ?king})];
+                    [userlink(Username) ++ " " ++ chessman({Color, ?king})];
                (_) -> []
             end, proplists:get_value(users, GameInfo)), ", ") ++ ")" ++
         case get(username) == echessd_game:who_must_turn(GameInfo) of
@@ -401,13 +401,13 @@ chess_table(GameType, Board, Captures, IsRotated) ->
         captures(Captures).
 captures([_ | _] = Captures) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
-        case [figure(F) || {?black, _} = F <- Captures] of
+        case [chessman(F) || {?black, _} = F <- Captures] of
             [_ | _] = Black ->
                 tr(tag("td", ["class=captures"],
                        lists:reverse(Black)));
             _ -> ""
         end ++
-        case [figure(F) || {?white, _} = F <- Captures] of
+        case [chessman(F) || {?white, _} = F <- Captures] of
             [_ | _] = White ->
                 tr(tag("td", ["class=captures"],
                        lists:reverse(White)));
@@ -434,8 +434,8 @@ chess_table_row(Row, N, Step) when is_tuple(Row) ->
     chess_table_row(
       tuple_to_list(Row),
       first_chess_cell_class(N, Step > 0)).
-chess_table_row([Figure | Tail], CellClass) ->
-    tag("td", ["class=" ++ CellClass], figure(Figure)) ++
+chess_table_row([Chessman | Tail], CellClass) ->
+    tag("td", ["class=" ++ CellClass], chessman(Chessman)) ++
         chess_table_row(Tail, next_chess_cell_class(CellClass));
 chess_table_row(_, _) -> "".
 
@@ -447,21 +447,21 @@ first_chess_cell_class(Row, _) ->
 next_chess_cell_class("wc") -> "bc";
 next_chess_cell_class("bc") -> "wc".
 
-figure(?empty) -> "&nbsp;";
-figure(Fig) ->
-    "&#" ++ integer_to_list(figure_(Fig)) ++ ";".
-figure_(?wking  ) -> 9812;
-figure_(?wqueen ) -> 9813;
-figure_(?wrook  ) -> 9814;
-figure_(?wbishop) -> 9815;
-figure_(?wknight) -> 9816;
-figure_(?wpawn  ) -> 9817;
-figure_(?bking  ) -> 9818;
-figure_(?bqueen ) -> 9819;
-figure_(?brook  ) -> 9820;
-figure_(?bbishop) -> 9821;
-figure_(?bknight) -> 9822;
-figure_(?bpawn  ) -> 9823.
+chessman(?empty) -> "&nbsp;";
+chessman(Fig) ->
+    "&#" ++ integer_to_list(chessman_(Fig)) ++ ";".
+chessman_(?wking  ) -> 9812;
+chessman_(?wqueen ) -> 9813;
+chessman_(?wrook  ) -> 9814;
+chessman_(?wbishop) -> 9815;
+chessman_(?wknight) -> 9816;
+chessman_(?wpawn  ) -> 9817;
+chessman_(?bking  ) -> 9818;
+chessman_(?bqueen ) -> 9819;
+chessman_(?brook  ) -> 9820;
+chessman_(?bbishop) -> 9821;
+chessman_(?bknight) -> 9822;
+chessman_(?bpawn  ) -> 9823.
 
 navig_links(List) -> navig_links(List, undefined).
 navig_links([], _Current) -> "";
