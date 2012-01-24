@@ -229,7 +229,7 @@ delgame(GameID) ->
 %% @spec gamemove(GameID, Username, Move) -> ok | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
 %%     Username = echessd_user:echessd_user(),
-%%     Move = echessd_game:echessd_move(),
+%%     Move = echessd_game:echessd_ply(),
 %%     Reason = term()
 gamemove(GameID, Username, Move) ->
     transaction_ok(

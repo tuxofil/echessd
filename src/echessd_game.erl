@@ -41,21 +41,21 @@
 %% @doc Color of player side.
 %% @type echessd_color() = atom()
 
-%% @doc String describing figure(s) move.
+%% @doc String describing half-move (ply).
 %%      Examples: "e2e4", "b7c6".
-%% @type echessd_move() = string()
+%% @type echessd_ply() = string()
 
 %% @doc Sequence of moves from first to last.
-%% @type echessd_history() = [echessd_move()]
+%% @type echessd_history() = [echessd_ply()]
 
 %% @doc Game identifier (in persistent storage).
 %% @type echessd_game_id() = integer()
 
 %% @doc Chess figure type format definition.
-%% @type echessd_figure_type() = atom().
+%% @type echessd_chessman_type() = atom().
 
 %% @doc Chess figure format definition.
-%% @type echessd_figure() = {echessd_color(), echessd_figure_type()}
+%% @type echessd_chessman() = {echessd_color(), echessd_chessman_type()}
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -94,17 +94,17 @@ add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
     end.
 
 %% @doc Checks if move is valid.
-%% @spec is_valid_move(GameType, Board, TurnColor, Move, History) ->
+%% @spec is_valid_move(GameType, Board, TurnColor, Ply, History) ->
 %%                 ok | {error, Reason}
 %%     GameType = echessd_game_type(),
 %%     Board = echessd_board(),
 %%     TurnColor = echessd_color(),
-%%     Move = echessd_move(),
+%%     Ply = echessd_ply(),
 %%     History = echessd_history(),
 %%     Reason = term()
-is_valid_move(?GAME_CLASSIC, Board, TurnColor, Move, History) ->
-    echessd_rules_classic:is_valid_move(
-      Board, TurnColor, Move, History);
+is_valid_move(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
+    echessd_rules_classic:is_valid_ply(
+      Board, TurnColor, Ply, History);
 is_valid_move(GameType, _, _, _, _) ->
     soft_unsupported(GameType).
 
@@ -113,7 +113,7 @@ is_valid_move(GameType, _, _, _, _) ->
 %% @spec move(GameID, User, Move) -> ok | {error, Reason}
 %%     GameID = echessd_game_id(),
 %%     User = echessd_user:echessd_username(),
-%%     Move = echessd_move(),
+%%     Move = echessd_ply(),
 %%     Reason = term()
 move(GameID, User, Move) ->
     case echessd_db:gamemove(GameID, User, Move) of
@@ -134,7 +134,7 @@ move(GameID, User, Move) ->
 %%     GameID = echessd_game_id(),
 %%     GameInfo = echessd_game_props(),
 %%     Board = echessd_board(),
-%%     Captures = [echessd_figure()],
+%%     Captures = [echessd_chessman()],
 %%     Reason = term()
 fetch(GameID) ->
     case getprops(GameID) of
@@ -180,7 +180,7 @@ turn_color(GameInfo) ->
 %%     GameType = echessd_game_type(),
 %%     History = echessd_history(),
 %%     Board = echessd_board(),
-%%     Captures = [echessd_figure()]
+%%     Captures = [echessd_chessman()]
 from_scratch(GameType, History) ->
     lists:foldl(
       fun(Move, {Board, Captures}) ->
@@ -218,9 +218,9 @@ new(GameType) ->
 %% @spec move_figure(GameType, Board, Move) -> {NewBoard, Capture}
 %%     GameType = echessd_game_type(),
 %%     Board = NewBoard = echessd_board(),
-%%     Capture = echessd_figure()
+%%     Capture = echessd_chessman()
 move_figure(?GAME_CLASSIC, Board, Move) ->
-    echessd_rules_classic:move_figure(Board, Move);
+    echessd_rules_classic:move_chessman(Board, Move);
 move_figure(GameType, _Board, _Move) ->
     unsupported(GameType).
 
