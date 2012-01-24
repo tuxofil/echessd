@@ -113,7 +113,26 @@ To check if server is alive, run './ping.sh' script.
 -----------------------------------------------------------------
 A. MISCELLANEOUS
 
+Security considerations.
 
+1. Do not run echessd under superuser privileges!
+2. Be aware of launching echessd on host without firewall
+   configured (or protected by another firewall) because
+   Erlang nature permits to connect to Erlang node (found via
+   epmd portmapper) from any host at your network. Such
+   connection will allow execute ANY code with UID of echessd
+   server process.
+
+Configuration file format.
+
+Empty lines and lines with first meaning character '#' (comments)
+will be skipped. Comments can take only whole line. You can`t
+comment only tail of line with configuration parameter.
+Configuration parameter value definition must look like key-value
+pair, separated by one or more spaces or tabs.
+Details for echessd existing configuration parameters you can
+found in ./echessd.conf configuration file in top directory of
+echessd source tree.
 
 -----------------------------------------------------------------
               Aleksey Morarash <aleksey.morarash@gmail.com>, 2012
