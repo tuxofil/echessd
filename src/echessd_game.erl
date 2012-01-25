@@ -17,6 +17,7 @@
          who_must_turn/1,
          turn_color/1,
          from_scratch/2,
+         can_move/4,
          transpose/2
         ]).
 
@@ -188,6 +189,17 @@ from_scratch(GameType, History) ->
                   move_chessman(GameType, Board, Ply),
               {NewGame, [Capture | Captures]}
       end, {new(GameType), []}, History).
+
+%% @doc Checks if valid turn exists for user with specified color.
+%% @spec can_move(GameType, Board, Color, History) -> boolean()
+%%     GameType = echessd_game_type(),
+%%     Board = echessd_board(),
+%%     Color = echessd_color(),
+%%     History = echessd_history()
+can_move(?GAME_CLASSIC, Board, Color, History) ->
+    echessd_rules_classic:can_move(Board, Color, History);
+can_move(GameType, _, _, _) ->
+    unsupported(GameType).
 
 %% @doc Turns internal board representation at 180 degrees.
 %% @spec transpose(GameType, Board) -> NewBoard

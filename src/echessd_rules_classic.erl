@@ -12,6 +12,7 @@
 -export([new/0,
          is_valid_ply/4,
          move_chessman/2,
+         can_move/3,
          transpose/1
         ]).
 
@@ -94,6 +95,36 @@ move_chessman(Board, I1, I2, Tail) ->
 move_chessman_normal(Board, I1, I2, F1, F2) ->
     {setcell(setcell(Board, I1, ?empty), I2, F1), F2}.
 
+%% @doc Checks if valid turn exists for user with specified color.
+%% @spec can_move(GameType, Board, Color, History) -> boolean()
+%%     Board = echessd_board(),
+%%     Color = echessd_color(),
+%%     History = echessd_history()
+can_move(Board, Color, History) ->
+    Seq = lists:seq(1, 8),
+    lists:any(
+      fun(I1) ->
+              case cell(Board, I1) of
+                  {Color, ChessmanType} ->
+                      Possibles =
+                          possible(
+                            Board, I1, Color,
+                            ChessmanType, History),
+                      lists:any(
+                        fun(I2) ->
+                                try
+                                    ok =
+                                        try_possible(
+                                          Board, Color, ChessmanType,
+                                          I1, I2, "q", History),
+                                    true
+                                catch _:_ -> false
+                                end
+                        end, Possibles);
+                  _ -> false
+              end
+      end, [{C, R} || C <- Seq, R <- Seq]).
+
 %% @doc Turns internal board representation at 180 degrees.
 %% @spec transpose(Board) -> NewBoard
 %%     GameType = echessd_game:echessd_game_type(),
@@ -128,20 +159,23 @@ is_valid_ply_(Board, TurnColor, Ply, History) ->
     Possible = possible(Board, I1, MyColor, ChessmanType, History),
     case lists:member(I2, Possible) of
         true ->
-            {Board2, _Capture} = move_chessman(Board, I1, I2, Tail),
-            MyKingIndex =
-                if ChessmanType == ?king -> I2;
-                   true ->
-                        whereis_my_king(History, MyColor)
-                end,
-            case is_cell_under_attack(
-                   Board2, MyKingIndex, MyColor) of
-                true ->
-                    throw({error, check});
-                _ -> ok
-            end;
+            try_possible(Board, MyColor, ChessmanType,
+                         I1, I2, Tail, History);
         _ ->
             throw({error, badmove})
+    end.
+
+try_possible(Board, Color, ChessmanType, I1, I2, Tail, History) ->
+    {Board2, _Capture} = move_chessman(Board, I1, I2, Tail),
+    KingIndex =
+        if ChessmanType == ?king -> I2;
+           true ->
+                whereis_my_king(History, Color)
+        end,
+    case is_cell_under_attack(Board2, KingIndex, Color) of
+        true ->
+            throw({error, check});
+        _ -> ok
     end.
 
 possible(B, I, C, ChessmanType, History) ->
