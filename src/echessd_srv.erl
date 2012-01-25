@@ -199,7 +199,8 @@ process_post(?SECTION_REG, Query, false) ->
             end
     end;
 process_post(?SECTION_NEWGAME, Query, true) ->
-    {User, _UserProperties} = echessd_session:get_val(opponent),
+    {Opponent, _UserProperties} =
+        echessd_session:get_val(opponent),
     Color =
         case proplists:get_value("color", Query) of
             "white" -> ?white;
@@ -213,12 +214,16 @@ process_post(?SECTION_NEWGAME, Query, true) ->
             true -> GameType0;
             _ -> ?GAME_CLASSIC
         end,
-    case echessd_game:add(GameType, get(username), Color, User, []) of
-        {ok, GameID} ->
+    Iam = get(username),
+    case echessd_game:add(GameType, Iam, Color, Opponent, []) of
+        {ok, GameID} when Iam == Opponent ->
             process_get(
               ?SECTION_GAME,
               [{"goto", ?SECTION_GAME},
                {"game", integer_to_list(GameID)}], true);
+        {ok, _GameID} ->
+            process_get(
+              ?SECTION_HOME, [{"goto", ?SECTION_HOME}], true);
         {error, Reason} ->
             echessd_html:error(
               "Failed to create new game:~n~9999p", [Reason])
