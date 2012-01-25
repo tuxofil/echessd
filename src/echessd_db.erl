@@ -16,6 +16,7 @@
          get_user_props/1,
          set_user_props/2,
          addgame/1,
+         game_ack/2,
          get_game_props/1,
          set_game_props/2,
          delgame/1,
@@ -153,6 +154,39 @@ addgame(GameInfo) ->
               GameID
       end).
 
+%% @doc Acknowledge the game.
+%% @spec game_ack(GameID, Username) -> ok | {error, Reason}
+%%     GameID = echessd_game:echessd_game_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     Reason = term()
+game_ack(GameID, Username) ->
+    transaction_ok(
+      fun() ->
+              _UserProperties = ll_get_props(?dbt_users, Username),
+              GameInfo = ll_get_props(?dbt_games, GameID),
+              case proplists:get_value(creator, GameInfo) of
+                  Username ->
+                      mnesia:abort(not_your_game);
+                  _ -> nop
+              end,
+              List =
+                  [z || {users, [_ | _] = L} <- GameInfo,
+                        {N, C} <- L,
+                        N == Username,
+                        lists:member(C, [?white, ?black])],
+              if length(List) > 0 -> nop;
+                 true ->
+                      mnesia:abort(not_your_game)
+              end,
+              case proplists:get_value(acknowledged, GameInfo) of
+                  true -> ok;
+                  _ ->
+                      ll_replace_props(
+                        ?dbt_games, GameID, GameInfo,
+                        [{acknowledged, true}])
+              end
+      end).
+
 %% @doc Fetch game properties.
 %% @spec get_game_props(GameID) -> {ok, GameInfo} | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
@@ -236,6 +270,11 @@ gameply(GameID, Username, Ply) ->
     transaction_ok(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
+              case proplists:get_value(acknowledged, GameInfo) of
+                  true -> nop;
+                  _ ->
+                      mnesia:abort(game_not_acknowledged)
+              end,
               %% check if such user exists
               _UserProperties = ll_get_props(?dbt_users, Username),
               case echessd_game:who_must_turn(GameInfo) of

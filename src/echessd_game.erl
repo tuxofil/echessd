@@ -10,6 +10,7 @@
 -module(echessd_game).
 
 -export([add/5,
+         ack/2,
          is_valid_ply/5,
          ply/3,
          fetch/1,
@@ -40,7 +41,8 @@
 %%     GameProperty = {type, echessd_game_type()} |
 %%         {time, now()} | {creator, echessd_user:echessd_username()} |
 %%         {users, [UserInfo]} | {status, Status} |
-%%         {winner, Winner} | {winner_color, Color},
+%%         {winner, Winner} | {winner_color, Color} |
+%%         {acknowledged, boolean()},
 %%     UserInfo = {echessd_user:echessd_username(), echessd_color()},
 %%     Status = none | checkmate | {draw, DrawType},
 %%         DrawType = stalemate | insufficient_material,
@@ -86,6 +88,7 @@ add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
          {time, now()},
          {creator, Owner},
          {status, none},
+         {acknowledged, Owner == Opponent},
          {users,
           [{Owner, OwnerColor},
            {Opponent, hd([?black, ?white] -- [OwnerColor])}]}
@@ -100,6 +103,25 @@ add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
             echessd_log:err(
               "game creation failed: ~9999p (props=~99999p)",
               [Reason, Props]),
+            Error
+    end.
+
+%% @doc Acknowledge the game.
+%% @spec ack(GameID, Username) -> ok | {error, Reason}
+%%     GameID = echessd_game_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     Reason = term()
+ack(GameID, Username) ->
+    case echessd_db:game_ack(GameID, Username) of
+        ok ->
+            echessd_log:info(
+              "game ~9999p confirmed by ~9999p",
+              [GameID, Username]),
+            ok;
+        {error, Reason} = Error ->
+            echessd_log:err(
+              "game ~9999p confirmation (by ~9999p) failed: ~9999p",
+              [GameID, Username, Reason]),
             Error
     end.
 

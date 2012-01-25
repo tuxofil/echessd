@@ -84,15 +84,12 @@ safe_handle(Req, Fun) ->
         catch
             _:{error, Reason} ->
                 echessd_html:error(
-                  io_lib:format(
-                    "Response generation failed:<br><tt>~p</tt>",
-                    [Reason]));
+                  "Response generation failed:~n~p", [Reason]);
             Type:Reason ->
                 StackTrace = erlang:get_stacktrace(),
                 echessd_html:error(
-                  io_lib:format(
-                    "Response generation failed:<br><tt>~p</tt>",
-                    [{Type, Reason, StackTrace}]))
+                  "Response generation failed:~n~p",
+                  [{Type, Reason, StackTrace}])
         end,
     ExtraHeaders =
         case get(extra_headers) of
@@ -106,9 +103,8 @@ safe_handle(Req, Fun) ->
             StackTrace2 = erlang:get_stacktrace(),
             Req:ok({?mime_text_html, [],
                     echessd_html:error(
-                      io_lib:format(
-                        "Response sending failed:<br><tt>~p</tt>",
-                        [{Type2, Reason2, StackTrace2}]))})
+                      "Response sending failed:~n~p",
+                      [{Type2, Reason2, StackTrace2}])})
     end.
 
 add_extra_headers(ExtraHeaders) ->
@@ -127,6 +123,18 @@ process_get(Req) ->
 process_get(?SECTION_EXIT, _Query, true) ->
     echessd_session:del(get(sid)),
     echessd_html:login();
+process_get(?SECTION_ACKGAME, _Query, true) ->
+    GameID = list_to_integer(get_query_item("game")),
+    case echessd_game:ack(GameID, get(username)) of
+        ok ->
+            process_get(
+              ?SECTION_GAME,
+              [{"goto", ?SECTION_GAME},
+               {"game", integer_to_list(GameID)}], true);
+        {error, Reason} ->
+            echessd_html:error(
+              "Failed to confirm game:~n~9999p", [Reason])
+    end;
 process_get(_, Query, true) ->
     process_goto(Query),
     put(query_proplist, Query),
@@ -187,9 +195,7 @@ process_post(?SECTION_REG, Query, false) ->
                        {"password", Password1}], false);
                 {error, Reason} ->
                     echessd_html:error(
-                      io_lib:format(
-                        "Failed to create new user:<br><tt>~9999p</tt>",
-                        [Reason]))
+                      "Failed to create new user:~n~9999p", [Reason])
             end
     end;
 process_post(?SECTION_NEWGAME, Query, true) ->
@@ -215,9 +221,7 @@ process_post(?SECTION_NEWGAME, Query, true) ->
                {"game", integer_to_list(GameID)}], true);
         {error, Reason} ->
             echessd_html:error(
-              io_lib:format(
-                "Failed to create new game:<br><tt>~9999p</tt>",
-                [Reason]))
+              "Failed to create new game:~n~9999p", [Reason])
     end;
 process_post(?SECTION_MOVE, Query, true) ->
     User = get(username),

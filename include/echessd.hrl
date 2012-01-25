@@ -57,6 +57,7 @@
 -define(SECTION_LOGIN, "login").
 -define(SECTION_EXIT, "exit").
 -define(SECTION_MOVE, "move").
+-define(SECTION_ACKGAME, "ackgame").
 
 -define(SECTIONS,
         [?SECTION_HOME, ?SECTION_GAME,

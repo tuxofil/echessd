@@ -11,7 +11,6 @@
 
 -export([login/0,
          register/0,
-         error/1,
          eaccess/0,
          home/0,
          game/1,
@@ -19,6 +18,7 @@
          users/0,
          user/1,
          newgame/0,
+         error/1, error/2,
          notyet/0
         ]).
 
@@ -63,14 +63,12 @@ home() ->
     Username = get(username),
     {ok, UserProperties} = echessd_user:getprops(Username),
     html_page_header(
-      "echessd - Home", [{h1, "Logged in as '" ++ Username ++ "'"}]) ++
+      "echessd - Home", [{h1, "Home: " ++ Username}]) ++
         navigation() ++
         "<br>" ++
         user_info(Username, UserProperties) ++
         "<br>" ++
-        user_games(Username, UserProperties) ++
-        "<br>" ++
-        newgame_link(Username) ++
+        user_games(Username, UserProperties, true) ++
         html_page_footer([]).
 
 %% @doc Makes 'registered users list' page content.
@@ -100,9 +98,9 @@ user(Username) ->
                 {ok, UserProperties} ->
                     user(Username, UserProperties);
                 {error, Reason} ->
-                    formatted_error_page(
-                      "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
-                      [Username, Reason])
+                    ?MODULE:error(
+                       "Unable to fetch user ~9999p properties:~n~p",
+                       [Username, Reason])
             end
     end.
 user(Username, UserProperties) ->
@@ -112,7 +110,7 @@ user(Username, UserProperties) ->
         "<br>" ++
         user_info(Username, UserProperties) ++
         "<br>" ++
-        user_games(Username, UserProperties) ++
+        user_games(Username, UserProperties, false) ++
         "<br>" ++
         newgame_link(Username) ++
         html_page_footer([]).
@@ -125,9 +123,9 @@ newgame() ->
         {ok, OpponentProperties} ->
             newgame(Opponent, OpponentProperties);
         {error, Reason} ->
-            formatted_error_page(
-              "Unable to fetch user ~9999p properties:<br>" ++ tt("~p"),
-              [Opponent, Reason])
+            ?MODULE:error(
+               "Unable to fetch user ~9999p properties:~n~p",
+               [Opponent, Reason])
     end.
 newgame(Opponent, OpponentProperties) ->
     echessd_session:set_val(
@@ -186,7 +184,7 @@ game(GameID) ->
                 end,
             LastPly =
                 case lists:reverse(
-                       proplists:get_value(moves, GameInfo)) of
+                       proplists:get_value(moves, GameInfo, [])) of
                     [LastPly0 | _] -> LastPly0;
                     _ -> undefined
                 end,
@@ -223,9 +221,9 @@ game(GameID) ->
                 captures(Captures) ++
                 html_page_footer([]);
         {error, Reason} ->
-            formatted_error_page(
-              "Unable to fetch game #~9999p properties:<br>" ++ tt("~p"),
-              [GameID, Reason])
+            ?MODULE:error(
+               "Unable to fetch game #~9999p properties:~n~p",
+               [GameID, Reason])
     end.
 
 %% @doc Makes 'game history' page content.
@@ -263,9 +261,9 @@ history(GameID) ->
                 captures(Captures) ++
                 html_page_footer([]);
         {error, Reason} ->
-            formatted_error_page(
-              "Unable to fetch game #~9999p properties:<br>" ++ tt("~p"),
-              [GameID, Reason])
+            ?MODULE:error(
+               "Unable to fetch game #~9999p properties:~n~p",
+               [GameID, Reason])
     end.
 
 %% @doc Makes 'under construction' page content.
@@ -281,10 +279,17 @@ notyet() ->
 %%     Message = io_list()
 error(Message) ->
     html_page_header("echessd - Error", [{h1, "echessd error"}]) ++
-        tag("div", ["class=error"], Message) ++
+        tag("div", ["class=error"], pre(Message)) ++
         "<br>" ++
         navig_links([{"javascript: history.back();", "Back"}]) ++
         html_page_footer([]).
+
+%% @doc Makes 'error' page content.
+%% @spec error(Format, Args) -> io_list()
+%%     Format = string(),
+%%     Args = list()
+error(Format, Args) ->
+    ?MODULE:error(io_lib:format(Format, Args)).
 
 %% @doc Makes 'access denied' page content.
 %% @spec eaccess() -> io_list()
@@ -321,48 +326,100 @@ user_info_cells(Username, UserProperties) ->
          (_) -> []
       end, [login, fullname, created]).
 
-user_games(Username, UserProperties) ->
-    case proplists:get_value(games, UserProperties) of
-        [_ | _] = Games ->
+user_games(Username, UserProperties, ShowNotAcknowledged) ->
+    %% fetch all user games info
+    UserGames =
+        lists:flatmap(
+          fun(GameID) ->
+                  case echessd_game:getprops(GameID) of
+                      {ok, GameInfo} ->
+                          [{GameID, GameInfo}];
+                      {error, Reason} ->
+                          echessd_log:err(
+                            "Failed to fetch game #~w props: "
+                            "~9999p (reference from ~9999p user)",
+                            [GameID, Reason, Username]),
+                          []
+                  end
+          end, proplists:get_value(games, UserProperties, [])),
+    %% split not acknowledged
+    {Confirmed, NotConfirmed} =
+        lists:partition(
+          fun({_GameID, GameInfo}) ->
+                  proplists:get_value(acknowledged, GameInfo)
+          end, UserGames),
+    case Confirmed of
+        [_ | _] ->
             h2("User games:") ++
                 string:join(
-                  lists:flatmap(
-                    fun(GameID) ->
-                            case echessd_game:getprops(GameID) of
-                                {ok, GameProps} ->
-                                    [user_games_(GameID, GameProps)];
-                                {error, Reason} ->
-                                    echessd_log:err(
-                                      "Failed to fetch game #~w props: "
-                                      "~9999p (reference from ~9999p user)",
-                                      [GameID, Reason, Username]),
-                                    []
-                            end
-                    end, Games), "<br>") ++ "<br>";
+                  [user_game_(Username, I, L) ||
+                      {I, L} <- Confirmed], "<br>") ++
+                "<br>";
         _ -> ""
-    end.
-user_games_(GameID, GameInfo) ->
-    "*&nbsp;" ++ gamelink(GameID) ++ "&nbsp;(" ++
-        string:join(
-          lists:flatmap(
-            fun({Username, Color})
-                  when Color == ?white orelse Color == ?black ->
-                    [userlink(Username) ++ " " ++ chessman({Color, ?king})];
-               (_) -> []
-            end, proplists:get_value(users, GameInfo)), ", ") ++ ")" ++
-        case proplists:get_value(status, GameInfo, none) of
+    end ++
+        case NotConfirmed of
+            [_ | _] when ShowNotAcknowledged ->
+                h2("Unconfirmed games:") ++
+                    string:join(
+                      [user_unconfirmed_game_(Username, I, L) ||
+                          {I, L} <- NotConfirmed], "<br>") ++
+                    "<br>";
+            _ -> ""
+        end.
+
+user_game_(Owner, GameID, GameInfo) ->
+    GamePlayers =
+        [{N, C} || {N, C} <- proplists:get_value(users, GameInfo, []),
+                   lists:member(C, [?white, ?black])],
+    UniquePlayerNames = lists:usort([N || {N, _} <- GamePlayers]),
+    IsTest = length(UniquePlayerNames) == 1,
+    "* " ++ gamelink(GameID) ++
+        if IsTest -> " test";
+           true ->
+                Color = proplists:get_value(Owner, GamePlayers),
+                Opponent = hd(UniquePlayerNames -- [Owner]),
+                OpponentColor = proplists:get_value(Opponent, GamePlayers),
+                chessman({Color, ?king}) ++ " vs " ++
+                    userlink(Opponent) ++ " " ++
+                    chessman({OpponentColor, ?king})
+        end ++
+        case proplists:get_value(status, GameInfo) of
             none ->
                 case get(username) == echessd_game:who_must_turn(GameInfo) of
-                    true -> " !!!";
+                    true when not IsTest -> " !!!";
                     _ -> ""
                 end;
+            checkmate when IsTest -> " - checkmate";
             checkmate ->
-                WinnerColor = proplists:get_value(winner_color, GameInfo),
-                " winner: " ++
-                    userlink(proplists:get_value(winner, GameInfo)) ++
-                    " " ++ chessman({WinnerColor, ?king});
+                case proplists:get_value(winner, GameInfo) of
+                    Owner -> " - win";
+                    _ -> " - loose"
+                end;
             {draw, _} ->
-                " draw"
+                " - draw"
+        end.
+
+user_unconfirmed_game_(Owner, GameID, GameInfo) ->
+    GamePlayers =
+        [{N, C} || {N, C} <- proplists:get_value(users, GameInfo, []),
+                   lists:member(C, [?white, ?black])],
+    UniquePlayerNames = lists:usort([N || {N, _} <- GamePlayers]),
+    "* #" ++ integer_to_list(GameID) ++
+        case proplists:get_value(creator, GameInfo) of
+            Owner ->
+                Opponent = hd(UniquePlayerNames -- [Owner]),
+                OpponentColor = proplists:get_value(Opponent, GamePlayers),
+                " waiting for " ++ userlink(Opponent) ++ " " ++
+                    chessman({OpponentColor, ?king}) ++ "...";
+            Opponent ->
+                OpponentColor = proplists:get_value(Opponent, GamePlayers),
+                AckURL =
+                    "?action=" ++ ?SECTION_ACKGAME ++ "&game=" ++
+                    integer_to_list(GameID),
+                " " ++ userlink(Opponent) ++ " " ++
+                    chessman({OpponentColor, ?king}) ++
+                    " is waiting for you! " ++
+                    tag("a", ["href='" ++ AckURL ++ "'"], "Confirm")
         end.
 
 html_page_header(Title, Options) ->
@@ -571,9 +628,6 @@ history_navigation(GameID, Step, MaxStep) ->
                   [{BaseURL ++ integer_to_list(Step + 1), "Next"}];
              true -> [{undefined, "Next"}]
           end).
-
-formatted_error_page(F, A) ->
-    ?MODULE:error(io_lib:format(F, A)).
 
 format_error({error, Reason}) ->
     format_error(Reason);
