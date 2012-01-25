@@ -253,16 +253,17 @@ gameply(GameID, Username, Ply) ->
                               GameStatus =
                                   echessd_game:gameover_status(
                                     GameType, NewBoard, NextColor, NewHistory),
-                              Winner =
+                              {Winner, WinnerColor} =
                                   case GameStatus of
-                                      checkmate -> Username;
-                                      _ -> undefined
+                                      checkmate -> {Username, TurnColor};
+                                      _ -> {undefined, undefined}
                                   end,
                               ll_replace_props(
                                 ?dbt_games, GameID, GameInfo,
                                 [{moves, NewHistory},
                                  {status, GameStatus},
-                                 {winner, Winner}]);
+                                 {winner, Winner},
+                                 {winner_color, WinnerColor}]);
                           {error, Reason} ->
                               mnesia:abort({wrong_move, Reason})
                       end;
@@ -293,7 +294,8 @@ gamerewind(GameID) ->
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
                 [{moves, NewHistory}, {status, none},
-                 {winner, undefined}])
+                 {winner, undefined},
+                 {winner_color, undefined}])
       end).
 
 %% @doc Denies all plies for specified game.
@@ -307,7 +309,8 @@ gamereset(GameID) ->
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
                 [{moves, []}, {status, none},
-                 {winner, undefined}])
+                 {winner, undefined},
+                 {winner_color, undefined}])
       end).
 
 %% ----------------------------------------------------------------------

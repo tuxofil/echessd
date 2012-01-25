@@ -350,9 +350,19 @@ user_games_(GameID, GameInfo) ->
                     [userlink(Username) ++ " " ++ chessman({Color, ?king})];
                (_) -> []
             end, proplists:get_value(users, GameInfo)), ", ") ++ ")" ++
-        case get(username) == echessd_game:who_must_turn(GameInfo) of
-            true -> " !!!";
-            _ -> ""
+        case proplists:get_value(status, GameInfo, none) of
+            none ->
+                case get(username) == echessd_game:who_must_turn(GameInfo) of
+                    true -> " !!!";
+                    _ -> ""
+                end;
+            checkmate ->
+                WinnerColor = proplists:get_value(winner_color, GameInfo),
+                " winner: " ++
+                    userlink(proplists:get_value(winner, GameInfo)) ++
+                    " " ++ chessman({WinnerColor, ?king});
+            {draw, _} ->
+                " draw"
         end.
 
 html_page_header(Title, Options) ->

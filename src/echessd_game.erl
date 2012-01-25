@@ -39,11 +39,13 @@
 %% @type echessd_game_props() = [GameProperty],
 %%     GameProperty = {type, echessd_game_type()} |
 %%         {time, now()} | {creator, echessd_user:echessd_username()} |
-%%         {users, [UserInfo]} | {status, Status} | {winner, Winner},
+%%         {users, [UserInfo]} | {status, Status} |
+%%         {winner, Winner} | {winner_color, Color},
 %%     UserInfo = {echessd_user:echessd_username(), echessd_color()},
 %%     Status = none | checkmate | {draw, DrawType},
 %%         DrawType = stalemate | insufficient_material,
-%%     Winner = echessd_user:echessd_username() | undefined
+%%     Winner = echessd_user:echessd_username() | undefined,
+%%     Color = echessd_color()
 
 %% @doc Color of player side.
 %% @type echessd_color() = atom()
