@@ -13,6 +13,5 @@ exec erl -sname "echessd_pinger" \
     -setcookie echessd_secret_cookie \
     -noshell -noinput \
     -pa ./ebin \
-    -s echessd ping \
-    -s init stop
+    -s echessd ping
 

@@ -13,6 +13,5 @@ exec erl -sname "echessd_hupper" \
     -setcookie echessd_secret_cookie \
     -noshell -noinput \
     -pa ./ebin \
-    -s echessd hup \
-    -s init stop
+    -s echessd hup
 

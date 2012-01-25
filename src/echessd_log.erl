@@ -73,7 +73,7 @@ debug(Format, Args) ->
 %% @doc Sends signal to logger to reopen log file.
 %% @spec reopen() -> ok
 reopen() ->
-    catch gen_server:cast(?MODULE, reopen),
+    gen_server:cast(?MODULE, reopen),
     ok.
 
 %% ----------------------------------------------------------------------

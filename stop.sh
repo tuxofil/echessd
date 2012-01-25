@@ -13,6 +13,5 @@ exec erl -sname "echessd_stopper" \
     -setcookie echessd_secret_cookie \
     -noshell -noinput \
     -pa ./ebin \
-    -s echessd stop \
-    -s init stop
+    -s echessd stop_remote
 

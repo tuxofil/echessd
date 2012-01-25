@@ -23,6 +23,9 @@
 
 -define(MANDATORY_CFGS, []).
 
+%% echessd node names
+-define(NODE_ECHESSD, "echessd").
+
 %% Configuration storage (ETS) name
 -define(echessd_cfg, echessd_cfg).
 
