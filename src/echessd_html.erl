@@ -161,70 +161,78 @@ newgame(Opponent, OpponentProperties) ->
 %% @spec game(GameID) -> io_list()
 %%     GameID = echessd_game:echessd_game_id()
 game(GameID) ->
-    Iam = get(username),
     case echessd_game:fetch(GameID) of
         {ok, GameInfo, {Board, Captures}} ->
-            GameType = proplists:get_value(type, GameInfo),
-            Players =
-                [I || {users, L} <- GameInfo, {_, C} = I <- L,
-                      lists:member(C, [?black, ?white])],
-            Users = lists:usort([N || {N, _} <- Players]),
-            MyColors = [C || {N, C} <- Players, N == Iam],
-            TurnColor = echessd_game:turn_color(GameInfo),
-            TurnUser = hd([N || {N, C} <- Players, C == TurnColor]),
-            OppColor = hd([?black, ?white] -- [TurnColor]),
-            OppUser = hd([N || {N, C} <- Players, C == OppColor]),
-            IsRotated =
-                if TurnUser == OppUser andalso
-                   OppUser == Iam ->
-                        TurnColor == ?black;
-                   true ->
-                        lists:member(Iam, Users) andalso
-                            lists:member(?black, MyColors)
-                end,
-            LastPly =
-                case lists:reverse(
-                       proplists:get_value(moves, GameInfo, [])) of
-                    [LastPly0 | _] -> LastPly0;
-                    _ -> undefined
-                end,
-            GameStatus = proplists:get_value(status, GameInfo, none),
-            Winner = proplists:get_value(winner, GameInfo),
-            html_page_header(
-              "echessd - Game",
-              [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
-                navigation() ++
-                game_navigation(GameID) ++
-                case GameStatus of
-                    checkmate ->
-                        h2("Game over: checkmate, winner: " ++
-                               userlink(Winner));
-                    {draw, DrawType} ->
-                        h2("Game over: draw (" ++
-                               atom_to_list(DrawType) ++ ")");
-                    _ -> ""
-                end ++
-                chess_table(GameType, Board, IsRotated, LastPly) ++
-                case TurnUser of
-                    Iam when GameStatus == none ->
-                        "<form method=post>"
-                            "Move:&nbsp;"
-                            "<input name=action type=hidden value=move>"
-                            "<input name=game type=hidden value=" ++
-                            integer_to_list(GameID) ++ ">"
-                            "<input name=move type=text size=4>"
-                            "<input type=submit value=OK>"
-                            "<input type=reset value=Reset>"
-                            "</form><br>";
-                    _ -> ""
-                end ++
-                captures(Captures) ++
-                html_page_footer([]);
+            case proplists:get_value(acknowledged, GameInfo) of
+                true ->
+                    game(GameID, GameInfo, Board, Captures);
+                _ ->
+                    ?MODULE:error(
+                       "Game #~w isn`t confirmed yet!", [GameID])
+            end;
         {error, Reason} ->
             ?MODULE:error(
                "Unable to fetch game #~9999p properties:~n~p",
                [GameID, Reason])
     end.
+game(GameID, GameInfo, Board, Captures) ->
+    Iam = get(username),
+    GameType = proplists:get_value(type, GameInfo),
+    Players =
+        [I || {users, L} <- GameInfo, {_, C} = I <- L,
+              lists:member(C, [?black, ?white])],
+    Users = lists:usort([N || {N, _} <- Players]),
+    MyColors = [C || {N, C} <- Players, N == Iam],
+    TurnColor = echessd_game:turn_color(GameInfo),
+    TurnUser = hd([N || {N, C} <- Players, C == TurnColor]),
+    OppColor = hd([?black, ?white] -- [TurnColor]),
+    OppUser = hd([N || {N, C} <- Players, C == OppColor]),
+    IsRotated =
+        if TurnUser == OppUser andalso
+           OppUser == Iam ->
+                TurnColor == ?black;
+           true ->
+                lists:member(Iam, Users) andalso
+                    lists:member(?black, MyColors)
+        end,
+    LastPly =
+        case lists:reverse(
+               proplists:get_value(moves, GameInfo, [])) of
+            [LastPly0 | _] -> LastPly0;
+            _ -> undefined
+        end,
+    GameStatus = proplists:get_value(status, GameInfo, none),
+    Winner = proplists:get_value(winner, GameInfo),
+    html_page_header(
+      "echessd - Game",
+      [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
+        navigation() ++
+        game_navigation(GameID) ++
+        case GameStatus of
+            checkmate ->
+                h2("Game over: checkmate, winner: " ++
+                       userlink(Winner));
+            {draw, DrawType} ->
+                h2("Game over: draw (" ++
+                       atom_to_list(DrawType) ++ ")");
+            _ -> ""
+        end ++
+        chess_table(GameType, Board, IsRotated, LastPly) ++
+        case TurnUser of
+            Iam when GameStatus == none ->
+                "<form method=post>"
+                    "Move:&nbsp;"
+                    "<input name=action type=hidden value=move>"
+                    "<input name=game type=hidden value=" ++
+                    integer_to_list(GameID) ++ ">"
+                    "<input name=move type=text size=4>"
+                    "<input type=submit value=OK>"
+                    "<input type=reset value=Reset>"
+                    "</form><br>";
+            _ -> ""
+        end ++
+        captures(Captures) ++
+        html_page_footer([]).
 
 %% @doc Makes 'game history' page content.
 %% @spec history(GameID) -> io_list()
