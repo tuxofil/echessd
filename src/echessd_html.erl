@@ -189,7 +189,7 @@ game(GameID) ->
               [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
                 navigation() ++
                 game_navigation(GameID) ++
-                chess_table(GameType, Board, Captures, IsRotated) ++
+                chess_table(GameType, Board, IsRotated) ++
                 case TurnUser of
                     Iam ->
                         "<form method=post>"
@@ -202,6 +202,8 @@ game(GameID) ->
                             "</form>";
                     _ -> ""
                 end ++
+                "<br>" ++
+                captures(Captures) ++
                 html_page_footer([]);
         {error, Reason} ->
             formatted_error_page(
@@ -239,7 +241,8 @@ history(GameID) ->
                         "&game=" ++ integer_to_list(GameID),
                     "Return to game"}]) ++
                 history_navigation(GameID, Step, FullHistoryLen) ++
-                chess_table(GameType, Board, Captures, false) ++
+                chess_table(GameType, Board, false) ++
+                captures(Captures) ++
                 html_page_footer([]);
         {error, Reason} ->
             formatted_error_page(
@@ -386,7 +389,7 @@ newgame_link(WithUsername) ->
       [{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUsername,
         "Start new game"}]).
 
-chess_table(GameType, Board, Captures, IsRotated) ->
+chess_table(GameType, Board, IsRotated) ->
     Letters0 = "abcdefgh",
     Letters =
         if IsRotated -> lists:reverse(Letters0);
@@ -397,20 +400,24 @@ chess_table(GameType, Board, Captures, IsRotated) ->
                          C <- Letters] ++ td("")) ++
             chess_table_rows(GameType, Board, IsRotated) ++
             tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
-                             C <- Letters] ++ td(""))) ++
-        captures(Captures).
+                             C <- Letters] ++ td(""))).
+
 captures([_ | _] = Captures) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         case [chessman(F) || {?black, _} = F <- Captures] of
             [_ | _] = Black ->
-                tr(tag("td", ["class=captures"],
-                       lists:reverse(Black)));
+                tr(
+                  tag("td", ["class=crd_l"], "&nbsp;") ++
+                      tag("td", ["class=captures"],
+                          lists:reverse(Black)));
             _ -> ""
         end ++
         case [chessman(F) || {?white, _} = F <- Captures] of
             [_ | _] = White ->
-                tr(tag("td", ["class=captures"],
-                       lists:reverse(White)));
+                tr(
+                  tag("td", ["class=crd_l"], "&nbsp;") ++
+                      tag("td", ["class=captures"],
+                          lists:reverse(White)));
             _ -> ""
         end);
 captures(_) -> "".
