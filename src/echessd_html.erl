@@ -398,26 +398,6 @@ chess_table(GameType, Board, IsRotated) ->
             tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
                              C <- Letters] ++ td(""))).
 
-captures([_ | _] = Captures) ->
-    tag("table", ["cellpadding=0", "cellspacing=0"],
-        case [chessman(F) || {?black, _} = F <- Captures] of
-            [_ | _] = Black ->
-                tr(
-                  tag("td", ["class=crd_l"], "&nbsp;") ++
-                      tag("td", ["class=captures"],
-                          lists:reverse(Black)));
-            _ -> ""
-        end ++
-        case [chessman(F) || {?white, _} = F <- Captures] of
-            [_ | _] = White ->
-                tr(
-                  tag("td", ["class=crd_l"], "&nbsp;") ++
-                      tag("td", ["class=captures"],
-                          lists:reverse(White)));
-            _ -> ""
-        end);
-captures(_) -> "".
-
 chess_table_rows(_GameType, Board, false) ->
     chess_table_rows(tuple_to_list(Board), 8, -1, []);
 chess_table_rows(GameType, Board, true) ->
@@ -449,6 +429,26 @@ first_chess_cell_class(Row, _) ->
 
 next_chess_cell_class("wc") -> "bc";
 next_chess_cell_class("bc") -> "wc".
+
+captures([_ | _] = Captures) ->
+    tag("table", ["cellpadding=0", "cellspacing=0"],
+        case [chessman(F) || {?black, _} = F <- Captures] of
+            [_ | _] = Black ->
+                tr(
+                  tag("td", ["class=crd_l"], "&nbsp;") ++
+                      tag("td", ["class=captures"],
+                          lists:reverse(Black)));
+            _ -> ""
+        end ++
+        case [chessman(F) || {?white, _} = F <- Captures] of
+            [_ | _] = White ->
+                tr(
+                  tag("td", ["class=crd_l"], "&nbsp;") ++
+                      tag("td", ["class=captures"],
+                          lists:reverse(White)));
+            _ -> ""
+        end);
+captures(_) -> "".
 
 chessman(?empty) -> "&nbsp;";
 chessman(Chessman) ->
