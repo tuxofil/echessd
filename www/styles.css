@@ -40,6 +40,8 @@ td.wc, td.bc {
     height: 40;
     width: 40;
     font-size: 30px;
+    border-color: red;
+    border-width: 1;
 }
 
 td.captures {

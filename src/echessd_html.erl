@@ -184,12 +184,18 @@ game(GameID) ->
                         lists:member(Iam, Users) andalso
                             lists:member(?black, MyColors)
                 end,
+            LastPly =
+                case lists:reverse(
+                       proplists:get_value(moves, GameInfo, [])) of
+                    [LastPly0 | _] -> LastPly0;
+                    _ -> undefined
+                end,
             html_page_header(
               "echessd - Game",
               [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
                 navigation() ++
                 game_navigation(GameID) ++
-                chess_table(GameType, Board, IsRotated) ++
+                chess_table(GameType, Board, IsRotated, LastPly) ++
                 case TurnUser of
                     Iam ->
                         "<form method=post>"
@@ -232,12 +238,17 @@ history(GameID) ->
             History = lists:sublist(FullHistory, Step),
             {Board, Captures} =
                 echessd_game:from_scratch(GameType, History),
+            LastPly =
+                case lists:reverse(History) of
+                    [LastPly0 | _] -> LastPly0;
+                    _ -> undefined
+                end,
             html_page_header(
               "echessd - Game history",
               [{h1, "Game " ++ gamelink(GameID) ++ " history"}]) ++
                 navigation() ++
                 history_navigation(GameID, Step, FullHistoryLen) ++
-                chess_table(GameType, Board, false) ++
+                chess_table(GameType, Board, false, LastPly) ++
                 captures(Captures) ++
                 html_page_footer([]);
         {error, Reason} ->
@@ -385,42 +396,66 @@ newgame_link(WithUsername) ->
       [{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUsername,
         "Start new game"}]).
 
-chess_table(GameType, Board, IsRotated) ->
+chess_table(GameType, Board, IsRotated, LastPly) ->
     Letters0 = "abcdefgh",
     Letters =
         if IsRotated -> lists:reverse(Letters0);
            true -> Letters0
         end,
+    put(is_rotated, IsRotated),
     tag("table", ["cellpadding=0", "cellspacing=0"],
         tr(td("") ++ [tag("td", ["class=crd_t"], tt([C])) ||
                          C <- Letters] ++ td("")) ++
-            chess_table_rows(GameType, Board, IsRotated) ++
+            chess_table_rows(GameType, Board, IsRotated, LastPly) ++
             tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
                              C <- Letters] ++ td(""))).
 
-chess_table_rows(_GameType, Board, false) ->
-    chess_table_rows(tuple_to_list(Board), 8, -1, []);
-chess_table_rows(GameType, Board, true) ->
-    chess_table_rows(
+chess_table_rows(_GameType, Board, false, LastPly) ->
+    chess_table_rows_(tuple_to_list(Board), 8, -1, LastPly, []);
+chess_table_rows(GameType, Board, true, LastPly) ->
+    chess_table_rows_(
       tuple_to_list(
-        echessd_game:transpose(GameType, Board)), 1, 1, []).
-chess_table_rows([Row | Tail], N, Step, Result) ->
+        echessd_game:transpose(GameType, Board)), 1, 1, LastPly, []).
+chess_table_rows_([Row | Tail], N, Step, LastPly, Result) ->
     StrRow =
         tag("td", ["class=crd_l"], tt(integer_to_list(N))) ++
-        chess_table_row(Row, N, Step) ++
+        chess_table_row(Row, N, Step, LastPly) ++
         tag("td", ["class=crd_r"], tt(integer_to_list(N))),
-    chess_table_rows(Tail, N + Step, Step, [tr(StrRow) | Result]);
-chess_table_rows(_, _, _, Result) ->
+    chess_table_rows_(Tail, N + Step, Step, LastPly, [tr(StrRow) | Result]);
+chess_table_rows_(_, _, _, _, Result) ->
     lists:reverse(Result).
 
-chess_table_row(Row, N, Step) when is_tuple(Row) ->
-    chess_table_row(
+chess_table_row(Row, N, Step, LastPly) when is_tuple(Row) ->
+    put(row_index, N),
+    erase(col_index),
+    chess_table_row_(
       tuple_to_list(Row),
-      first_chess_cell_class(N, Step > 0)).
-chess_table_row([Chessman | Tail], CellClass) ->
-    tag("td", ["class=" ++ CellClass], chessman(Chessman)) ++
-        chess_table_row(Tail, next_chess_cell_class(CellClass));
-chess_table_row(_, _) -> "".
+      first_chess_cell_class(N, Step > 0), LastPly).
+chess_table_row_([Chessman | Tail], CellClass, LastPly) ->
+    Col =
+        case get(col_index) of
+            Col0 when is_integer(Col0) ->
+                put(col_index, Col0 + 1), Col0;
+            _ ->
+                put(col_index, 2), 1
+        end,
+    ExtraAttrs =
+        case LastPly of
+            [A, B, C, D | _] ->
+                CurInd =
+                    [case get(is_rotated) of
+                         true -> $a - Col + 8;
+                         _ -> $a + Col - 1
+                     end, $1 + get(row_index) - 1],
+                if [A, B] == CurInd orelse [C, D] == CurInd ->
+                        ["style='border-style:solid;'"];
+                   true -> []
+                end;
+            _ -> []
+        end,
+    tag("td", ["class=" ++ CellClass] ++ ExtraAttrs, chessman(Chessman)) ++
+        chess_table_row_(Tail, next_chess_cell_class(CellClass), LastPly);
+chess_table_row_(_, _, _) -> "".
 
 first_chess_cell_class(Row, false) when Row rem 2 == 0 -> "wc";
 first_chess_cell_class(_, false) -> "bc";
