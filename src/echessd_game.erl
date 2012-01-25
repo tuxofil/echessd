@@ -16,8 +16,11 @@
          getprops/1,
          who_must_turn/1,
          turn_color/1,
+         turn_color_by_history/1,
          from_scratch/2,
          can_move/4,
+         gameover_status/2,
+         gameover_status/4,
          transpose/2
         ]).
 
@@ -36,8 +39,11 @@
 %% @type echessd_game_props() = [GameProperty],
 %%     GameProperty = {type, echessd_game_type()} |
 %%         {time, now()} | {creator, echessd_user:echessd_username()} |
-%%         {users, [UserInfo]},
-%%     UserInfo = {echessd_user:echessd_username(), echessd_color()}
+%%         {users, [UserInfo]} | {status, Status} | {winner, Winner},
+%%     UserInfo = {echessd_user:echessd_username(), echessd_color()},
+%%     Status = none | checkmate | {draw, DrawType},
+%%         DrawType = stalemate | insufficient_material,
+%%     Winner = echessd_user:echessd_username() | undefined
 
 %% @doc Color of player side.
 %% @type echessd_color() = atom()
@@ -77,6 +83,7 @@ add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
         [{type, GameType},
          {time, now()},
          {creator, Owner},
+         {status, none},
          {users,
           [{Owner, OwnerColor},
            {Opponent, hd([?black, ?white] -- [OwnerColor])}]}
@@ -170,10 +177,15 @@ who_must_turn(GameInfo) ->
 %%     GameInfo = echessd_game_props(),
 %%     Color = echessd_color()
 turn_color(GameInfo) ->
-    case length(proplists:get_value(moves, GameInfo, [])) rem 2 of
-        0 -> ?white;
-        _ -> ?black
-    end.
+    turn_color_by_history(
+      proplists:get_value(moves, GameInfo, [])).
+
+%% @doc Tells color of the side which must turn.
+%% @spec turn_color_by_history(History) -> Color
+%%     History = echessd_history(),
+%%     Color = echessd_color()
+turn_color_by_history(History) ->
+    lists:nth((length(History) rem 2) + 1, [?white, ?black]).
 
 %% @doc Creates new board and makes all moves from history supplied.
 %%      Returns result chess board and all chessmans captured.
@@ -199,6 +211,26 @@ from_scratch(GameType, History) ->
 can_move(?GAME_CLASSIC, Board, Color, History) ->
     echessd_rules_classic:can_move(Board, Color, History);
 can_move(GameType, _, _, _) ->
+    unsupported(GameType).
+
+%% @doc Return game over status.
+%% @spec gameover_status(GameType, History) ->
+%%         none | checkmate | {draw, DrawType}
+%% @spec gameover_status(GameType, Board, Color, History) ->
+%%         none | checkmate | {draw, DrawType}
+%%     GameType = echessd_game_type(),
+%%     Board = echessd_board(),
+%%     Color = echessd_color()
+%%     History = echessd_history(),
+%%     DrawType = stalemate | insufficient_material
+gameover_status(GameType, History) ->
+    {Board, _Captures} =
+        echessd_game:from_scratch(GameType, History),
+    Color = echessd_game:turn_color_by_history(History),
+    gameover_status(GameType, Board, Color, History).
+gameover_status(?GAME_CLASSIC, Board, Color, History) ->
+    echessd_rules_classic:gameover_status(Board, Color, History);
+gameover_status(GameType, _, _, _) ->
     unsupported(GameType).
 
 %% @doc Turns internal board representation at 180 degrees.

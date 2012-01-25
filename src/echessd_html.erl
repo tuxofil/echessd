@@ -186,18 +186,29 @@ game(GameID) ->
                 end,
             LastPly =
                 case lists:reverse(
-                       proplists:get_value(moves, GameInfo, [])) of
+                       proplists:get_value(moves, GameInfo)) of
                     [LastPly0 | _] -> LastPly0;
                     _ -> undefined
                 end,
+            GameStatus = proplists:get_value(status, GameInfo, none),
+            Winner = proplists:get_value(winner, GameInfo),
             html_page_header(
               "echessd - Game",
               [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
                 navigation() ++
                 game_navigation(GameID) ++
+                case GameStatus of
+                    checkmate ->
+                        h2("Game over: checkmate, winner: " ++
+                               userlink(Winner));
+                    {draw, DrawType} ->
+                        h2("Game over: draw (" ++
+                               atom_to_list(DrawType) ++ ")");
+                    _ -> ""
+                end ++
                 chess_table(GameType, Board, IsRotated, LastPly) ++
                 case TurnUser of
-                    Iam ->
+                    Iam when GameStatus == none ->
                         "<form method=post>"
                             "Move:&nbsp;"
                             "<input name=action type=hidden value=move>"

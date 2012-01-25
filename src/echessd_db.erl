@@ -20,7 +20,8 @@
          set_game_props/2,
          delgame/1,
          gameply/3,
-         gamerewind/1
+         gamerewind/1,
+         gamereset/1
         ]).
 
 -include("echessd.hrl").
@@ -246,10 +247,22 @@ gameply(GameID, Username, Ply) ->
                           echessd_game:from_scratch(GameType, History),
                       case echessd_game:is_valid_ply(
                              GameType, Board, TurnColor, Ply, History) of
-                          ok ->
+                          {ok, NewBoard} ->
+                              NewHistory = History ++ [Ply],
+                              NextColor = hd([?white, ?black] -- [TurnColor]),
+                              GameStatus =
+                                  echessd_game:gameover_status(
+                                    GameType, NewBoard, NextColor, NewHistory),
+                              Winner =
+                                  case GameStatus of
+                                      checkmate -> Username;
+                                      _ -> undefined
+                                  end,
                               ll_replace_props(
                                 ?dbt_games, GameID, GameInfo,
-                                [{moves, History ++ [Ply]}]);
+                                [{moves, NewHistory},
+                                 {status, GameStatus},
+                                 {winner, Winner}]);
                           {error, Reason} ->
                               mnesia:abort({wrong_move, Reason})
                       end;
@@ -279,7 +292,22 @@ gamerewind(GameID) ->
               NewHistory = all_except_last(History),
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
-                [{moves, NewHistory}])
+                [{moves, NewHistory}, {status, none},
+                 {winner, undefined}])
+      end).
+
+%% @doc Denies all plies for specified game.
+%% @spec gamereset(GameID) -> ok | {error, Reason}
+%%     GameID = echessd_game:echessd_game_id(),
+%%     Reason = term()
+gamereset(GameID) ->
+    transaction_ok(
+      fun() ->
+              GameInfo = ll_get_props(?dbt_games, GameID),
+              ll_replace_props(
+                ?dbt_games, GameID, GameInfo,
+                [{moves, []}, {status, none},
+                 {winner, undefined}])
       end).
 
 %% ----------------------------------------------------------------------

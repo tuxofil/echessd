@@ -13,6 +13,7 @@
          is_valid_ply/4,
          move_chessman/2,
          can_move/3,
+         gameover_status/3,
          transpose/1
         ]).
 
@@ -38,15 +39,15 @@ new() ->
 
 %% @doc Checks if ply is valid.
 %% @spec is_valid_ply(Board, TurnColor, Ply, History) ->
-%%                 ok | {error, Reason}
-%%     Board = echessd_game:echessd_board(),
+%%                 {ok, NewBoard} | {error, Reason}
+%%     Board = NewBoard = echessd_game:echessd_board(),
 %%     TurnColor = echessd_game:echessd_color(),
 %%     Ply = echessd_game:echessd_ply(),
 %%     History = echessd_game:echessd_history(),
 %%     Reason = term()
 is_valid_ply(Board, TurnColor, Ply, History) ->
     try is_valid_ply_(Board, TurnColor, Ply, History) of
-        ok -> ok;
+        {ok, _NewBoard} = Ok -> Ok;
         {error, _} = Error -> Error;
         Other -> {error, Other}
     catch
@@ -113,7 +114,7 @@ can_move(Board, Color, History) ->
                       lists:any(
                         fun(I2) ->
                                 try
-                                    ok =
+                                    {ok, _NewBoard} =
                                         try_possible(
                                           Board, Color, ChessmanType,
                                           I1, I2, "q", History),
@@ -124,6 +125,29 @@ can_move(Board, Color, History) ->
                   _ -> false
               end
       end, [{C, R} || C <- Seq, R <- Seq]).
+
+%% @doc Return game over status.
+%% @spec gameover_status(Board, Color, History) ->
+%%         none | checkmate | {draw, DrawType}
+%%     Board = echessd_game:echessd_board(),
+%%     Color = echessd_game:echessd_color()
+%%     History = echessd_game:echessd_history(),
+%%     DrawType = stalemate | insufficient_material
+gameover_status(Board, Color, History) ->
+    case can_move(Board, Color, History) of
+        true ->
+            case insufficient_material_check(Board) of
+                true -> {draw, insufficient_material};
+                _ -> none
+            end;
+        _ ->
+            KingIndex = whereis_my_king(History, Color),
+            case is_cell_under_attack(
+                   Board, KingIndex, Color) of
+                true -> checkmate;
+                _ -> {draw, stalemate}
+            end
+    end.
 
 %% @doc Turns internal board representation at 180 degrees.
 %% @spec transpose(Board) -> NewBoard
@@ -166,16 +190,16 @@ is_valid_ply_(Board, TurnColor, Ply, History) ->
     end.
 
 try_possible(Board, Color, ChessmanType, I1, I2, Tail, History) ->
-    {Board2, _Capture} = move_chessman(Board, I1, I2, Tail),
+    {NewBoard, _Capture} = move_chessman(Board, I1, I2, Tail),
     KingIndex =
         if ChessmanType == ?king -> I2;
            true ->
                 whereis_my_king(History, Color)
         end,
-    case is_cell_under_attack(Board2, KingIndex, Color) of
+    case is_cell_under_attack(NewBoard, KingIndex, Color) of
         true ->
             throw({error, check});
-        _ -> ok
+        _ -> {ok, NewBoard}
     end.
 
 possible(B, I, C, ChessmanType, History) ->
@@ -324,6 +348,10 @@ search_rook(Board, I, Step, Color) ->
         ?empty -> search_rook(Board, I2, Step, Color);
         _ -> ?null
     end.
+
+insufficient_material_check(Board) ->
+    %% todo: implement
+    false.
 
 %% ----------------------------------------------------------------------
 %% low level tools
