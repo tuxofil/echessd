@@ -345,7 +345,7 @@ html_page_header(Title, Options) ->
         "<meta http-equiv='Content-Style-Type' content='text/css'>\n"
         "<meta http-equiv='Content-Script-Type' content='text/javascript'>\n"
         "<title>" ++ Title ++ "</title>\n"
-        "<link rel='stylesheet' href='res/styles.css'>\n"
+        "<link rel='stylesheet' href='/res/styles.css'>\n"
         "</head>\n\n"
         "<body>\n\n" ++
         case [S || {h1, S} <- Options] of
