@@ -199,6 +199,7 @@ game(GameID) ->
                             integer_to_list(GameID) ++ ">"
                             "<input name=move type=text size=4>"
                             "<input type=submit value=OK>"
+                            "<input type=reset value=Reset>"
                             "</form>";
                     _ -> ""
                 end ++
