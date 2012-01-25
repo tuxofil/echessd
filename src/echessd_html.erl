@@ -235,12 +235,8 @@ history(GameID) ->
                 echessd_game:from_scratch(GameType, History),
             html_page_header(
               "echessd - Game history",
-              [{h1, "Game #" ++ integer_to_list(GameID) ++ " history"}]) ++
+              [{h1, "Game " ++ gamelink(GameID) ++ " history"}]) ++
                 navigation() ++
-                navig_links(
-                  [{"?goto=" ++ ?SECTION_GAME ++
-                        "&game=" ++ integer_to_list(GameID),
-                    "Return to game"}]) ++
                 history_navigation(GameID, Step, FullHistoryLen) ++
                 chess_table(GameType, Board, false) ++
                 captures(Captures) ++
