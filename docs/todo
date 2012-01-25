@@ -1,5 +1,3 @@
-- handling endgame clauses;
-- show game status in game lists;
 - handling user proposed give up and draw;
 - time limitation for moves;
 - describe system architecture;
