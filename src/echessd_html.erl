@@ -478,12 +478,16 @@ navig_links(List, Current) ->
         "[&nbsp;" ++
             string:join(
               lists:map(
-                fun({URL, Caption}) ->
+                fun({[_ | _] = URL, [_ | _] = Caption}) ->
                         a(URL,
                           if Caption == Current ->
                                   b(Caption);
                              true -> Caption
-                          end)
+                          end);
+                   ({_, [_ | _] = Caption}) ->
+                        if Caption == Current -> b(Caption);
+                           true -> Caption
+                        end
                 end, List), "&nbsp;|&nbsp;") ++
             "&nbsp;]").
 
@@ -510,11 +514,11 @@ history_navigation(GameID, Step, MaxStep) ->
     navig_links(
       if Step > 0 ->
               [{BaseURL ++ integer_to_list(Step - 1), "Previous"}];
-         true -> []
+         true -> [{undefined, "Previous"}]
       end ++
           if Step < MaxStep ->
                   [{BaseURL ++ integer_to_list(Step + 1), "Next"}];
-             true -> []
+             true -> [{undefined, "Next"}]
           end).
 
 formatted_error_page(F, A) ->
