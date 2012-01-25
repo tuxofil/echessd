@@ -200,10 +200,9 @@ game(GameID) ->
                             "<input name=move type=text size=4>"
                             "<input type=submit value=OK>"
                             "<input type=reset value=Reset>"
-                            "</form>";
+                            "</form><br>";
                     _ -> ""
                 end ++
-                "<br>" ++
                 captures(Captures) ++
                 html_page_footer([]);
         {error, Reason} ->
