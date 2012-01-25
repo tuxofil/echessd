@@ -16,7 +16,7 @@ Contents:
 -----------------------------------------------------------------
 1. SUMMARY
 
-echessd - is lightweight, minimalistic and free online chess
+echessd - is lightweight, minimalistic and free Internet chess
 server implementation written on Erlang (http://www.erlang.org/)
 programming language.
 
@@ -93,9 +93,10 @@ and server start to write messages to that file.
 
 1. Send your browser to http://localhost:8888/
 2. Register new user;
-3. Create new game;
-4. ...
-5. PROFIT!!!
+3. Create new game with any user registered;
+4. Wait while your opponent confirms the game;
+5. ...
+6. PROFIT!!!
 
 -----------------------------------------------------------------
 9. ADVANCED ADMINISTRATION
