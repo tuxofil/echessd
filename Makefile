@@ -10,11 +10,13 @@ ebin/%.beam: src/%.erl include/*.hrl
 
 doc: ebin/echessd.beam
 	@echo Making documentation...
-	mkdir -p ./doc
 	erl -noshell -noinput -pa ./ebin -s echessd build_doc
 
 clean:
-	rm -f -- ./doc/*
+	rm -f -- ./doc/*.html
+	rm -f -- ./doc/*.css
+	rm -f -- ./doc/*.png
+	rm -f -- ./doc/edoc-info
 	rm -f -- ./ebin/*.beam
 	rm -f ./erl_crash.dump
 	find ./ -type f -name '*~' -print -delete

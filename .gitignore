@@ -3,7 +3,10 @@
 contrib/*
 tmp/*
 db/*
-doc/*
+doc/*.html
+doc/*.css
+doc/*.png
+doc/edoc-info
 erl_crash.dump
 *.log
 *.log.?

@@ -1,0 +1,29 @@
+%%%-------------------------------------------------------------------
+%%% File    : overview.edoc
+%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% Created : 26 Jan 2012
+%%% License : FreeBSD
+%%% Description : Contents for 'overview' documentation page
+%%%               of echessd application
+%%%-------------------------------------------------------------------
+
+@author Aleksey Morarash <aleksey.morarash@gmail.com>
+@copyright 2012 Aleksey Morarash
+@version 0.1.0
+@title Welcome to echessd - Internet chess server
+@doc echessd - is lightweight, minimalistic and free Internet chess
+server implementation written on Erlang (http://www.erlang.org/)
+programming language.
+
+Goals of the project:
+ - no usage limitations;
+ - no email address collecting;
+ - no social networking;
+ - no network traffic:
+   - no images (except captcha maybe);
+   - no ads;
+ - no extra software dependencies;
+ - just playing chess with other people. Anytime, everywhere
+   with any type of browser - even like lynx or w3m.
+
+
