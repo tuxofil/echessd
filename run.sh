@@ -11,7 +11,6 @@
 
 exec erl -sname "echessd" \
     -setcookie echessd_secret_cookie \
-    -boot start_sasl \
     -noshell -noinput \
     -pa ./ebin \
     -pa ./contrib/mochiweb/ebin \

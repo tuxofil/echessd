@@ -12,7 +12,6 @@
 set -e
 mkdir -p ./db
 exec erl -sname "echessd" \
-    -boot start_sasl \
     -noshell -noinput \
     -pa ./ebin \
     -mnesia dir \"./db/mnesia\" \
