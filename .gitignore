@@ -2,5 +2,8 @@
 *.beam
 contrib/*
 tmp/*
+db/*
+doc/*
 erl_crash.dump
 *.log
+*.log.?

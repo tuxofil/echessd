@@ -15,7 +15,7 @@ exec erl -sname "echessd" \
     -noshell -noinput \
     -pa ./ebin \
     -pa ./contrib/mochiweb/ebin \
-    -mnesia dir \"./tmp/mnesia\" \
+    -mnesia dir \"./db/mnesia\" \
     -echessd_config ./echessd.conf \
     -s mnesia \
     -s echessd

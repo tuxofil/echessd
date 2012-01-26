@@ -10,12 +10,12 @@
 ###-------------------------------------------------------------------
 
 set -e
-mkdir -p ./tmp
+mkdir -p ./db
 exec erl -sname "echessd" \
     -boot start_sasl \
     -noshell -noinput \
     -pa ./ebin \
-    -mnesia dir \"./tmp/mnesia\" \
+    -mnesia dir \"./db/mnesia\" \
     -s echessd_db init \
     -s init stop
 

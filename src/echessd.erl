@@ -9,7 +9,9 @@
 
 -module(echessd).
 
--export([start/0, stop/0, hup/0, ping/0, stop_remote/0]).
+-export([start/0, stop/0, hup/0, ping/0, stop_remote/0,
+         build_doc/0
+        ]).
 
 -include("echessd.hrl").
 
@@ -59,6 +61,13 @@ stop_remote() ->
     {ok, Node} = connect_server(),
     ok = rpc:call(Node, ?MODULE, stop, []),
     catch rpc:call(Node, init, stop, []),
+    halt(0).
+
+%% @doc Builds echessd developer documentation from sources.
+%%      This function needed only on build stage.
+%% @spec build_doc() -> no_return()
+build_doc() ->
+    edoc:application(?MODULE, ".", []),
     halt(0).
 
 %% ----------------------------------------------------------------------
