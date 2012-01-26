@@ -208,7 +208,9 @@ split_kv(_, Key) ->
 
 %% @doc Removes Characters from beginning and ending of String.
 %% @spec strip(String, Characters) -> StrippedString
-%%     String = Characters = StrippedString = string()
+%%     String = string(),
+%%     Characters = string(),
+%%     StrippedString = string()
 strip(String, Characters) ->
     lists:reverse(
       strip_(

@@ -40,10 +40,11 @@ new() ->
 %% @doc Checks if ply is valid.
 %% @spec is_valid_ply(Board, TurnColor, Ply, History) ->
 %%                 {ok, NewBoard} | {error, Reason}
-%%     Board = NewBoard = echessd_game:echessd_board(),
+%%     Board = echessd_game:echessd_board(),
 %%     TurnColor = echessd_game:echessd_color(),
 %%     Ply = echessd_game:echessd_ply(),
 %%     History = echessd_game:echessd_history(),
+%%     NewBoard = echessd_game:echessd_board(),
 %%     Reason = term()
 is_valid_ply(Board, TurnColor, Ply, History) ->
     try is_valid_ply_(Board, TurnColor, Ply, History) of
@@ -58,8 +59,9 @@ is_valid_ply(Board, TurnColor, Ply, History) ->
 
 %% @doc Make chessman move.
 %% @spec move_chessman(Board, Ply) -> {NewBoard, Capture}
-%%     Board = NewBoard = echessd_game:echessd_board(),
+%%     Board = echessd_game:echessd_board(),
 %%     Ply = echessd_game:echessd_ply(),
+%%     NewBoard = echessd_game:echessd_board(),
 %%     Capture = echessd_game:echessd_chessman()
 move_chessman(Board, Ply) ->
     {I1, I2, Tail} = ply_dec(Ply),
@@ -97,10 +99,10 @@ move_chessman_normal(Board, I1, I2, F1, F2) ->
     {setcell(setcell(Board, I1, ?empty), I2, F1), F2}.
 
 %% @doc Checks if valid turn exists for user with specified color.
-%% @spec can_move(GameType, Board, Color, History) -> boolean()
-%%     Board = echessd_board(),
-%%     Color = echessd_color(),
-%%     History = echessd_history()
+%% @spec can_move(Board, Color, History) -> boolean()
+%%     Board = echessd_game:echessd_board(),
+%%     Color = echessd_game:echessd_color(),
+%%     History = echessd_game:echessd_history()
 can_move(Board, Color, History) ->
     Seq = lists:seq(1, 8),
     lists:any(
@@ -151,8 +153,8 @@ gameover_status(Board, Color, History) ->
 
 %% @doc Turns internal board representation at 180 degrees.
 %% @spec transpose(Board) -> NewBoard
-%%     GameType = echessd_game:echessd_game_type(),
-%%     Board = NewBoard = echessd_game:echessd_board()
+%%     Board = echessd_game:echessd_board(),
+%%     NewBoard = echessd_game:echessd_board()
 transpose(Board) ->
     list_to_tuple(
       lists:reverse(

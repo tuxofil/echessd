@@ -20,8 +20,12 @@
 
 -include("echessd.hrl").
 
-%% @doc User session ID format definition.
-%% @type echessd_session_id() = string()
+%% ----------------------------------------------------------------------
+%% Type definitions
+%% ----------------------------------------------------------------------
+
+-type echessd_session_id() :: string().
+%% HTTP session identifier.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -92,13 +96,15 @@ read(Cookie) ->
 
 %% @doc Get session variable value.
 %% @spec get_val(Key) -> Value
-%%     Key = Value = term()
+%%     Key = term(),
+%%     Value = term()
 get_val(Key) ->
     erlang:get({session_var, Key}).
 
 %% @doc Set session variable value.
 %% @spec set_val(Key, Value) -> ok
-%%     Key = Value = term()
+%%     Key = term(),
+%%     Value = term()
 set_val(Key, Val) ->
     SID = erlang:get(sid),
     case ?MODULE:get(SID) of

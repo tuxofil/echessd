@@ -138,7 +138,7 @@ set_user_props(Username, UserProperties) ->
 
 %% @doc Adds new game to database.
 %% @spec addgame(GameInfo) -> {ok, GameID} | {error, Reason}
-%%     GameInfo = echessd_game:echessd_game_props(),
+%%     GameInfo = echessd_game:echessd_game_info(),
 %%     GameID = echessd_game:echessd_game_id(),
 %%     Reason = term()
 addgame(GameInfo) ->
@@ -190,7 +190,7 @@ game_ack(GameID, Username) ->
 %% @doc Fetch game properties.
 %% @spec get_game_props(GameID) -> {ok, GameInfo} | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
-%%     GameInfo = echessd_game:echessd_game_props(),
+%%     GameInfo = echessd_game:echessd_game_info(),
 %%     Reason = term()
 get_game_props(GameID) ->
     transaction(
@@ -201,7 +201,7 @@ get_game_props(GameID) ->
 %% @doc Set game properties.
 %% @spec set_game_props(GameID, GameInfo) -> ok | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
-%%     GameInfo = echessd_game:echessd_game_props(),
+%%     GameInfo = echessd_game:echessd_game_info(),
 %%     Reason = term()
 set_game_props(GameID, GameInfo) ->
     transaction_ok(

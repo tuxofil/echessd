@@ -37,36 +37,45 @@ start_link() ->
 %% @doc Logs message with level 'ERROR'. When log file is not opened
 %%      yet this data will be output to stdout.
 %% @spec err(Text) -> ok
-%% @spec err(Format, Args) -> ok
-%%     Text = string(),
-%%     Format = string(),
-%%     Args = list()
+%%     Text = string()
 err(String) ->
     log(?LOG_ERR, String).
+
+%% @doc Logs message with level 'ERROR'. When log file is not opened
+%%      yet this data will be output to stdout.
+%% @spec err(Format, Args) -> ok
+%%     Format = string(),
+%%     Args = list()
 err(Format, Args) ->
     log(?LOG_ERR, Format, Args).
 
 %% @doc Logs message with level 'INFO'. When log file is not opened
 %%      yet this data will be output to stdout.
 %% @spec info(Text) -> ok
-%% @spec info(Format, Args) -> ok
-%%     Text = string(),
-%%     Format = string(),
-%%     Args = list()
+%%     Text = string()
 info(String) ->
     log(?LOG_INFO, String).
+
+%% @doc Logs message with level 'INFO'. When log file is not opened
+%%      yet this data will be output to stdout.
+%% @spec info(Format, Args) -> ok
+%%     Format = string(),
+%%     Args = list()
 info(Format, Args) ->
     log(?LOG_INFO, Format, Args).
 
 %% @doc Logs message with level 'DEBUG'. This message will be
 %%      silently discarded if log file is not opened yet.
 %% @spec debug(Text) -> ok
-%% @spec debug(Format, Args) -> ok
-%%     Text = string(),
-%%     Format = string(),
-%%     Args = list()
+%%     Text = string()
 debug(String) ->
     log(?LOG_DEBUG, String).
+
+%% @doc Logs message with level 'DEBUG'. This message will be
+%%      silently discarded if log file is not opened yet.
+%% @spec debug(Format, Args) -> ok
+%%     Format = string(),
+%%     Args = list()
 debug(Format, Args) ->
     log(?LOG_DEBUG, Format, Args).
 

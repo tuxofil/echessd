@@ -26,7 +26,9 @@ ip2str({A, B, C, D}) ->
 
 %% @doc Replaces items in proplist.
 %% @spec proplist_replace(PropList, NewValues) -> NewPropList
-%%     PropList = NewValues = NewPropList = proplist()
+%%     PropList = proplist(),
+%%     NewValues = proplist(),
+%%     NewPropList = proplist()
 proplist_replace(PropList, NewValues) ->
     lists:foldl(
       fun({Key, _V} = Item, Acc) ->

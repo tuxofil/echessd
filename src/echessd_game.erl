@@ -27,46 +27,61 @@
 
 -include("echessd.hrl").
 
-%% @doc Game type format definition.
-%% @type echessd_game_type() = string()
+%% ----------------------------------------------------------------------
+%% Type definitions
+%% ----------------------------------------------------------------------
 
-%% @doc Game board format definition.
+-export_type([echessd_board/0,
+              echessd_color/0,
+              echessd_ply/0,
+              echessd_history/0,
+              echessd_game_id/0,
+              echessd_chessman/0
+             ]).
+
+-type echessd_game_type() :: string().
+%% Game type format definition.
+
+-type echessd_board() :: tuple().
+%% Game board format definition.
 %%      Commonly, this format is game-type specific
 %%      and must be treated as opaque value in
 %%      not 'echessd_rules_*' modules.
-%% @type echessd_board() = tuple()
 
-%% @doc Game properties format definition.
-%% @type echessd_game_props() = [GameProperty],
-%%     GameProperty = {type, echessd_game_type()} |
-%%         {time, now()} | {creator, echessd_user:echessd_username()} |
-%%         {users, [UserInfo]} | {status, Status} |
-%%         {winner, Winner} | {winner_color, Color} |
-%%         {acknowledged, boolean()},
-%%     UserInfo = {echessd_user:echessd_username(), echessd_color()},
-%%     Status = none | checkmate | {draw, DrawType},
-%%         DrawType = stalemate | insufficient_material,
-%%     Winner = echessd_user:echessd_username() | undefined,
-%%     Color = echessd_color()
+-type echessd_game_info() :: [echessd_game_property()].
 
-%% @doc Color of player side.
-%% @type echessd_color() = atom()
+-type echessd_game_property() ::
+        {type, echessd_game_type()} |
+        {time, erlang:timestamp()} |
+        {creator, echessd_user:echessd_username()} |
+        {users, [{echessd_user:echessd_username(), echessd_color()}]} |
+        {status, echessd_game_status()} |
+        {winner, echessd_user:echessd_username()} |
+        {winner_color, echessd_color()} |
+        {acknowledged, boolean()}.
 
-%% @doc String describing half-move (ply).
+-type echessd_game_status() ::
+        none | checkmate | {draw, stalemate} |
+        {draw, insufficient_material}.
+
+-type echessd_color() :: atom().
+%% Color of player side.
+
+-type echessd_ply() :: string().
+%% String describing half-move (ply).
 %%      Examples: "e2e4", "b7c6".
-%% @type echessd_ply() = string()
 
-%% @doc Sequence of plies from first to last.
-%% @type echessd_history() = [echessd_ply()]
+-type echessd_history() :: [echessd_ply()].
+%% Sequence of plies from first to last.
 
-%% @doc Game identifier (in persistent storage).
-%% @type echessd_game_id() = integer()
+-type echessd_game_id() :: integer().
+%% Game identifier (in persistent storage).
 
-%% @doc Chessman type format definition.
-%% @type echessd_chessman_type() = atom().
+-type echessd_chessman_type() :: atom().
+%% Chessman type format definition.
 
-%% @doc Chessman format definition.
-%% @type echessd_chessman() = {echessd_color(), echessd_chessman_type()}
+-type echessd_chessman() :: {echessd_color(), echessd_chessman_type()}.
+%% Chessman format definition.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -77,7 +92,8 @@
 %% @spec add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
 %%                 {ok, GameID} | {error, Reason}
 %%     GameType = echessd_game_type(),
-%%     Owner = Opponent = echessd_user:echessd_username(),
+%%     Owner = echessd_user:echessd_username(),
+%%     Opponent = echessd_user:echessd_username(),
 %%     OwnerColor = echessd_color(),
 %%     OtherProps = proplist(),
 %%     GameID = echessd_game_id(),
@@ -164,7 +180,7 @@ ply(GameID, User, Ply) ->
 %% @doc Fetches game from database.
 %% @spec fetch(GameID) -> {ok, GameInfo, {Board, Captures}} | {error, Reason}
 %%     GameID = echessd_game_id(),
-%%     GameInfo = echessd_game_props(),
+%%     GameInfo = echessd_game_info(),
 %%     Board = echessd_board(),
 %%     Captures = [echessd_chessman()],
 %%     Reason = term()
@@ -180,14 +196,14 @@ fetch(GameID) ->
 %% @doc Fetches game properties from database.
 %% @spec getprops(GameID) -> {ok, GameInfo} | {error, Reason}
 %%     GameID = echessd_game_id(),
-%%     GameInfo = echessd_game_props(),
+%%     GameInfo = echessd_game_info(),
 %%     Reason = term()
 getprops(GameID) ->
     echessd_db:get_game_props(GameID).
 
 %% @doc Tells username who must turn now.
 %% @spec who_must_turn(GameInfo) -> Username
-%%     GameInfo = echessd_game_props(),
+%%     GameInfo = echessd_game_info(),
 %%     Username = echessd_user:echessd_username()
 who_must_turn(GameInfo) ->
     Users =
@@ -198,7 +214,7 @@ who_must_turn(GameInfo) ->
 
 %% @doc Tells color of the side which must turn.
 %% @spec turn_color(GameInfo) -> Color
-%%     GameInfo = echessd_game_props(),
+%%     GameInfo = echessd_game_info(),
 %%     Color = echessd_color()
 turn_color(GameInfo) ->
     turn_color_by_history(
@@ -238,20 +254,22 @@ can_move(GameType, _, _, _) ->
     unsupported(GameType).
 
 %% @doc Return game over status.
-%% @spec gameover_status(GameType, History) ->
-%%         none | checkmate | {draw, DrawType}
-%% @spec gameover_status(GameType, Board, Color, History) ->
-%%         none | checkmate | {draw, DrawType}
+%% @spec gameover_status(GameType, History) -> echessd_game_status()
 %%     GameType = echessd_game_type(),
-%%     Board = echessd_board(),
-%%     Color = echessd_color()
-%%     History = echessd_history(),
-%%     DrawType = stalemate | insufficient_material
+%%     History = echessd_history()
 gameover_status(GameType, History) ->
     {Board, _Captures} =
         echessd_game:from_scratch(GameType, History),
     Color = echessd_game:turn_color_by_history(History),
     gameover_status(GameType, Board, Color, History).
+
+%% @doc Return game over status.
+%% @spec gameover_status(GameType, Board, Color, History) ->
+%%         echessd_game_status()
+%%     GameType = echessd_game_type(),
+%%     Board = echessd_board(),
+%%     Color = echessd_color()
+%%     History = echessd_history()
 gameover_status(?GAME_CLASSIC, Board, Color, History) ->
     echessd_rules_classic:gameover_status(Board, Color, History);
 gameover_status(GameType, _, _, _) ->
@@ -260,7 +278,8 @@ gameover_status(GameType, _, _, _) ->
 %% @doc Turns internal board representation at 180 degrees.
 %% @spec transpose(GameType, Board) -> NewBoard
 %%     GameType = echessd_game_type(),
-%%     Board = NewBoard = echessd_board()
+%%     Board = echessd_board(),
+%%     NewBoard = echessd_board()
 transpose(?GAME_CLASSIC, Board) ->
     echessd_rules_classic:transpose(Board);
 transpose(GameType, _Board) ->
@@ -285,7 +304,8 @@ new(GameType) ->
 %% @doc Make chessman move by rules of specified game.
 %% @spec move_chessman(GameType, Board, Ply) -> {NewBoard, Capture}
 %%     GameType = echessd_game_type(),
-%%     Board = NewBoard = echessd_board(),
+%%     Board = echessd_board(),
+%%     NewBoard = echessd_board(),
 %%     Capture = echessd_chessman()
 move_chessman(?GAME_CLASSIC, Board, Ply) ->
     echessd_rules_classic:move_chessman(Board, Ply);

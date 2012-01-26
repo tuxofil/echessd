@@ -13,16 +13,27 @@
 
 -include("echessd.hrl").
 
-%% @doc Username format definition.
-%% @type echessd_user() = string()
+%% ----------------------------------------------------------------------
+%% Type definitions
+%% ----------------------------------------------------------------------
 
-%% @doc User properties format definition.
-%% @spec echessd_user_info() = [UserProperty],
-%%     UserProperty = {password, Password} | {created, now()} |
-%%                    {login, echessd_user()} |
-%%                    {fullname, string()} |
-%%                    {games, [echessd_game:echessd_game_id()]},
-%%     Password = string()
+-export_type([echessd_user/0,
+              echessd_user_info/0
+             ]).
+
+-type echessd_user() :: string().
+%% Username format definition.
+
+-type echessd_user_info() :: [echessd_user_property()].
+%% User properties format definition.
+
+-type echessd_user_property() ::
+        {password, string()} |
+        {created, erlang:timestamp()} |
+        {login, echessd_user()} |
+        {fullname, string()} |
+        {games, [echessd_game:echessd_game_id()]}.
+%% Some descr
 
 %% ----------------------------------------------------------------------
 %% API functions

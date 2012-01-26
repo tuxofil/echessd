@@ -36,7 +36,7 @@ stop() ->
 
 %% @doc Connects to Erlang node with echessd running and makes
 %%      him re-read its configuration file and reopen log file.
-%% @spec hup() -> none()
+%% @spec hup() -> no_return()
 hup() ->
     {ok, Node} = connect_server(),
     ok = rpc:call(Node, echessd_cfg, read, []),
@@ -44,7 +44,7 @@ hup() ->
     halt(0).
 
 %% @doc Checks if Erlang node with running echessd exists.
-%% @spec ping() -> none()
+%% @spec ping() -> no_return()
 ping() ->
     {ok, Node} = connect_server(),
     Apps = rpc:call(Node, application, which_applications, []),
@@ -54,7 +54,7 @@ ping() ->
     end.
 
 %% @doc Stops echessd server on remote Erlang node.
-%% @spec stop_remote() -> none()
+%% @spec stop_remote() -> no_return()
 stop_remote() ->
     {ok, Node} = connect_server(),
     ok = rpc:call(Node, ?MODULE, stop, []),
