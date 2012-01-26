@@ -138,7 +138,10 @@ echessd source tree.
 Developer guide.
 
 Detailed information about project architecture, implementation
-features and todo-lists can be found in ./docs directory.
+features and todo-lists can be found in ./doc directory after
+building documentation with command:
+
+$ make doc
 
 -----------------------------------------------------------------
               Aleksey Morarash <aleksey.morarash@gmail.com>, 2012

@@ -27,6 +27,7 @@
   <ol>
    <li>{@section Security considerations}</li>
    <li>{@section Configuration file format}</li>
+   <li>{@section TODO list}</li>
   </ol>
  </li>
 </ol>
@@ -156,4 +157,18 @@ pair, separated by one or more spaces or tabs.
 Details for echessd existing configuration parameters you can
 found in ./echessd.conf configuration file in top directory of
 echessd source tree.
+
+=== TODO list ===
+
+<pre>
+- handling user proposed give up and draw;
+- time limitation for moves;
+- describe system architecture;
+- show timezone in log messages;
+- introduce 'timezone' user property;
+- edit user properties;
+- add users 'extra_info' property;
+- improve error reports;
+- dispose of 'mochiweb' dependency.
+</pre>
 

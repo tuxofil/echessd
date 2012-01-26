@@ -1,9 +1,0 @@
-- handling user proposed give up and draw;
-- time limitation for moves;
-- describe system architecture;
-- show timezone in log messages;
-- introduce 'timezone' user property;
-- edit user properties;
-- add users 'extra_info' property;
-- improve error reports;
-
