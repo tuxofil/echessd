@@ -1,11 +1,7 @@
-%%%-------------------------------------------------------------------
-%%% File    : echessd.erl
-%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
-%%% Created : 20 Jan 2012
-%%% License : FreeBSD
-%%% Description : Application start/stop wrapper functions
-%%%
-%%%-------------------------------------------------------------------
+%%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% @since 20 Jan 2012
+%%% @copyright 2012, Aleksey Morarash
+%%% @doc Application start/stop wrapper functions.
 
 -module(echessd).
 

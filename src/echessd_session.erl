@@ -1,11 +1,7 @@
-%%%-------------------------------------------------------------------
-%%% File    : echessd_session.erl
-%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
-%%% Created : 21 Jan 2012
-%%% License : FreeBSD
-%%% Description : HTTP session implementation
-%%%
-%%%-------------------------------------------------------------------
+%%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% @since 21 Jan 2012
+%%% @copyright 2012, Aleksey Morarash
+%%% @doc HTTP session implementation.
 
 -module(echessd_session).
 

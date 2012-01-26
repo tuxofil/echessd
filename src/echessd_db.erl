@@ -1,11 +1,7 @@
-%%%-------------------------------------------------------------------
-%%% File    : echessd_db.erl
-%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
-%%% Created : 21 Jan 2012
-%%% License : FreeBSD
-%%% Description : persistent storage interface
-%%%
-%%%-------------------------------------------------------------------
+%%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% @since 21 Jan 2012
+%%% @copyright 2012, Aleksey Morarash
+%%% @doc Persistent storage interface.
 
 -module(echessd_db).
 

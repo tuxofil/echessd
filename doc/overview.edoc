@@ -11,19 +11,149 @@
 @copyright 2012 Aleksey Morarash
 @version 0.1.0
 @title Welcome to echessd - Internet chess server
-@doc echessd - is lightweight, minimalistic and free Internet chess
-server implementation written on Erlang (http://www.erlang.org/)
+@doc == Contents ==
+
+<ol>
+ <li>{@section Summary}</li>
+ <li>{@section Goals of the project}</li>
+ <li>{@section License}</li>
+ <li>{@section Building}</li>
+ <li>{@section Installing}</li>
+ <li>{@section Before first run}</li>
+ <li>{@section Running}</li>
+ <li>{@section Playing}</li>
+ <li>{@section Advanced administration}</li>
+ <li>{@section Miscellaneous}
+  <ol>
+   <li>{@section Security considerations}</li>
+   <li>{@section Configuration file format}</li>
+  </ol>
+ </li>
+</ol>
+
+== Summary ==
+
+echessd - is lightweight, minimalistic and free Internet chess
+server implementation written on
+<a target="top" href="http://www.erlang.org/">Erlang</a>
 programming language.
 
-Goals of the project:
- - no usage limitations;
- - no email address collecting;
- - no social networking;
- - no network traffic:
-   - no images (except captcha maybe);
-   - no ads;
- - no extra software dependencies;
- - just playing chess with other people. Anytime, everywhere
-   with any type of browser - even like lynx or w3m.
+== Goals of the project ==
 
+<ul>
+ <li>no usage limitations;</li>
+ <li>no email address collecting;</li>
+ <li>no social networking;</li>
+ <li>no network traffic:
+  <ul>
+   <li>no images (except captcha maybe);</li>
+   <li>no ads;</li>
+  </ul>
+ </li>
+ <li>no extra software dependencies;</li>
+ <li>just playing chess with other people. Anytime, everywhere
+   with any type of browser - even like lynx or w3m.</li>
+</ul>
+
+== License ==
+
+echessd uses FreeBSD License. You can found full license text on
+<a target="top" href="http://www.freebsd.org/copyright/freebsd-license.html">http://www.freebsd.org/copyright/freebsd-license.html</a>
+or in file LICENSE on the top of echessd sources tree.
+
+== Building ==
+
+Erlang must be installed to build and run echessd.
+You always can obtain latest Erlang version on
+<a target="top" href="http://www.erlang.org/download.html">Erlang download page</a>
+or use one provided by your software repository.
+
+For echessd to run
+<a target="top" href="https://github.com/mochi/mochiweb">mochiweb</a>
+Erlang application must be installed.
+mochiweb - is a lightweight and free HTTP server written on Erlang.
+
+echessd is developed and tested with Erlang R14B04 but probably
+will work with older Erlang versions.
+
+<code>$ make</code>
+
+or, if you don't have make installed, type
+
+<code>$ erlc -I ./include -o ./ebin ./src/*.erl</code>
+
+on echessd top level directory of sources tree.
+
+== Installing ==
+
+Files by wildcards './*.sh', './ebin/*.{app,beam}', './www/*' - is
+all you need to start echessd from scratch.
+You can place them anywhere in your filesystem, preserving original
+directory structure.
+
+== Before first run ==
+
+You must initialize echessd persistent storage before starting
+the server with command "./init.sh" in echessd top level directory.
+
+Warning: you will lost all your games and users registered calling
+"./init.sh" on live system!
+
+== Running ==
+
+You can run echessd by command "./run.sh" in echessd top level
+directory. echessd will be started as foreground process. It is
+normal to some output on stdout before log file will be opened
+and server start to write messages to that file.
+
+== Playing ==
+
+<ol>
+ <li>Send your browser to
+   <a target="top" href="http://localhost:8888/">http://localhost:8888/</a></li>
+ <li>Register new user;</li>
+ <li>Create new game with any user registered;</li>
+ <li>Wait while your opponent confirms the game;</li>
+ <li>...</li>
+ <li>PROFIT!!!</li>
+</ol>
+
+== Advanced administration ==
+
+echessd configuration defined in ./echessd.conf file. Path to it
+specified in './run.sh' script. You can change them if you need.
+
+To tell running server to re-read configuration file and reopen
+log file (needed to logrotate), run './hup.sh' script.
+
+To stop running server, run './stop.sh' script.
+
+To check if server is alive, run './ping.sh' script.
+
+== Miscellaneous ==
+
+=== Security considerations ===
+
+<ol>
+ <li>Do not run echessd under superuser privileges!</li>
+ <li>Be aware of launching echessd on host without firewall
+   configured (or protected by another firewall) because
+   Erlang nature permits to connect to Erlang node (found via
+   epmd portmapper) from any host at your network. Such
+   connection will allow execute ANY code with UID of echessd
+   server process.</li>
+</ol>
+
+=== Configuration file format ===
+
+Empty lines and lines with first meaning character '#' (comments)
+will be skipped. Comments can take only whole line. You can't
+comment only tail of line with configuration parameter.
+
+Configuration parameter value definition must look like key-value
+pair, separated by one or more spaces or tabs.
+
+Details for echessd existing configuration parameters you can
+found in ./echessd.conf configuration file in top directory of
+echessd source tree.
 

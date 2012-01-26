@@ -1,11 +1,7 @@
-%%%-------------------------------------------------------------------
-%%% File    : echessd_srv.erl
-%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
-%%% Created : 20 Jan 2012
-%%% License : FreeBSD
-%%% Description : HTTP request handler
-%%%
-%%%-------------------------------------------------------------------
+%%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% @since 20 Jan 2012
+%%% @copyright 2012, Aleksey Morarash
+%%% @doc HTTP request handler callback module.
 
 -module(echessd_srv).
 

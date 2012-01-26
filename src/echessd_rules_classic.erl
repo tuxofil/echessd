@@ -1,11 +1,7 @@
-%%%-------------------------------------------------------------------
-%%% File    : echessd_rules_classic.erl
-%%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
-%%% Created : 22 Jan 2012
-%%% License : FreeBSD
-%%% Description : Classic chess rules implementation
-%%%
-%%%-------------------------------------------------------------------
+%%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
+%%% @since 22 Jan 2012
+%%% @copyright 2012, Aleksey Morarash
+%%% @doc Classic chess rules implementation.
 
 -module(echessd_rules_classic).
 
