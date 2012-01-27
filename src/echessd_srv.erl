@@ -129,7 +129,20 @@ process_get(?SECTION_ACKGAME, _Query, true) ->
                {"game", integer_to_list(GameID)}], true);
         {error, Reason} ->
             echessd_html:error(
-              "Failed to confirm game:~n~9999p", [Reason])
+              "Failed to confirm game ~9999p:~n~9999p",
+              [GameID, Reason])
+    end;
+process_get(?SECTION_DENYGAME, _Query, true) ->
+    GameID = list_to_integer(get_query_item("game")),
+    case echessd_game:deny(GameID, get(username)) of
+        ok ->
+            process_get(
+              ?SECTION_HOME,
+              [{"goto", ?SECTION_HOME}], true);
+        {error, Reason} ->
+            echessd_html:error(
+              "Failed to deny game ~9999p:~n~9999p",
+              [GameID, Reason])
     end;
 process_get(_, Query, true) ->
     process_goto(Query),

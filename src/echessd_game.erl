@@ -7,6 +7,7 @@
 
 -export([add/5,
          ack/2,
+         deny/2,
          is_valid_ply/5,
          ply/3,
          fetch/1,
@@ -133,6 +134,25 @@ ack(GameID, Username) ->
         {error, Reason} = Error ->
             echessd_log:err(
               "game ~9999p confirmation (by ~9999p) failed: ~9999p",
+              [GameID, Username, Reason]),
+            Error
+    end.
+
+%% @doc Deny not confirmed game.
+%% @spec deny(GameID, Username) -> ok | {error, Reason}
+%%     GameID = echessd_game_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     Reason = term()
+deny(GameID, Username) ->
+    case echessd_db:game_deny(GameID, Username) of
+        ok ->
+            echessd_log:info(
+              "game ~9999p denied by ~9999p",
+              [GameID, Username]),
+            ok;
+        {error, Reason} = Error ->
+            echessd_log:err(
+              "game ~9999p deny (by ~9999p) failed: ~9999p",
               [GameID, Username, Reason]),
             Error
     end.

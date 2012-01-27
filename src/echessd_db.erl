@@ -13,6 +13,7 @@
          set_user_props/2,
          addgame/1,
          game_ack/2,
+         game_deny/2,
          get_game_props/1,
          set_game_props/2,
          delgame/1,
@@ -183,6 +184,33 @@ game_ack(GameID, Username) ->
               end
       end).
 
+%% @doc Deny not confirmed game.
+%% @spec game_deny(GameID, Username) -> ok | {error, Reason}
+%%     GameID = echessd_game:echessd_game_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     Reason = term()
+game_deny(GameID, Username) ->
+    transaction_ok(
+      fun() ->
+              _UserProperties = ll_get_props(?dbt_users, Username),
+              GameInfo = ll_get_props(?dbt_games, GameID),
+              List =
+                  [z || {users, [_ | _] = L} <- GameInfo,
+                        {N, C} <- L,
+                        N == Username,
+                        lists:member(C, [?white, ?black])],
+              if length(List) > 0 -> nop;
+                 true ->
+                      mnesia:abort(not_your_game)
+              end,
+              case proplists:get_value(acknowledged, GameInfo) of
+                  true ->
+                      mnesia:abort(unable_to_deny_confirmed_game);
+                  _ ->
+                      delgame_(GameID, GameInfo)
+              end
+      end).
+
 %% @doc Fetch game properties.
 %% @spec get_game_props(GameID) -> {ok, GameInfo} | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
@@ -235,26 +263,28 @@ delgame(GameID) ->
               case mnesia:read({?dbt_games, GameID}) of
                   [HRec] ->
                       GameInfo = HRec#hrec.val,
-                      Users =
-                          [N || {users, L} <- GameInfo,
-                                {N, _Role} <- L],
-                      lists:foreach(
-                        fun(Username) ->
-                                UserProperties =
-                                    ll_get_props(?dbt_users, Username),
-                                UserGames =
-                                    lists:usort(
-                                      proplists:get_value(
-                                        games, UserProperties, []) --
-                                          [GameID]),
-                                ll_replace_props(
-                                  ?dbt_users, Username, UserProperties,
-                                  [{games, UserGames}])
-                        end, Users),
-                      mnesia:delete({?dbt_games, GameID});
+                      delgame_(GameID, GameInfo);
                   _ -> ok
               end
       end).
+delgame_(GameID, GameInfo) ->
+    Users =
+        [N || {users, L} <- GameInfo,
+              {N, _Role} <- L],
+    lists:foreach(
+      fun(Username) ->
+              UserProperties =
+                  ll_get_props(?dbt_users, Username),
+              UserGames =
+                  lists:usort(
+                    proplists:get_value(
+                      games, UserProperties, []) --
+                        [GameID]),
+              ll_replace_props(
+                ?dbt_users, Username, UserProperties,
+                [{games, UserGames}])
+      end, Users),
+    mnesia:delete({?dbt_games, GameID}).
 
 %% @doc Makes turn for user.
 %% @spec gameply(GameID, Username, Ply) -> ok | {error, Reason}

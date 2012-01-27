@@ -404,11 +404,12 @@ user_game_(Owner, GameID, GameInfo) ->
         end.
 
 user_unconfirmed_game_(Owner, GameID, GameInfo) ->
+    StrGameID = integer_to_list(GameID),
     GamePlayers =
         [{N, C} || {N, C} <- proplists:get_value(users, GameInfo, []),
                    lists:member(C, [?white, ?black])],
     UniquePlayerNames = lists:usort([N || {N, _} <- GamePlayers]),
-    "* #" ++ integer_to_list(GameID) ++
+    "* #" ++ StrGameID ++
         case proplists:get_value(creator, GameInfo) of
             Owner ->
                 Opponent = hd(UniquePlayerNames -- [Owner]),
@@ -418,13 +419,13 @@ user_unconfirmed_game_(Owner, GameID, GameInfo) ->
             Opponent ->
                 OpponentColor = proplists:get_value(Opponent, GamePlayers),
                 AckURL =
-                    "?action=" ++ ?SECTION_ACKGAME ++ "&game=" ++
-                    integer_to_list(GameID),
+                    "?action=" ++ ?SECTION_ACKGAME ++ "&game=" ++ StrGameID,
                 " " ++ userlink(Opponent) ++ " " ++
                     chessman({OpponentColor, ?king}) ++
                     " is waiting for you! " ++
                     tag("a", ["href='" ++ AckURL ++ "'"], "Confirm")
-        end.
+        end ++ tag("a", ["href='" ++ "?action=" ++ ?SECTION_DENYGAME ++
+                             "&game=" ++ StrGameID ++"'"], "Deny").
 
 html_page_header(Title, Options) ->
     "<html>\n\n"
