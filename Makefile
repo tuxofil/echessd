@@ -3,7 +3,7 @@
 SRCS=$(wildcard src/*.erl)
 BEAMS=$(patsubst src/%.erl, ebin/%.beam, $(SRCS))
 
-all: $(BEAMS) doc
+all: $(BEAMS)
 
 ebin/%.beam: src/%.erl include/*.hrl
 	erlc -I ./include -o ./ebin $<
