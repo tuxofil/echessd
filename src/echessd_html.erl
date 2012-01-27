@@ -237,7 +237,7 @@ history(GameID) ->
     case echessd_game:getprops(GameID) of
         {ok, GameInfo} ->
             GameType = proplists:get_value(type, GameInfo),
-            FullHistory = proplists:get_value(moves, GameInfo),
+            FullHistory = proplists:get_value(moves, GameInfo, []),
             FullHistoryLen = length(FullHistory),
             StrStep = proplists:get_value("step", get(query_proplist)),
             Step =
