@@ -140,7 +140,9 @@ setprops(Username, UserProperties0) ->
         end,
     case Result of
         ok ->
-            echessd_log:info("user ~9999p props updated", [Username]),
+            echessd_log:info(
+              "user ~9999p props updated: ~9999p",
+              [Username, UserProperties0]),
             ok;
         {error, Reason} = FinalError ->
             echessd_log:err(
