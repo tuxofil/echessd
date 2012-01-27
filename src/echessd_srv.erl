@@ -189,22 +189,31 @@ process_post(?SECTION_REG, Query, false) ->
     Fullname = proplists:get_value("regfullname", Query),
     Password1 = proplists:get_value("regpassword1", Query),
     Password2 = proplists:get_value("regpassword2", Query),
+    StrTimezone = proplists:get_value("regtimezone", Query),
     if Password1 /= Password2 ->
             echessd_html:error("Password confirmation failed");
        true ->
-            case echessd_user:add(
-                   Username,
-                   [{password, Password1},
-                    {fullname, Fullname},
-                    {created, now()}]) of
-                ok ->
-                    process_post(
-                      ?SECTION_LOGIN,
-                      [{"username", Username},
-                       {"password", Password1}], false);
-                {error, Reason} ->
+            case echessd_lib:list_to_time_offset(StrTimezone) of
+                {ok, Timezone} ->
+                    case echessd_user:add(
+                           Username,
+                           [{password, Password1},
+                            {fullname, Fullname},
+                            {timezone, Timezone},
+                            {created, now()}]) of
+                        ok ->
+                            process_post(
+                              ?SECTION_LOGIN,
+                              [{"username", Username},
+                               {"password", Password1}], false);
+                        {error, Reason} ->
+                            echessd_html:error(
+                              "Failed to create new user:~n~9999p",
+                              [Reason])
+                    end;
+                _ ->
                     echessd_html:error(
-                      "Failed to create new user:~n~9999p", [Reason])
+                      "Failed to create new user:~nbad timezone", [])
             end
     end;
 process_post(?SECTION_NEWGAME, Query, true) ->

@@ -28,6 +28,7 @@
         {created, erlang:timestamp()} |
         {login, echessd_user()} |
         {fullname, string()} |
+        {timezone, echessd_lib:administrative_offset()} |
         {games, [echessd_game:echessd_game_id()]}.
 %% Some descr
 
@@ -205,6 +206,11 @@ check_property({games, V} = I) ->
     end;
 check_property({fullname, V}) ->
     {fullname, drop_html(lists:sublist(V, 70))};
+check_property({timezone, V} = I) ->
+    case lists:member(V, echessd_lib:administrative_offsets()) of
+        true -> I;
+        _ -> throw({error, {bad_timezone, V}})
+    end;
 check_property({K, _V}) ->
     throw({error, {unknown_property, K}}).
 

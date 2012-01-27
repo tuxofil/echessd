@@ -40,15 +40,30 @@ login() ->
 %% @doc Makes 'register new user' page content.
 %% @spec register() -> io_list()
 register() ->
+    Timezones =
+        [echessd_lib:time_offset_to_list(O) ||
+            O <- echessd_lib:administrative_offsets()],
+    ServerZone =
+        echessd_lib:time_offset_to_list(
+          echessd_lib:local_offset()),
     html_page_header("echessd - Register new user",
                      [{h1, "echessd register form"}]) ++
         navig_links([{"?goto=" ++ ?SECTION_LOGIN, "Return to login form"}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=register>"
         "Login:    <input name=regusername type=text><br>"
-        "Full name: <input name=regfullname type=text> (optional)<br>"
         "Password: <input name=regpassword1 type=password><br>"
         "Confirm password: <input name=regpassword2 type=password><br>"
+        "Full name: <input name=regfullname type=text> (optional)<br>"
+        "Timezone: <select name=regtimezone>" ++
+        lists:map(
+          fun(Zone) when Zone == ServerZone ->
+                  "<option value='" ++ Zone ++ "' selected>" ++
+                      Zone ++ "</option>";
+             (Zone) ->
+                  "<option value='" ++ Zone ++ "'>" ++ Zone ++ "</option>"
+          end, Timezones) ++
+        "</select><br>"
         "<input type=submit value='Register'>"
         "</form>" ++
         html_page_footer([]).
@@ -327,8 +342,17 @@ user_info_cells(Username, UserProperties) ->
                         echessd_lib:timestamp(Value);
                     _ -> "unknown"
                 end}];
+         (timezone = Key) ->
+              [{"Timezone",
+                case proplists:get_value(Key, UserProperties) of
+                    Value when is_tuple(Value) ->
+                        echessd_lib:time_offset_to_list(Value);
+                    _ ->
+                        echessd_lib:time_offset_to_list(
+                          echessd_lib:local_offset())
+                end}];
          (_) -> []
-      end, [login, fullname, created]).
+      end, [login, fullname, created, timezone]).
 
 user_games(Username, UserProperties, ShowNotAcknowledged) ->
     %% fetch all user games info

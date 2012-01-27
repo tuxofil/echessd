@@ -8,8 +8,24 @@
 -export([ip2str/1,
          proplist_replace/2,
          timestamp/1,
-         random_elem/1
+         random_elem/1,
+         administrative_offsets/0,
+         time_offset_to_list/1,
+         list_to_time_offset/1,
+         local_offset/0
         ]).
+
+%% ----------------------------------------------------------------------
+%% Type definitions
+%% ----------------------------------------------------------------------
+
+-export_type([administrative_offset/0]).
+
+-type administrative_offset() ::
+        {Sign    :: -1 | 1,
+         Hours   :: 0..14,
+         Minutes :: 0 | 30 | 45
+        }.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -38,9 +54,15 @@ proplist_replace(PropList, NewValues) ->
 timestamp(Time) ->
     {{Year, Month, Day}, {Hour, Minutes, Seconds}} =
         calendar:now_to_local_time(Time),
+    {OffSign, OffHours, OffMinutes} = local_offset(Time),
+    Sign =
+        if OffSign > 0 -> "+";
+           true -> "-"
+        end,
     io_lib:format(
-      "~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0B",
-      [Year, Month, Day, Hour, Minutes, Seconds]).
+      "~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0B~s~2..0B~2..0B",
+      [Year, Month, Day, Hour, Minutes, Seconds,
+       Sign, OffHours, OffMinutes]).
 
 %% @doc Return random element of the list supplied.
 %% @spec random_elem(list()) -> term()
@@ -48,7 +70,78 @@ random_elem([Item]) -> Item;
 random_elem(List) when is_list(List) ->
     lists:nth(random:uniform(length(List)), List).
 
+%% @doc Return list of all adminitrative time offsets.
+%% @spec administrative_offsets() -> Offsets
+%%     Offsets = [administrative_offset()]
+administrative_offsets() ->
+    Negative =
+        [{12, 0}, {11, 0}, {10, 0}, {9, 30}, {9, 0},
+         {8, 0}, {7, 0}, {6, 0}, {5, 0}, {4, 30},
+         {4, 0}, {3, 30}, {3, 0}, {2, 0}, {1, 0}],
+    Positive =
+        [{0, 0}, {1, 0}, {2, 0}, {3, 0}, {3, 30},
+         {4, 0}, {4, 30}, {5, 0}, {5, 30}, {5, 45},
+         {6, 0}, {7, 0}, {8, 0}, {9, 0}, {9, 30},
+         {10, 0}, {10, 30}, {11, 0}, {11, 30}, {12, 00},
+         {12, 45}, {13, 00}, {14, 00}],
+    [{-1, H, M} || {H, M} <- Negative] ++
+        [{1, H, M} || {H, M} <- Positive].
+
+%% @doc Formats time offset as for ISO8601 timestamp.
+%% @spec time_offset_to_list(Offset) -> string()
+%%     Offset = administrative_offset()
+time_offset_to_list({S, H, M}) ->
+    Sign =
+        if S == -1 -> "-";
+           true -> "+"
+        end,
+    lists:flatten(
+      io_lib:format("~s~2..0B~2..0B", [Sign, H, M])).
+
+%% @doc Parse time offset string representation.
+%% @spec list_to_time_offset(String) -> {ok, Offset} | error
+%%     String = string(),
+%%     Offset = administrative_offset()
+list_to_time_offset(String) ->
+    case io_lib:fread("~c~2d~2d", String) of
+        {ok, [Sign, H, M], []} ->
+            S =
+                if Sign == "+" -> 1;
+                   true -> -1
+                end,
+            Tuple = {S, H, M},
+            case lists:member(Tuple, administrative_offsets()) of
+                true -> {ok, Tuple};
+                _ -> error
+            end;
+        _ -> error
+    end.
+
+%% @doc Return local offset (on server).
+%% @spec local_offset() -> Offset
+%%     Offset = administrative_offset()
+local_offset() -> local_offset(now()).
+
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+%% @doc Return local offset (on server).
+%% @spec local_offset(Time) -> Offset
+%%     Time = timestamp(),
+%%     Offset = administrative_offset()
+local_offset(Time) ->
+    SecondsDiff =
+        calendar:datetime_to_gregorian_seconds(
+          calendar:now_to_local_time(Time)) -
+        calendar:datetime_to_gregorian_seconds(
+          calendar:now_to_universal_time(Time)),
+    OffsetMinutes0 = round(abs(SecondsDiff) / (15 * 60)) * 15,
+    OffsetHours = OffsetMinutes0 div 60,
+    OffsetMinutes = OffsetMinutes0 rem 60,
+    Sign =
+        if SecondsDiff > 0 -> 1;
+           true -> -1
+        end,
+    {Sign, OffsetHours, OffsetMinutes}.
 
