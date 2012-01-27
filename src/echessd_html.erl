@@ -424,8 +424,9 @@ user_unconfirmed_game_(Owner, GameID, GameInfo) ->
                     chessman({OpponentColor, ?king}) ++
                     " is waiting for you! " ++
                     tag("a", ["href='" ++ AckURL ++ "'"], "Confirm")
-        end ++ tag("a", ["href='" ++ "?action=" ++ ?SECTION_DENYGAME ++
-                             "&game=" ++ StrGameID ++"'"], "Deny").
+        end ++ " " ++
+        tag("a", ["href='" ++ "?action=" ++ ?SECTION_DENYGAME ++
+                      "&game=" ++ StrGameID ++"'"], "Deny").
 
 html_page_header(Title, Options) ->
     "<html>\n\n"
