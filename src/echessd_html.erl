@@ -82,8 +82,7 @@ edituser() ->
         echessd_lib:time_offset_to_list(
           proplists:get_value(
             timezone, UserProperties,
-            echessd_lib:time_offset_to_list(
-              echessd_lib:local_offset()))),
+            echessd_lib:local_offset())),
     html_page_header(
       "echessd - Edit user preferences",
       [{h1, "Edit your preferences"}]) ++
