@@ -170,11 +170,11 @@ process_post(?SECTION_LOGIN, Query, LoggedIn) ->
         _ ->
             ok = echessd_session:del(get(sid)),
             case echessd_user:auth(Username, Password) of
-                {ok, UserProperties} ->
+                {ok, UserInfo} ->
                     SID = echessd_session:mk(Username),
                     echessd_session:read([{"sid", SID}]),
                     echessd_session:set_val(section, ?SECTION_HOME),
-                    echessd_session:set_val(userinfo, UserProperties),
+                    echessd_session:set_val(userinfo, UserInfo),
                     echessd_log:debug(
                       "session ~9999p created for user ~9999p",
                       [SID, Username]),
@@ -224,18 +224,18 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
     Password2 = proplists:get_value("editpassword2", Query),
     StrTimezone = proplists:get_value("edittimezone", Query),
     case echessd_user:auth(Username, Password0) of
-        {ok, _UserProperties} ->
+        {ok, _UserInfo} ->
             if Password1 /= Password2 ->
                     echessd_html:error("Password confirmation failed");
                true ->
                     case echessd_lib:list_to_time_offset(StrTimezone) of
                         {ok, Timezone} ->
-                            NewUserProperties =
+                            NewUserInfo =
                                 [{password, Password1},
                                  {fullname, Fullname},
                                  {timezone, Timezone}],
                             case echessd_user:setprops(
-                                   Username, NewUserProperties) of
+                                   Username, NewUserInfo) of
                                 ok ->
                                     echessd_session:read([{"sid", get(sid)}]),
                                     process_get(
@@ -256,7 +256,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
             echessd_html:eaccess()
     end;
 process_post(?SECTION_NEWGAME, Query, true) ->
-    {Opponent, _UserProperties} =
+    {Opponent, _UserInfo} =
         echessd_session:get_val(opponent),
     Color =
         case proplists:get_value("color", Query) of

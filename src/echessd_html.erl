@@ -73,15 +73,15 @@ register() ->
 %% @spec edituser() -> io_list()
 edituser() ->
     Username = get(username),
-    {ok, UserProperties} = echessd_user:getprops(Username),
-    Fullname = proplists:get_value(fullname, UserProperties, ""),
+    {ok, UserInfo} = echessd_user:getprops(Username),
+    Fullname = proplists:get_value(fullname, UserInfo, ""),
     Timezones =
         [echessd_lib:time_offset_to_list(O) ||
             O <- echessd_lib:administrative_offsets()],
     Timezone =
         echessd_lib:time_offset_to_list(
           proplists:get_value(
-            timezone, UserProperties,
+            timezone, UserInfo,
             echessd_lib:local_offset())),
     html_page_header(
       "echessd - Edit user preferences",
@@ -112,15 +112,15 @@ edituser() ->
 %% @spec home() -> io_list()
 home() ->
     Username = get(username),
-    {ok, UserProperties} = echessd_user:getprops(Username),
+    {ok, UserInfo} = echessd_user:getprops(Username),
     html_page_header(
       "echessd - Home", [{h1, "Home: " ++ Username}]) ++
         navigation() ++
         navig_links([{"?goto=" ++ ?SECTION_EDITUSER, "Edit preferences"}]) ++
         "<br>" ++
-        user_info(Username, UserProperties) ++
+        user_info(Username, UserInfo) ++
         "<br>" ++
-        user_games(Username, UserProperties, true) ++
+        user_games(Username, UserInfo, true) ++
         html_page_footer([]).
 
 %% @doc Makes 'registered users list' page content.
@@ -147,22 +147,22 @@ user(Username) ->
         Username -> home();
         _ ->
             case echessd_user:getprops(Username) of
-                {ok, UserProperties} ->
-                    user(Username, UserProperties);
+                {ok, UserInfo} ->
+                    user(Username, UserInfo);
                 {error, Reason} ->
                     ?MODULE:error(
                        "Unable to fetch user ~9999p properties:~n~p",
                        [Username, Reason])
             end
     end.
-user(Username, UserProperties) ->
+user(Username, UserInfo) ->
     Title = "User '" ++ Username ++ "'",
     html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
         navigation() ++
         "<br>" ++
-        user_info(Username, UserProperties) ++
+        user_info(Username, UserInfo) ++
         "<br>" ++
-        user_games(Username, UserProperties, false) ++
+        user_games(Username, UserInfo, false) ++
         "<br>" ++
         newgame_link(Username) ++
         html_page_footer([]).
@@ -360,25 +360,25 @@ eaccess() ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-user_info(Username, UserProperties) ->
+user_info(Username, UserInfo) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         tr(
           string:join(
             [tr(td(b(K ++ ":&nbsp;")) ++ td(V)) ||
-                {K, V} <- user_info_cells(Username, UserProperties)]
+                {K, V} <- user_info_cells(Username, UserInfo)]
             , "\n"))).
-user_info_cells(Username, UserProperties) ->
+user_info_cells(Username, UserInfo) ->
     lists:flatmap(
       fun(login) -> [{"Login", Username}];
          (fullname = Key) ->
               [{"Full name",
-                case proplists:get_value(Key, UserProperties) of
+                case proplists:get_value(Key, UserInfo) of
                     [_ | _] = Value -> Value;
                     _ -> "Not Sure"
                 end}];
          (created = Key) ->
               [{"Registered",
-                case proplists:get_value(Key, UserProperties) of
+                case proplists:get_value(Key, UserInfo) of
                     Value when ?is_now(Value) ->
                         echessd_lib:timestamp(
                           Value, get(timezone));
@@ -386,7 +386,7 @@ user_info_cells(Username, UserProperties) ->
                 end}];
          (timezone = Key) ->
               [{"Timezone",
-                case proplists:get_value(Key, UserProperties) of
+                case proplists:get_value(Key, UserInfo) of
                     Value when is_tuple(Value) ->
                         echessd_lib:time_offset_to_list(Value);
                     _ ->
@@ -396,7 +396,7 @@ user_info_cells(Username, UserProperties) ->
          (_) -> []
       end, [login, fullname, created, timezone]).
 
-user_games(Username, UserProperties, ShowNotAcknowledged) ->
+user_games(Username, UserInfo, ShowNotAcknowledged) ->
     %% fetch all user games info
     UserGames =
         lists:flatmap(
@@ -411,7 +411,7 @@ user_games(Username, UserProperties, ShowNotAcknowledged) ->
                             [GameID, Reason, Username]),
                           []
                   end
-          end, proplists:get_value(games, UserProperties, [])),
+          end, proplists:get_value(games, UserInfo, [])),
     %% split not acknowledged
     {Confirmed, NotConfirmed} =
         lists:partition(

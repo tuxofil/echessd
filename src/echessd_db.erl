@@ -83,18 +83,18 @@ list_users() ->
       end).
 
 %% @doc Adds new user.
-%% @spec adduser(Username, UserProperties) -> ok | {error, Reason}
+%% @spec adduser(Username, UserInfo) -> ok | {error, Reason}
 %%     Username = echessd_user:echessd_user(),
-%%     UserProperties = echessd_user:echessd_user_info(),
+%%     UserInfo = echessd_user:echessd_user_info(),
 %%     Reason = term()
-adduser(Username, UserProperties) ->
+adduser(Username, UserInfo) ->
     transaction_ok(
       fun() ->
               case mnesia:read({?dbt_users, Username}) of
                   [_] ->
                       mnesia:abort({user_already_exists, Username});
                   _ ->
-                      ll_set_props(?dbt_users, Username, UserProperties)
+                      ll_set_props(?dbt_users, Username, UserInfo)
               end
       end).
 
@@ -109,9 +109,9 @@ deluser(Username) ->
       end).
 
 %% @doc Fetch user properties.
-%% @spec get_user_props(Username) -> {ok, UserProperties} | {error, Reason}
+%% @spec get_user_props(Username) -> {ok, UserInfo} | {error, Reason}
 %%     Username = echessd_user:echessd_user(),
-%%     UserProperties = echessd_user:echessd_user_info(),
+%%     UserInfo = echessd_user:echessd_user_info(),
 %%     Reason = term()
 get_user_props(Username) ->
     transaction(
@@ -121,16 +121,16 @@ get_user_props(Username) ->
       end).
 
 %% @doc Set user properties.
-%% @spec set_user_props(Username, UserProperties) -> ok | {error, Reason}
+%% @spec set_user_props(Username, UserInfo) -> ok | {error, Reason}
 %%     Username = echessd_user:echessd_user(),
-%%     UserProperties = echessd_user:echessd_user_info(),
+%%     UserInfo = echessd_user:echessd_user_info(),
 %%     Reason = term()
-set_user_props(Username, UserProperties) ->
+set_user_props(Username, UserInfo) ->
     transaction_ok(
       fun() ->
               OldProps = ll_get_props(?dbt_users, Username),
               ll_replace_props(
-                ?dbt_users, Username, OldProps, UserProperties)
+                ?dbt_users, Username, OldProps, UserInfo)
       end).
 
 %% @doc Adds new game to database.
@@ -159,7 +159,7 @@ addgame(GameInfo) ->
 game_ack(GameID, Username) ->
     transaction_ok(
       fun() ->
-              _UserProperties = ll_get_props(?dbt_users, Username),
+              _UserInfo = ll_get_props(?dbt_users, Username),
               GameInfo = ll_get_props(?dbt_games, GameID),
               case proplists:get_value(creator, GameInfo) of
                   Username ->
@@ -192,7 +192,7 @@ game_ack(GameID, Username) ->
 game_deny(GameID, Username) ->
     transaction_ok(
       fun() ->
-              _UserProperties = ll_get_props(?dbt_users, Username),
+              _UserInfo = ll_get_props(?dbt_users, Username),
               GameInfo = ll_get_props(?dbt_games, GameID),
               List =
                   [z || {users, [_ | _] = L} <- GameInfo,
@@ -242,13 +242,13 @@ set_game_props_(GameID, GameInfo) ->
               {N, _Role} <- L],
     lists:foreach(
       fun(Username) ->
-              UserProperties = ll_get_props(?dbt_users, Username),
+              UserInfo = ll_get_props(?dbt_users, Username),
               UserGames =
                   lists:usort(
                     [GameID | proplists:get_value(
-                                games, UserProperties, [])]),
+                                games, UserInfo, [])]),
               ll_replace_props(
-                ?dbt_users, Username, UserProperties,
+                ?dbt_users, Username, UserInfo,
                 [{games, UserGames}])
       end, Users),
     ll_set_props(?dbt_games, GameID, GameInfo).
@@ -268,20 +268,16 @@ delgame(GameID) ->
               end
       end).
 delgame_(GameID, GameInfo) ->
-    Users =
-        [N || {users, L} <- GameInfo,
-              {N, _Role} <- L],
+    Users = [N || {users, L} <- GameInfo, {N, _Role} <- L],
     lists:foreach(
       fun(Username) ->
-              UserProperties =
-                  ll_get_props(?dbt_users, Username),
+              UserInfo = ll_get_props(?dbt_users, Username),
               UserGames =
                   lists:usort(
                     proplists:get_value(
-                      games, UserProperties, []) --
-                        [GameID]),
+                      games, UserInfo, []) -- [GameID]),
               ll_replace_props(
-                ?dbt_users, Username, UserProperties,
+                ?dbt_users, Username, UserInfo,
                 [{games, UserGames}])
       end, Users),
     mnesia:delete({?dbt_games, GameID}).
@@ -302,7 +298,7 @@ gameply(GameID, Username, Ply) ->
                       mnesia:abort(game_not_acknowledged)
               end,
               %% check if such user exists
-              _UserProperties = ll_get_props(?dbt_users, Username),
+              _UserInfo = ll_get_props(?dbt_users, Username),
               case echessd_game:who_must_turn(GameInfo) of
                   Username ->
                       TurnColor = echessd_game:turn_color(GameInfo),

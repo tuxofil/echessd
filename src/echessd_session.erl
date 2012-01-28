@@ -74,16 +74,16 @@ read(Cookie) ->
     [erase(K) || {{session_var, _} = K, _} <- erlang:get()],
     SID = proplists:get_value("sid", Cookie),
     case echessd_session:get(SID) of
-        {ok, User, Vars} ->
-            case echessd_user:getprops(User) of
-                {ok, Props} ->
+        {ok, Username, Vars} ->
+            case echessd_user:getprops(Username) of
+                {ok, UserInfo} ->
                     put(logged_in, true),
                     put(sid, SID),
-                    put(username, User),
-                    put(userinfo, Props),
+                    put(username, Username),
+                    put(userinfo, UserInfo),
                     put(timezone,
                         proplists:get_value(
-                          timezone, Props,
+                          timezone, UserInfo,
                           echessd_lib:local_offset())),
                     lists:foreach(
                       fun({K, V}) ->
