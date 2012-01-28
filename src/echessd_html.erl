@@ -448,7 +448,7 @@ user_game_(Owner, GameID, GameInfo) ->
                 Color = proplists:get_value(Owner, GamePlayers),
                 Opponent = hd(UniquePlayerNames -- [Owner]),
                 OpponentColor = proplists:get_value(Opponent, GamePlayers),
-                chessman({Color, ?king}) ++ " vs " ++
+                " " ++ chessman({Color, ?king}) ++ " vs " ++
                     userlink(Opponent) ++ " " ++
                     chessman({OpponentColor, ?king})
         end ++
