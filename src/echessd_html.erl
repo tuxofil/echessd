@@ -74,7 +74,9 @@ register() ->
 edituser() ->
     Username = get(username),
     {ok, UserInfo} = echessd_user:getprops(Username),
-    Fullname = proplists:get_value(fullname, UserInfo, ""),
+    Fullname =
+        echessd_lib:escape_html_entities(
+          proplists:get_value(fullname, UserInfo, "")),
     Timezones =
         [echessd_lib:time_offset_to_list(O) ||
             O <- echessd_lib:administrative_offsets()],
@@ -373,7 +375,8 @@ user_info_cells(Username, UserInfo) ->
          (fullname = Key) ->
               [{"Full name",
                 case proplists:get_value(Key, UserInfo) of
-                    [_ | _] = Value -> Value;
+                    [_ | _] = Value ->
+                        echessd_lib:escape_html_entities(Value);
                     _ -> "Not Sure"
                 end}];
          (created = Key) ->

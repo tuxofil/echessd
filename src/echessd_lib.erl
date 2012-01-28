@@ -10,6 +10,7 @@
          timestamp/1,
          timestamp/2,
          random_elem/1,
+         escape_html_entities/1,
          administrative_offsets/0,
          time_offset_to_list/1,
          list_to_time_offset/1,
@@ -87,6 +88,22 @@ timestamp(Timestamp, {OffsetSign, OffsetHours, OffsetMinutes}) ->
 random_elem([Item]) -> Item;
 random_elem(List) when is_list(List) ->
     lists:nth(random:uniform(length(List)), List).
+
+%% @doc Converts all chars with special meaning in HTML to
+%%      HTML entities.
+%% @spec escape_html_entities(String) -> NewString
+%%     String = string(),
+%%     NewString = string()
+escape_html_entities(String) ->
+    lists:flatmap(
+      fun($<) -> "&lt;";
+         ($>) -> "&gt;";
+         ($") -> "&quot;";
+         ($') -> "&apos;";
+         ($&) -> "&amp;";
+         (C) ->
+              [C]
+      end, String).
 
 %% @doc Return list of all adminitrative time offsets.
 %% @spec administrative_offsets() -> Offsets

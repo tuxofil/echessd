@@ -207,7 +207,7 @@ check_property({games, V} = I) ->
             throw({error, {bad_games_list, V}})
     end;
 check_property({fullname, V}) ->
-    {fullname, drop_html(lists:sublist(V, 70))};
+    {fullname, lists:sublist(V, 70)};
 check_property({timezone, V} = I) ->
     case lists:member(V, echessd_lib:administrative_offsets()) of
         true -> I;
@@ -215,10 +215,4 @@ check_property({timezone, V} = I) ->
     end;
 check_property({K, _V}) ->
     throw({error, {unknown_property, K}}).
-
-drop_html(String) ->
-    lists:flatmap(
-      fun($<) -> "&lt;";
-         (C) -> [C]
-      end, String).
 
