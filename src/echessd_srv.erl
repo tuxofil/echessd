@@ -237,6 +237,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                             case echessd_user:setprops(
                                    Username, NewUserProperties) of
                                 ok ->
+                                    echessd_session:read([{"sid", get(sid)}]),
                                     process_get(
                                       ?SECTION_HOME,
                                       [{"goto", ?SECTION_HOME}], true);

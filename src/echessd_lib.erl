@@ -8,6 +8,7 @@
 -export([ip2str/1,
          proplist_replace/2,
          timestamp/1,
+         timestamp/2,
          random_elem/1,
          administrative_offsets/0,
          time_offset_to_list/1,
@@ -50,7 +51,7 @@ proplist_replace(PropList, NewValues) ->
       end, PropList, NewValues).
 
 %% @doc Formats time as text.
-%% @spec timestamp(now()) -> string()
+%% @spec timestamp(timestamp()) -> string()
 timestamp(Time) ->
     {{Year, Month, Day}, {Hour, Minutes, Seconds}} =
         calendar:now_to_local_time(Time),
@@ -63,6 +64,23 @@ timestamp(Time) ->
       "~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0B~s~2..0B~2..0B",
       [Year, Month, Day, Hour, Minutes, Seconds,
        Sign, OffHours, OffMinutes]).
+
+%% @doc Formats time as text with specified time offset.
+%% @spec timestamp(timestamp(), administrative_offset()) -> string()
+timestamp(Timestamp, {OffsetSign, OffsetHours, OffsetMinutes}) ->
+    {{Year, Month, Day}, {Hour, Minutes, Seconds}} =
+        calendar:gregorian_seconds_to_datetime(
+          calendar:datetime_to_gregorian_seconds(
+            calendar:now_to_universal_time(Timestamp)) +
+              OffsetSign * (OffsetHours * 60 + OffsetMinutes) * 60),
+    Sign =
+        if OffsetSign > 0 -> "+";
+           true -> "-"
+        end,
+    io_lib:format(
+      "~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0B~s~2..0B~2..0B",
+      [Year, Month, Day, Hour, Minutes, Seconds,
+       Sign, OffsetHours, OffsetMinutes]).
 
 %% @doc Return random element of the list supplied.
 %% @spec random_elem(list()) -> term()

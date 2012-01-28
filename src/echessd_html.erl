@@ -380,7 +380,8 @@ user_info_cells(Username, UserProperties) ->
               [{"Registered",
                 case proplists:get_value(Key, UserProperties) of
                     Value when ?is_now(Value) ->
-                        echessd_lib:timestamp(Value);
+                        echessd_lib:timestamp(
+                          Value, get(timezone));
                     _ -> "unknown"
                 end}];
          (timezone = Key) ->
