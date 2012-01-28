@@ -59,11 +59,15 @@
 -define(SECTION_MOVE, "move").
 -define(SECTION_ACKGAME, "ackgame").
 -define(SECTION_DENYGAME, "denygame").
+-define(SECTION_EDITUSER, "edituser").
+-define(SECTION_SAVEUSER, "saveuser").
 
 -define(SECTIONS,
         [?SECTION_HOME, ?SECTION_GAME,
          ?SECTION_USERS, ?SECTION_USER,
-         ?SECTION_NEWGAME, ?SECTION_HISTORY]).
+         ?SECTION_NEWGAME, ?SECTION_HISTORY,
+         ?SECTION_EDITUSER
+        ]).
 
 %% colors
 -define(white, w).

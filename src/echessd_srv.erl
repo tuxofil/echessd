@@ -216,6 +216,44 @@ process_post(?SECTION_REG, Query, false) ->
                       "Failed to create new user:~nbad timezone", [])
             end
     end;
+process_post(?SECTION_SAVEUSER, Query, true) ->
+    Username = get(username),
+    Fullname = proplists:get_value("editfullname", Query),
+    Password0 = proplists:get_value("editpassword0", Query),
+    Password1 = proplists:get_value("editpassword1", Query),
+    Password2 = proplists:get_value("editpassword2", Query),
+    StrTimezone = proplists:get_value("edittimezone", Query),
+    case echessd_user:auth(Username, Password0) of
+        {ok, _UserProperties} ->
+            if Password1 /= Password2 ->
+                    echessd_html:error("Password confirmation failed");
+               true ->
+                    case echessd_lib:list_to_time_offset(StrTimezone) of
+                        {ok, Timezone} ->
+                            NewUserProperties =
+                                [{password, Password1},
+                                 {fullname, Fullname},
+                                 {timezone, Timezone}],
+                            case echessd_user:setprops(
+                                   Username, NewUserProperties) of
+                                ok ->
+                                    process_get(
+                                      ?SECTION_HOME,
+                                      [{"goto", ?SECTION_HOME}], true);
+                                {error, Reason} ->
+                                    echessd_html:error(
+                                      "Failed to update user "
+                                      "properties:~n~9999p",
+                                      [Reason])
+                            end;
+                        _ ->
+                            echessd_html:error(
+                              "Failed to create new user:~nbad timezone", [])
+                    end
+            end;
+        _ ->
+            echessd_html:eaccess()
+    end;
 process_post(?SECTION_NEWGAME, Query, true) ->
     {Opponent, _UserProperties} =
         echessd_session:get_val(opponent),
@@ -271,6 +309,8 @@ process_show(?SECTION_USERS) ->
     echessd_html:users();
 process_show(?SECTION_USER) ->
     echessd_html:user(get_query_item("name"));
+process_show(?SECTION_EDITUSER) ->
+    echessd_html:edituser();
 process_show(?SECTION_NEWGAME) ->
     echessd_html:newgame();
 process_show(_Default) ->

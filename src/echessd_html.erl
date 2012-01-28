@@ -7,6 +7,7 @@
 
 -export([login/0,
          register/0,
+         edituser/0,
          eaccess/0,
          home/0,
          game/1,
@@ -68,6 +69,46 @@ register() ->
         "</form>" ++
         html_page_footer([]).
 
+%% @doc Makes 'edit user properties' page content.
+%% @spec edituser() -> io_list()
+edituser() ->
+    Username = get(username),
+    {ok, UserProperties} = echessd_user:getprops(Username),
+    Fullname = proplists:get_value(fullname, UserProperties, ""),
+    Timezones =
+        [echessd_lib:time_offset_to_list(O) ||
+            O <- echessd_lib:administrative_offsets()],
+    Timezone =
+        echessd_lib:time_offset_to_list(
+          proplists:get_value(
+            timezone, UserProperties,
+            echessd_lib:time_offset_to_list(
+              echessd_lib:local_offset()))),
+    html_page_header(
+      "echessd - Edit user preferences",
+      [{h1, "Edit your preferences"}]) ++
+        navigation() ++
+        "<br>" ++
+        "<form method=post>"
+        "<input name=action type=hidden value=" ++ ?SECTION_SAVEUSER ++ ">"
+        "Your password: <input name=editpassword0 type=password><br>"
+        "New password: <input name=editpassword1 type=password><br>"
+        "New password confirm: <input name=editpassword2 type=password><br>"
+        "Fullname: <input name=editfullname type=text value='" ++ Fullname ++ "'><br>"
+        "Timezone: <select name=edittimezone>" ++
+        lists:map(
+          fun(Zone) when Zone == Timezone ->
+                  "<option value='" ++ Zone ++ "' selected>" ++
+                      Zone ++ "</option>";
+             (Zone) ->
+                  "<option value='" ++ Zone ++ "'>" ++ Zone ++ "</option>"
+          end, Timezones) ++
+        "</select><br>"
+        "<input type=submit value=Save>"
+        "</form>"
+        "<br>" ++
+        html_page_footer([]).
+
 %% @doc Makes 'home' page content.
 %% @spec home() -> io_list()
 home() ->
@@ -76,6 +117,7 @@ home() ->
     html_page_header(
       "echessd - Home", [{h1, "Home: " ++ Username}]) ++
         navigation() ++
+        navig_links([{"?goto=" ++ ?SECTION_EDITUSER, "Edit preferences"}]) ++
         "<br>" ++
         user_info(Username, UserProperties) ++
         "<br>" ++
