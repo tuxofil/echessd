@@ -294,6 +294,22 @@ process_post(?SECTION_MOVE, Query, true) ->
         Error -> put(error, Error)
     end,
     process_show(?SECTION_GAME);
+process_post(?SECTION_DRAW, _Query, true) ->
+    Username = get(username),
+    GameID = list_to_integer(get_query_item("game")),
+    case echessd_game:request_draw(GameID, Username) of
+        ok -> nop;
+        Error -> put(error, Error)
+    end,
+    process_show(?SECTION_GAME);
+process_post(?SECTION_GIVEUP, _Query, true) ->
+    Username = get(username),
+    GameID = list_to_integer(get_query_item("game")),
+    case echessd_game:give_up(GameID, Username) of
+        ok -> nop;
+        Error -> put(error, Error)
+    end,
+    process_show(?SECTION_GAME);
 process_post(_, _, _) ->
     echessd_html:eaccess().
 
@@ -314,6 +330,12 @@ process_show(?SECTION_EDITUSER) ->
     echessd_html:edituser();
 process_show(?SECTION_NEWGAME) ->
     echessd_html:newgame();
+process_show(?SECTION_DRAW_CONFIRM) ->
+    echessd_html:draw_confirm(
+      list_to_integer(get_query_item("game")));
+process_show(?SECTION_GIVEUP_CONFIRM) ->
+    echessd_html:giveup_confirm(
+      list_to_integer(get_query_item("game")));
 process_show(_Default) ->
     echessd_html:home().
 

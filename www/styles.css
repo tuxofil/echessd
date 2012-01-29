@@ -70,3 +70,8 @@ td.crd_l, td.crd_r {
     color: red;
 }
 
+.warning {
+    font-weight: bold;
+    color: orange;
+}
+

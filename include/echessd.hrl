@@ -61,12 +61,17 @@
 -define(SECTION_DENYGAME, "denygame").
 -define(SECTION_EDITUSER, "edituser").
 -define(SECTION_SAVEUSER, "saveuser").
+-define(SECTION_DRAW_CONFIRM, "drawconfirm").
+-define(SECTION_DRAW, "draw").
+-define(SECTION_GIVEUP_CONFIRM, "giveupconfirm").
+-define(SECTION_GIVEUP, "giveup").
 
 -define(SECTIONS,
         [?SECTION_HOME, ?SECTION_GAME,
          ?SECTION_USERS, ?SECTION_USER,
          ?SECTION_NEWGAME, ?SECTION_HISTORY,
-         ?SECTION_EDITUSER
+         ?SECTION_EDITUSER, ?SECTION_DRAW_CONFIRM,
+         ?SECTION_GIVEUP_CONFIRM
         ]).
 
 %% colors

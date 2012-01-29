@@ -12,6 +12,8 @@
          home/0,
          game/1,
          history/1,
+         draw_confirm/1,
+         giveup_confirm/1,
          users/0,
          user/1,
          newgame/0,
@@ -236,6 +238,7 @@ game(GameID, GameInfo, Board, Captures) ->
         [I || {users, L} <- GameInfo, {_, C} = I <- L,
               lists:member(C, [?black, ?white])],
     Users = lists:usort([N || {N, _} <- Players]),
+    IsMyGame = lists:member(Iam, Users),
     MyColors = [C || {N, C} <- Players, N == Iam],
     TurnColor = echessd_game:turn_color(GameInfo),
     TurnUser = hd([N || {N, C} <- Players, C == TurnColor]),
@@ -246,7 +249,7 @@ game(GameID, GameInfo, Board, Captures) ->
            OppUser == Iam ->
                 TurnColor == ?black;
            true ->
-                lists:member(Iam, Users) andalso
+                IsMyGame andalso
                     lists:member(?black, MyColors)
         end,
     LastPly =
@@ -261,15 +264,28 @@ game(GameID, GameInfo, Board, Captures) ->
       "echessd - Game",
       [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
         navigation() ++
-        game_navigation(GameID) ++
+        game_navigation(GameID, IsMyGame andalso GameStatus == none) ++
         case GameStatus of
             checkmate ->
                 h2("Game over: checkmate, winner: " ++
                        userlink(Winner));
+            give_up ->
+                h2("Game over: gived up, winner: " ++
+                       userlink(Winner));
             {draw, DrawType} ->
                 h2("Game over: draw (" ++
                        atom_to_list(DrawType) ++ ")");
-            _ -> ""
+            _ ->
+                case proplists:get_value(
+                       draw_request_from, GameInfo) of
+                    Iam when IsMyGame ->
+                        tag("div", ["class=warning"],
+                            "You have been proposed draw...");
+                    OppUser when IsMyGame ->
+                        tag("div", ["class=warning"],
+                            userlink(OppUser) ++ " is proposing draw");
+                    _ -> ""
+                end
         end ++
         chess_table(GameType, Board, IsRotated, LastPly) ++
         case TurnUser of
@@ -327,6 +343,50 @@ history(GameID) ->
                "Unable to fetch game #~9999p properties:~n~p",
                [GameID, Reason])
     end.
+
+%% @doc Makes 'draw confirmation' page content.
+%% @spec draw_confirm(GameID) -> io_list()
+%%     GameID = echessd_game:echessd_game_id()
+draw_confirm(GameID) ->
+    html_page_header("echessd - Game draw by agreement confirmation",
+                     [{h1, "You are about tie proposal!"}]) ++
+        tag("div", ["class=warning"],
+            "Do you want to propose to end the game with "
+            "draw by agreement?") ++
+        "<form method=post>"
+        "<input type=hidden name=action value=" ++ ?SECTION_DRAW ++ ">"
+        "<input type=hidden name=game value=" ++
+        integer_to_list(GameID) ++ ">"
+        "<input type=submit value='Propose draw'>"
+        "</form>" ++
+        navig_links([{"javascript: history.back();",
+                      "No, get out of here!"}]) ++
+        html_page_footer([]).
+
+%% @doc Makes 'giving up confirmation' page content.
+%% @spec giveup_confirm(GameID) -> io_list()
+%%     GameID = echessd_game:echessd_game_id()
+giveup_confirm(GameID) ->
+    Iam = get(username),
+    {ok, GameInfo} = echessd_game:getprops(GameID),
+    Players =
+        [N || {users, L} <- GameInfo,
+              {N, C} <- L, lists:member(C, [?white, ?black])],
+    [Opponent | _] = Players -- [Iam],
+    html_page_header("echessd - Game give up confirmation",
+                     [{h1, "You are about giving up!"}]) ++
+        tag("div", ["class=warning"],
+            "Do you wish to '" ++ userlink(Opponent) ++
+                "' to win this game?") ++
+        "<form method=post>"
+        "<input type=hidden name=action value=" ++ ?SECTION_GIVEUP ++ ">"
+        "<input type=hidden name=game value=" ++
+        integer_to_list(GameID) ++ ">"
+        "<input type=submit value='Give up'>"
+        "</form>" ++
+        navig_links([{"javascript: history.back();",
+                      "No, get out of here!"}]) ++
+        html_page_footer([]).
 
 %% @doc Makes 'under construction' page content.
 %% @spec notyet() -> io_list()
@@ -467,6 +527,12 @@ user_game_(Owner, GameID, GameInfo) ->
                 case proplists:get_value(winner, GameInfo) of
                     Owner -> " - win";
                     _ -> " - loose"
+                end;
+            give_up when IsTest -> " - gived up";
+            give_up ->
+                case proplists:get_value(winner, GameInfo) of
+                    Owner -> " - win (give up)";
+                    _ -> " - loose (gived up)"
                 end;
             {draw, _} ->
                 " - draw"
@@ -685,11 +751,18 @@ navigation() ->
           [{"?action=" ++ ?SECTION_EXIT, "Logout"}],
       section_caption(echessd_session:get_val(section))).
 
-game_navigation(GameID) ->
+game_navigation(GameID, ShowEndGameLinks) ->
     StrID = integer_to_list(GameID),
     navig_links(
       [{"?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, "Refresh"},
-       {"?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID, "History"}]).
+       {"?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID, "History"}] ++
+          if ShowEndGameLinks ->
+                  [{"?goto=" ++ ?SECTION_DRAW_CONFIRM ++
+                        "&game=" ++ StrID, "Draw"},
+                   {"?goto=" ++ ?SECTION_GIVEUP_CONFIRM ++
+                        "&game=" ++ StrID, "GiveUp"}];
+             true -> []
+          end).
 
 history_navigation(GameID, Step, MaxStep) ->
     StrID = integer_to_list(GameID),
