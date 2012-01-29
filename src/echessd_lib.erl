@@ -11,12 +11,16 @@
          timestamp/2,
          random_elem/1,
          escape_html_entities/1,
+         gettext/2,
+         languages/0,
          administrative_offsets/0,
          time_offset_to_list/1,
          list_to_time_offset/1,
          local_offset/0,
          strip/2
         ]).
+
+-include("echessd.hrl").
 
 %% ----------------------------------------------------------------------
 %% Type definitions
@@ -105,6 +109,34 @@ escape_html_entities(String) ->
          (C) ->
               [C]
       end, String).
+
+%% @doc Fetches localized text with specified ID.
+%% @spec gettext(TextID, LangID) -> string()
+%%     TextID = term(),
+%%     LangID = atom()
+gettext(TextID, LangID) ->
+    {_Languages, Strings} = echessd_cfg:get(?CFG_LANG_INFO),
+    case dict:find({TextID, LangID}, Strings) of
+        {ok, Text} -> Text;
+        _ ->
+            case dict:find({TextID, en}, Strings) of
+                {ok, Text} -> Text;
+                _ ->
+                    echessd_log:err(
+                      "Failed to fetch text "
+                      "~9999p for lang ~9999p"),
+                    ""
+            end
+    end.
+
+%% @doc Return list of supported languages.
+%% @spec languages() -> List
+%%     List = [{LangAbbreviation, LangName}],
+%%     LangAbbreviation = atom(),
+%%     LangName = string()
+languages() ->
+    {Languages, _Strings} = echessd_cfg:get(?CFG_LANG_INFO),
+    Languages.
 
 %% @doc Return list of all adminitrative time offsets.
 %% @spec administrative_offsets() -> Offsets

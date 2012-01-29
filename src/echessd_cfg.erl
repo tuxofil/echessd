@@ -35,9 +35,21 @@ read() ->
             String = binary_to_list(Binary),
             case parse_config(String) of
                 {ok, Config} ->
-                    catch ets:new(?echessd_cfg, [named_table, public, set]),
-                    ets:insert(?echessd_cfg, Config),
-                    ok;
+                    case read_lang_file() of
+                        {ok, LangInfo} ->
+                            catch ets:new(
+                                    ?echessd_cfg,
+                                    [named_table, public, set]),
+                            ets:insert(
+                              ?echessd_cfg,
+                              [{?CFG_LANG_INFO, LangInfo} | Config]),
+                            ok;
+                        {error, Reason} ->
+                            echessd_log:err(
+                              "Lang file parse error: ~99999p",
+                              [Reason]),
+                            throw({lang_read_error, Reason})
+                    end;
                 {error, Reason} ->
                     echessd_log:err(
                       "Configuration file ~99999p parse error: ~99999p",
@@ -202,4 +214,22 @@ split_kv([H | Tail], Key) ->
     end;
 split_kv(_, Key) ->
     {string:to_lower(lists:reverse(Key)), ""}.
+
+read_lang_file() ->
+    LangFilename = filename:join("priv", "echessd.lang"),
+    case file:consult(LangFilename) of
+        {ok, Terms} ->
+            Strings =
+                [{{ID, Abbr}, S} ||
+                    {text, ID, L} <- Terms,
+                    {Abbr, S} <- L,
+                    is_atom(Abbr), is_list(S)],
+            {ok,
+             {lists:usort(
+                [I || {languages, L} <- Terms,
+                      {Abbr, [_ | _]} = I <- L,
+                      is_atom(Abbr)]),
+              dict:from_list(Strings)}};
+        Error -> Error
+    end.
 

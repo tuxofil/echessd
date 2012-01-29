@@ -16,6 +16,7 @@
 -define(CFG_BIND_ADDR, bind_addr).
 -define(CFG_BIND_PORT, bind_port).
 -define(CFG_DOC_ROOT, doc_root).
+-define(CFG_LANG_INFO, lanf_info).
 
 -define(CFGS, [?CFG_LOGLEVEL, ?CFG_LOGFILE,
                ?CFG_BIND_ADDR, ?CFG_BIND_PORT,
