@@ -288,10 +288,18 @@ process_post(?SECTION_NEWGAME, Query, true) ->
 process_post(?SECTION_MOVE, Query, true) ->
     User = get(username),
     GameID = list_to_integer(get_query_item("game")),
-    Ply = string:to_lower(proplists:get_value("move", Query)),
-    case echessd_game:ply(GameID, User, Ply) of
-        ok -> nop;
-        Error -> put(error, Error)
+    Ply =
+        string:to_lower(
+          echessd_lib:strip(
+            proplists:get_value("move", Query),
+            " \t\r\n")),
+    case Ply of
+        [_ | _] ->
+            case echessd_game:ply(GameID, User, Ply) of
+                ok -> nop;
+                Error -> put(error, Error)
+            end;
+        _ -> nop
     end,
     process_show(?SECTION_GAME);
 process_post(?SECTION_DRAW, _Query, true) ->
