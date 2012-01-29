@@ -14,7 +14,8 @@
          administrative_offsets/0,
          time_offset_to_list/1,
          list_to_time_offset/1,
-         local_offset/0
+         local_offset/0,
+         strip/2
         ]).
 
 %% ----------------------------------------------------------------------
@@ -156,6 +157,26 @@ list_to_time_offset(String) ->
 %% @spec local_offset() -> Offset
 %%     Offset = administrative_offset()
 local_offset() -> local_offset(now()).
+
+%% @doc Removes Characters from beginning and ending of String.
+%% @spec strip(String, Characters) -> StrippedString
+%%     String = string(),
+%%     Characters = string(),
+%%     StrippedString = string()
+strip(String, Characters) ->
+    lists:reverse(
+      strip_(
+        lists:reverse(
+          strip_(String, Characters)),
+        Characters)).
+strip_([], _Chars) -> [];
+strip_([Char | Tail] = String, Chars) ->
+    case lists:member(Char, Chars) of
+        true ->
+            strip_(Tail, Chars);
+        _ ->
+            String
+    end.
 
 %% ----------------------------------------------------------------------
 %% Internal functions

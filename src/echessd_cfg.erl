@@ -131,7 +131,7 @@ parse_config_(String, Result) ->
     end.
 
 parse_line(Line0) ->
-    case strip(Line0, " \n\r\t") of
+    case echessd_lib:strip(Line0, " \n\r\t") of
         "#" ++ _ ->
             ignore;
         "" ->
@@ -196,30 +196,10 @@ split_kv([H | Tail], Key) ->
     case lists:member(H, " \t") of
         true ->
             {string:to_lower(lists:reverse(Key)),
-             strip(Tail, " \t")};
+             echessd_lib:strip(Tail, " \t")};
         _ ->
             split_kv(Tail, [H | Key])
     end;
 split_kv(_, Key) ->
     {string:to_lower(lists:reverse(Key)), ""}.
-
-%% @doc Removes Characters from beginning and ending of String.
-%% @spec strip(String, Characters) -> StrippedString
-%%     String = string(),
-%%     Characters = string(),
-%%     StrippedString = string()
-strip(String, Characters) ->
-    lists:reverse(
-      strip_(
-        lists:reverse(
-          strip_(String, Characters)),
-        Characters)).
-strip_([], _Chars) -> [];
-strip_([Char | Tail] = String, Chars) ->
-    case lists:member(Char, Chars) of
-        true ->
-            strip_(Tail, Chars);
-        _ ->
-            String
-    end.
 
