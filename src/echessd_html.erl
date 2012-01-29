@@ -531,7 +531,7 @@ user_game_(Owner, GameID, GameInfo) ->
             give_up when IsTest -> " - gived up";
             give_up ->
                 case proplists:get_value(winner, GameInfo) of
-                    Owner -> " - win (give up)";
+                    Owner -> " - win (gived up)";
                     _ -> " - loose (gived up)"
                 end;
             {draw, _} ->
