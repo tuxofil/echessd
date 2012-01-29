@@ -49,6 +49,7 @@ register() ->
     ServerZone =
         echessd_lib:time_offset_to_list(
           echessd_lib:local_offset()),
+    {ok, DefLang} = echessd_cfg:default(?CFG_DEF_LANG),
     html_page_header("echessd - Register new user",
                      [{h1, "echessd register form"}]) ++
         navig_links([{"?goto=" ++ ?SECTION_LOGIN, "Return to login form"}]) ++
@@ -66,6 +67,17 @@ register() ->
              (Zone) ->
                   "<option value='" ++ Zone ++ "'>" ++ Zone ++ "</option>"
           end, Timezones) ++
+        "</select><br>"
+        "Language: <select name=reglanguage>" ++
+        lists:map(
+          fun({LangAbbr, LangName}) ->
+                  "<option value='" ++ atom_to_list(LangAbbr) ++ "'" ++
+                      if LangAbbr == DefLang ->
+                              " selected";
+                         true -> ""
+                      end ++ ">" ++
+                      LangName ++ "</option>"
+          end, echessd_lib:languages()) ++
         "</select><br>"
         "<input type=submit value='Register'>"
         "</form>" ++
@@ -87,9 +99,10 @@ edituser() ->
           proplists:get_value(
             timezone, UserInfo,
             echessd_lib:local_offset())),
+    {OldLangAbbr, _OldLangName} = echessd_user:lang_info(UserInfo),
     html_page_header(
-      "echessd - Edit user preferences",
-      [{h1, "Edit your preferences"}]) ++
+      "echessd - " ++ gettext(edit_profile_title),
+      [{h1, gettext(edit_profile_title)}]) ++
         navigation() ++
         "<br>" ++
         "<form method=post>"
@@ -107,6 +120,17 @@ edituser() ->
                   "<option value='" ++ Zone ++ "'>" ++ Zone ++ "</option>"
           end, Timezones) ++
         "</select><br>"
+        "Language: <select name=editlanguage>" ++
+        lists:map(
+          fun({LangAbbr, LangName}) ->
+                  "<option value='" ++ atom_to_list(LangAbbr) ++ "'" ++
+                      if LangAbbr == OldLangAbbr ->
+                              " selected";
+                         true -> ""
+                      end ++ ">" ++
+                      LangName ++ "</option>"
+          end, echessd_lib:languages()) ++
+        "</select><br>"
         "<input type=submit value=Save>"
         "</form>"
         "<br>" ++
@@ -118,9 +142,10 @@ home() ->
     Username = get(username),
     {ok, UserInfo} = echessd_user:getprops(Username),
     html_page_header(
-      "echessd - Home", [{h1, "Home: " ++ Username}]) ++
+      "echessd - Home", [{h1, gettext(home) ++ ": " ++ Username}]) ++
         navigation() ++
-        navig_links([{"?goto=" ++ ?SECTION_EDITUSER, "Edit preferences"}]) ++
+        navig_links([{"?goto=" ++ ?SECTION_EDITUSER,
+                      gettext(edit_profile_title)}]) ++
         "<br>" ++
         user_info(Username, UserInfo) ++
         "<br>" ++
@@ -132,7 +157,7 @@ home() ->
 users() ->
     {ok, Users0} = echessd_user:list(),
     Users = lists:usort(Users0) -- get(username),
-    Title = "User list",
+    Title = gettext(users),
     html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
         navigation() ++
         "<br>" ++
@@ -160,7 +185,7 @@ user(Username) ->
             end
     end.
 user(Username, UserInfo) ->
-    Title = "User '" ++ Username ++ "'",
+    Title = gettext(user) ++ " '" ++ Username ++ "'",
     html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
         navigation() ++
         "<br>" ++
@@ -261,8 +286,8 @@ game(GameID, GameInfo, Board, Captures) ->
     GameStatus = proplists:get_value(status, GameInfo, none),
     Winner = proplists:get_value(winner, GameInfo),
     html_page_header(
-      "echessd - Game",
-      [{h1, "Game #" ++ integer_to_list(GameID)}]) ++
+      "echessd - " ++ gettext(game),
+      [{h1, gettext(game) ++ " #" ++ integer_to_list(GameID)}]) ++
         navigation() ++
         game_navigation(GameID, IsMyGame andalso GameStatus == none) ++
         case GameStatus of
@@ -360,7 +385,7 @@ draw_confirm(GameID) ->
         "<input type=submit value='Propose draw'>"
         "</form>" ++
         navig_links([{"javascript: history.back();",
-                      "No, get out of here!"}]) ++
+                      gettext(ouch_back_link)}]) ++
         html_page_footer([]).
 
 %% @doc Makes 'giving up confirmation' page content.
@@ -385,7 +410,7 @@ giveup_confirm(GameID) ->
         "<input type=submit value='Give up'>"
         "</form>" ++
         navig_links([{"javascript: history.back();",
-                      "No, get out of here!"}]) ++
+                      gettext(ouch_back_link)}]) ++
         html_page_footer([]).
 
 %% @doc Makes 'under construction' page content.
@@ -403,7 +428,7 @@ error(Message) ->
     html_page_header("echessd - Error", [{h1, "echessd error"}]) ++
         tag("div", ["class=error"], pre(Message)) ++
         "<br>" ++
-        navig_links([{"javascript: history.back();", "Back"}]) ++
+        navig_links([{"javascript: history.back();", gettext(back_link)}]) ++
         html_page_footer([]).
 
 %% @doc Makes 'error' page content.
@@ -430,25 +455,26 @@ user_info(Username, UserInfo) ->
                 {K, V} <- user_info_cells(Username, UserInfo)]
             , "\n"))).
 user_info_cells(Username, UserInfo) ->
+    LangInfo = echessd_user:lang_info(UserInfo),
     lists:flatmap(
-      fun(login) -> [{"Login", Username}];
+      fun(login) -> [{gettext(login), Username}];
          (fullname = Key) ->
-              [{"Full name",
+              [{gettext(fullname),
                 case proplists:get_value(Key, UserInfo) of
                     [_ | _] = Value ->
                         echessd_lib:escape_html_entities(Value);
-                    _ -> "Not Sure"
+                    _ -> gettext(not_sure)
                 end}];
          (created = Key) ->
-              [{"Registered",
+              [{gettext(registered),
                 case proplists:get_value(Key, UserInfo) of
                     Value when ?is_now(Value) ->
                         echessd_lib:timestamp(
                           Value, get(timezone));
-                    _ -> "unknown"
+                    _ -> gettext(unknown)
                 end}];
          (timezone = Key) ->
-              [{"Timezone",
+              [{gettext(timezone),
                 case proplists:get_value(Key, UserInfo) of
                     Value when is_tuple(Value) ->
                         echessd_lib:time_offset_to_list(Value);
@@ -456,8 +482,11 @@ user_info_cells(Username, UserInfo) ->
                         echessd_lib:time_offset_to_list(
                           echessd_lib:local_offset())
                 end}];
+         (language) ->
+              {_LangAbbr, LangName} = LangInfo,
+              [{gettext(language), LangName}];
          (_) -> []
-      end, [login, fullname, created, timezone]).
+      end, [login, fullname, created, timezone, language]).
 
 user_games(Username, UserInfo, ShowNotAcknowledged) ->
     %% fetch all user games info
@@ -483,7 +512,7 @@ user_games(Username, UserInfo, ShowNotAcknowledged) ->
           end, UserGames),
     case Confirmed of
         [_ | _] ->
-            h2("User games:") ++
+            h2(gettext(user_games) ++ ":") ++
                 string:join(
                   [user_game_(Username, I, L) ||
                       {I, L} <- Confirmed], "<br>") ++
@@ -492,7 +521,7 @@ user_games(Username, UserInfo, ShowNotAcknowledged) ->
     end ++
         case NotConfirmed of
             [_ | _] when ShowNotAcknowledged ->
-                h2("Unconfirmed games:") ++
+                h2(gettext(unconf_games) ++ ":") ++
                     string:join(
                       [user_unconfirmed_game_(Username, I, L) ||
                           {I, L} <- NotConfirmed], "<br>") ++
@@ -507,13 +536,13 @@ user_game_(Owner, GameID, GameInfo) ->
     UniquePlayerNames = lists:usort([N || {N, _} <- GamePlayers]),
     IsTest = length(UniquePlayerNames) == 1,
     "* " ++ gamelink(GameID) ++
-        if IsTest -> " test";
+        if IsTest -> " " ++ gettext(test_game);
            true ->
                 Color = proplists:get_value(Owner, GamePlayers),
                 Opponent = hd(UniquePlayerNames -- [Owner]),
                 OpponentColor = proplists:get_value(Opponent, GamePlayers),
-                " " ++ chessman({Color, ?king}) ++ " vs " ++
-                    userlink(Opponent) ++ " " ++
+                " " ++ chessman({Color, ?king}) ++ " " ++ gettext(vs) ++
+                    " " ++ userlink(Opponent) ++ " " ++
                     chessman({OpponentColor, ?king})
         end ++
         case proplists:get_value(status, GameInfo) of
@@ -522,20 +551,20 @@ user_game_(Owner, GameID, GameInfo) ->
                     true when not IsTest -> " !!!";
                     _ -> ""
                 end;
-            checkmate when IsTest -> " - checkmate";
+            checkmate when IsTest -> " - " ++ gettext(checkmate);
             checkmate ->
                 case proplists:get_value(winner, GameInfo) of
-                    Owner -> " - win";
-                    _ -> " - loose"
+                    Owner -> " - " ++ gettext(win);
+                    _ -> " - " ++ gettext(loose)
                 end;
-            give_up when IsTest -> " - gived up";
+            give_up when IsTest -> " - " ++ gettext(gived_up);
             give_up ->
                 case proplists:get_value(winner, GameInfo) of
-                    Owner -> " - win (gived up)";
-                    _ -> " - loose (gived up)"
+                    Owner -> " - " ++ gettext(win_giveup);
+                    _ -> " - " ++ gettext(loose_giveup)
                 end;
             {draw, _} ->
-                " - draw"
+                " - " ++ gettext(draw)
         end.
 
 user_unconfirmed_game_(Owner, GameID, GameInfo) ->
@@ -581,7 +610,7 @@ html_page_header(Title, Options) ->
             undefined -> "";
             Error ->
                 tag("div", ["class=error"],
-                    pre("ERROR: " ++ format_error(Error)))
+                    pre(gettext(error) ++ ": " ++ format_error(Error)))
         end.
 
 html_page_footer(_Options) ->
@@ -613,7 +642,7 @@ gamelink(GameID) ->
 newgame_link(WithUsername) ->
     navig_links(
       [{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUsername,
-        "Start new game"}]).
+        gettext(new_game_link)}]).
 
 chess_table(GameType, Board, IsRotated, LastPly) ->
     Letters0 = "abcdefgh",
@@ -740,27 +769,27 @@ navig_links(List, Current) ->
                 end, List), "&nbsp;|&nbsp;") ++
             "&nbsp;]").
 
-section_caption(?SECTION_HOME) -> "Home";
-section_caption(?SECTION_USERS) -> "Users";
+section_caption(?SECTION_HOME) -> gettext(home);
+section_caption(?SECTION_USERS) -> gettext(users);
 section_caption(Other) -> Other.
 
 navigation() ->
     navig_links(
       [{"?goto=" ++ S, section_caption(S)} ||
           S <- [?SECTION_HOME, ?SECTION_USERS]] ++
-          [{"?action=" ++ ?SECTION_EXIT, "Logout"}],
+          [{"?action=" ++ ?SECTION_EXIT, gettext(logout)}],
       section_caption(echessd_session:get_val(section))).
 
 game_navigation(GameID, ShowEndGameLinks) ->
     StrID = integer_to_list(GameID),
     navig_links(
-      [{"?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, "Refresh"},
-       {"?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID, "History"}] ++
+      [{"?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, gettext(refresh)},
+       {"?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID, gettext(history)}] ++
           if ShowEndGameLinks ->
                   [{"?goto=" ++ ?SECTION_DRAW_CONFIRM ++
-                        "&game=" ++ StrID, "Draw"},
+                        "&game=" ++ StrID, gettext(req_draw)},
                    {"?goto=" ++ ?SECTION_GIVEUP_CONFIRM ++
-                        "&game=" ++ StrID, "GiveUp"}];
+                        "&game=" ++ StrID, gettext(do_giveup)}];
              true -> []
           end).
 
@@ -769,24 +798,27 @@ history_navigation(GameID, Step, MaxStep) ->
     BaseURL = "?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID ++ "&step=",
     navig_links(
       if Step > 0 ->
-              [{BaseURL ++ integer_to_list(Step - 1), "Previous"}];
-         true -> [{undefined, "Previous"}]
+              [{BaseURL ++ integer_to_list(Step - 1), gettext(prev)}];
+         true -> [{undefined, gettext(prev)}]
       end ++
           if Step < MaxStep ->
-                  [{BaseURL ++ integer_to_list(Step + 1), "Next"}];
-             true -> [{undefined, "Next"}]
+                  [{BaseURL ++ integer_to_list(Step + 1), gettext(next)}];
+             true -> [{undefined, gettext(next)}]
           end).
 
 format_error({error, Reason}) ->
     format_error(Reason);
 format_error({wrong_move, Reason}) ->
-    "You can not move such way. " ++
+    gettext(badmove) ++
         case Reason of
-            check -> "Your King is in check!";
+            check -> gettext(king_in_check);
             badmove -> "";
             friendly_fire -> "";
             _ -> format_error(Reason)
         end;
 format_error(Term) ->
     io_lib:format("~120p", [Term]).
+
+gettext(TextID) ->
+    echessd_lib:gettext(TextID, get(language)).
 
