@@ -161,7 +161,7 @@ echessd source tree.
 === TODO list ===
 
 <pre>
-- handling user proposed give up and draw;
+- add mouse support to make moves;
 - time limitation for moves;
 - describe system architecture;
 - add users 'extra_info' property;
