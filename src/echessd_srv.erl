@@ -190,6 +190,7 @@ process_post(?SECTION_REG, Query, false) ->
     Password1 = proplists:get_value("regpassword1", Query),
     Password2 = proplists:get_value("regpassword2", Query),
     StrTimezone = proplists:get_value("regtimezone", Query),
+    StrLanguage = proplists:get_value("reglanguage", Query),
     if Password1 /= Password2 ->
             echessd_html:error("Password confirmation failed");
        true ->
@@ -200,6 +201,7 @@ process_post(?SECTION_REG, Query, false) ->
                            [{password, Password1},
                             {fullname, Fullname},
                             {timezone, Timezone},
+                            {language, StrLanguage},
                             {created, now()}]) of
                         ok ->
                             process_post(
@@ -223,6 +225,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
     Password1 = proplists:get_value("editpassword1", Query),
     Password2 = proplists:get_value("editpassword2", Query),
     StrTimezone = proplists:get_value("edittimezone", Query),
+    StrLanguage = proplists:get_value("editlanguage", Query),
     case echessd_user:auth(Username, Password0) of
         {ok, _UserInfo} ->
             if Password1 /= Password2 ->
@@ -233,7 +236,8 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                             NewUserInfo =
                                 [{password, Password1},
                                  {fullname, Fullname},
-                                 {timezone, Timezone}],
+                                 {timezone, Timezone},
+                                 {language, StrLanguage}],
                             case echessd_user:setprops(
                                    Username, NewUserInfo) of
                                 ok ->

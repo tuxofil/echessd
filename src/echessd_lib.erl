@@ -119,12 +119,15 @@ gettext(TextID, LangID) ->
     case dict:find({TextID, LangID}, Strings) of
         {ok, Text} -> Text;
         _ ->
-            case dict:find({TextID, en}, Strings) of
+            {ok, DefLang} = echessd_cfg:default(?CFG_DEF_LANG),
+            case dict:find({TextID, DefLang}, Strings) of
                 {ok, Text} -> Text;
                 _ ->
                     echessd_log:err(
                       "Failed to fetch text "
-                      "~9999p for lang ~9999p"),
+                      "~9999p for lang ~9999p "
+                      "(default lang is ~9999p)",
+                      [TextID, LangID, DefLang]),
                     ""
             end
     end.

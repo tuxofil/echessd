@@ -5,7 +5,8 @@
 
 -module(echessd_user).
 
--export([list/0, add/2, del/1, auth/2, getprops/1, setprops/2]).
+-export([list/0, add/2, del/1, auth/2, getprops/1, setprops/2,
+         lang_info/1]).
 
 -include("echessd.hrl").
 
@@ -29,8 +30,8 @@
         {login, echessd_user()} |
         {fullname, string()} |
         {timezone, echessd_lib:administrative_offset()} |
+        {language, atom()} |
         {games, [echessd_game:echessd_game_id()]}.
-%% Some descr
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -151,6 +152,27 @@ setprops(Username, UserInfo0) ->
             FinalError
     end.
 
+%% @doc Fetch language information from users info.
+%% @spec lang_info(UserInfo) -> {LangAbbr, LangName},
+%%     UserInfo = echessd_user_info(),
+%%     LangAbbr = atom(),
+%%     LangName = string()
+lang_info(UserInfo) ->
+    LangAbbr = proplists:get_value(language, UserInfo),
+    Languages = echessd_lib:languages(),
+    case proplists:get_value(LangAbbr, Languages) of
+        [_ | _] = LangName ->
+            {LangAbbr, LangName};
+        _ ->
+            {ok, DefLangAbbr} = echessd_cfg:default(?CFG_DEF_LANG),
+            case proplists:get_value(DefLangAbbr, Languages) of
+                [_ | _] = LangName ->
+                    {DefLangAbbr, LangName};
+                _ ->
+                    throw({error, no_default_language})
+            end
+    end.
+
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
@@ -212,6 +234,21 @@ check_property({timezone, V} = I) ->
     case lists:member(V, echessd_lib:administrative_offsets()) of
         true -> I;
         _ -> throw({error, {bad_timezone, V}})
+    end;
+check_property({language = Key, A} = I) ->
+    if is_atom(A) -> I;
+       is_list(A) ->
+            List =
+                [{atom_to_list(N), N} ||
+                    {N, _} <- echessd_lib:languages()],
+            A1 = string:to_lower(echessd_lib:strip(A, " \t\r\n")),
+            case [V || {K, V} <- List, K == A1] of
+                [Parsed | _] -> {Key, Parsed};
+                _ ->
+                    throw({error, {unsupported_language, A}})
+            end;
+       true ->
+            throw({error, {bad_language, A}})
     end;
 check_property({K, _V}) ->
     throw({error, {unknown_property, K}}).

@@ -71,6 +71,7 @@ read(Cookie) ->
     erase(username),
     erase(userinfo),
     erase(timezone),
+    erase(language),
     [erase(K) || {{session_var, _} = K, _} <- erlang:get()],
     SID = proplists:get_value("sid", Cookie),
     case echessd_session:get(SID) of
@@ -85,6 +86,9 @@ read(Cookie) ->
                         proplists:get_value(
                           timezone, UserInfo,
                           echessd_lib:local_offset())),
+                    {LangAbbr, _LangName} =
+                        echessd_user:lang_info(UserInfo),
+                    put(language, LangAbbr),
                     lists:foreach(
                       fun({K, V}) ->
                               put({session_var, K}, V)

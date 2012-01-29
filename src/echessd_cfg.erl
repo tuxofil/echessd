@@ -94,6 +94,8 @@ default(?CFG_DOC_ROOT) ->
     {ok, "www"};
 default(?CFG_LOGFILE) ->
     {ok, "echessd.log"};
+default(?CFG_DEF_LANG) ->
+    {ok, en};
 default(_) ->
     undefined.
 
