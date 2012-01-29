@@ -779,6 +779,14 @@ history_navigation(GameID, Step, MaxStep) ->
 
 format_error({error, Reason}) ->
     format_error(Reason);
+format_error({wrong_move, Reason}) ->
+    "You can not move such way. " ++
+        case Reason of
+            check -> "Your King is in check!";
+            badmove -> "";
+            friendly_fire -> "";
+            _ -> format_error(Reason)
+        end;
 format_error(Term) ->
     io_lib:format("~120p", [Term]).
 
