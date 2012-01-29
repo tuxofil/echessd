@@ -3,9 +3,45 @@
   {ru, "Русский"}
  ]}.
 
-{text, 1,
+{text, home,
  [{en, "Home"},
   {ru, "Главная"}]}.
+
+{text, users,
+ [{en, "Users"},
+  {ru, "Игроки"}]}.
+
+{text, user,
+ [{en, "User"},
+  {ru, "Игрок"}]}.
+
+{text, refresh,
+ [{en, "Refresh"},
+  {ru, "Обновить"}]}.
+
+{text, history,
+ [{en, "History"},
+  {ru, "История"}]}.
+
+{text, req_draw,
+ [{en, "Draw"},
+  {ru, "Ничья"}]}.
+
+{text, do_giveup,
+ [{en, "GiveUp"},
+  {ru, "Сдаться"}]}.
+
+{text, prev,
+ [{en, "Previous"},
+  {ru, "Предыдущий"}]}.
+
+{text, next,
+ [{en, "Next"},
+  {ru, "Следующий"}]}.
+
+{text, game,
+ [{en, "Game"},
+  {ru, "Партия"}]}.
 
 {text, badmove,
  [{en, "You can not move such way. "},
@@ -18,4 +54,100 @@
 {text, error,
  [{en, "ERROR"},
   {ru, "ОШИБКА"}]}.
+
+{text, draw,
+ [{en, "draw"},
+  {ru, "ничья"}]}.
+
+{text, checkmate,
+ [{en, "checkmate"},
+  {ru, "мат"}]}.
+
+{text, win_giveup,
+ [{en, "win (gived up)"},
+  {ru, "выиграно (сдался)"}]}.
+
+{text, loose_giveup,
+ [{en, "loose (gived up)"},
+  {ru, "проиграно (сдался)"}]}.
+
+{text, gived_up,
+ [{en, "gived up"},
+  {ru, "сдался"}]}.
+
+{text, win,
+ [{en, "win"},
+  {ru, "выиграно"}]}.
+
+{text, loose,
+ [{en, "loose"},
+  {ru, "проиграно"}]}.
+
+{text, test_game,
+ [{en, "test"},
+  {ru, "тестовая игра"}]}.
+
+{text, vs,
+ [{en, "vs"},
+  {ru, "против"}]}.
+
+{text, unconf_games,
+ [{en, "Unconfirmed games"},
+  {ru, "Неподтверждённые партии"}]}.
+
+{text, user_games,
+ [{en, "User games"},
+  {ru, "Текущие партии"}]}.
+
+{text, timezone,
+ [{en, "Timezone"},
+  {ru, "Часовой пояс"}]}.
+
+{text, language,
+ [{en, "Language"},
+  {ru, "Язык"}]}.
+
+{text, registered,
+ [{en, "Registered"},
+  {ru, "Зарегистрирован"}]}.
+
+{text, unknown,
+ [{en, "unknown"},
+  {ru, "неизвестно"}]}.
+
+{text, fullname,
+ [{en, "Full name"},
+  {ru, "Полное имя"}]}.
+
+{text, not_sure,
+ [{en, "Not Sure"},
+  {ru, "Не Уверен"}]}.
+
+{text, optional,
+ [{en, "optional"},
+  {ru, "необязательно"}]}.
+
+{text, login,
+ [{en, "login"},
+  {ru, "Логин"}]}.
+
+{text, edit_profile_title,
+ [{en, "Edit user preferences"},
+  {ru, "Редактирование профиля"}]}.
+
+{text, logout,
+ [{en, "Logout"},
+  {ru, "Выйти"}]}.
+
+{text, new_game_link,
+ [{en, "Start new game"},
+  {ru, "Начать новую партию"}]}.
+
+{text, back_link,
+ [{en, "Back"},
+  {ru, "Вернуться"}]}.
+
+{text, ouch_back_link,
+ [{en, "No, get out of here!"},
+  {ru, "Ой, не надо, хочу назад!"}]}.
 
