@@ -18,6 +18,8 @@
          set_game_props/2,
          delgame/1,
          gameply/3,
+         game_give_up/2,
+         game_request_draw/2,
          gamerewind/1,
          gamereset/1
         ]).
@@ -299,6 +301,11 @@ gameply(GameID, Username, Ply) ->
               end,
               %% check if such user exists
               _UserInfo = ll_get_props(?dbt_users, Username),
+              case proplists:get_value(status, GameInfo) of
+                  none -> nop;
+                  _ ->
+                      mnesia:abort(game_ended)
+              end,
               case echessd_game:who_must_turn(GameInfo) of
                   Username ->
                       TurnColor = echessd_game:turn_color(GameInfo),
@@ -339,6 +346,123 @@ gameply(GameID, Username, Ply) ->
                           _ ->
                               mnesia:abort(not_your_game)
                       end
+              end
+      end).
+
+%% @doc Make user fail the game by giving up.
+%% @spec game_give_up(GameID, Username) -> ok | {error, Reason}
+%%     GameID = echessd_game:echessd_game_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     Reason = term()
+game_give_up(GameID, Username) ->
+    transaction_ok(
+      fun() ->
+              GameInfo = ll_get_props(?dbt_games, GameID),
+              case proplists:get_value(acknowledged, GameInfo) of
+                  true -> nop;
+                  _ ->
+                      mnesia:abort(game_not_acknowledged)
+              end,
+              %% check if such user exists
+              _UserInfo = ll_get_props(?dbt_users, Username),
+              Players =
+                  [I || {users, L} <- GameInfo,
+                        {_N, R} = I <- L,
+                        lists:member(R, [?white, ?black])],
+              case [N || {N, _} <- Players, N == Username] of
+                  [_ | _] -> nop;
+                  _ ->
+                      mnesia:abort(not_your_game)
+              end,
+              MyColor =
+                  case lists:usort([N || {N, _} <- Players]) of
+                      [_] ->
+                          echessd_game:turn_color(GameInfo);
+                      _ ->
+                          [MyColor0 | _] =
+                              [C || {N, C} <- Players, N == Username],
+                          MyColor0
+                  end,
+              WinnerColor = hd([?white, ?black] -- [MyColor]),
+              [Winner | _] =
+                  [N || {N, C} <- Players, C == WinnerColor],
+              case proplists:get_value(status, GameInfo) of
+                  none ->
+                      ll_replace_props(
+                        ?dbt_games, GameID, GameInfo,
+                        [{status, give_up},
+                         {winner, Winner},
+                         {winner_color, WinnerColor}]);
+                  give_up -> ok;
+                  _ ->
+                      mnesia:abort(game_ended)
+              end
+      end).
+
+%% @doc Makes draw request.
+%% @spec game_request_draw(GameID, Username) -> ok | {error, Reason}
+%%     GameID = echessd_game:echessd_game_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     Reason = term()
+game_request_draw(GameID, Username) ->
+    transaction_ok(
+      fun() ->
+              GameInfo = ll_get_props(?dbt_games, GameID),
+              case proplists:get_value(acknowledged, GameInfo) of
+                  true -> nop;
+                  _ ->
+                      mnesia:abort(game_not_acknowledged)
+              end,
+              %% check if such user exists
+              _UserInfo = ll_get_props(?dbt_users, Username),
+              Players =
+                  [I || {users, L} <- GameInfo,
+                        {_N, R} = I <- L,
+                        lists:member(R, [?white, ?black])],
+              case [N || {N, _} <- Players, N == Username] of
+                  [_ | _] -> nop;
+                  _ ->
+                      mnesia:abort(not_your_game)
+              end,
+              MyColor =
+                  case lists:usort([N || {N, _} <- Players]) of
+                      [_] ->
+                          echessd_game:turn_color(GameInfo);
+                      _ ->
+                          [MyColor0 | _] =
+                              [C || {N, C} <- Players, N == Username],
+                          MyColor0
+                  end,
+              [Opponent | _] = [N || {N, C} <- Players, C /= MyColor],
+              case proplists:get_value(status, GameInfo) of
+                  none ->
+                      OldDrawRequest =
+                          proplists:get_value(
+                            draw_request_from, GameInfo),
+                      if Username == Opponent ->
+                              %% test game: just end the game
+                              ll_replace_props(
+                                ?dbt_games, GameID, GameInfo,
+                                [{status, {draw, agreement}},
+                                 {winner, undefined},
+                                 {winner_color, undefined}]);
+                         OldDrawRequest == Opponent ->
+                              %% confirm draw
+                              ll_replace_props(
+                                ?dbt_games, GameID, GameInfo,
+                                [{status, {draw, agreement}},
+                                 {winner, undefined},
+                                 {winner_color, undefined}]);
+                         true ->
+                              %% make draw request
+                              ll_replace_props(
+                                ?dbt_games, GameID, GameInfo,
+                                [{draw_request_from, Username},
+                                 {winner, undefined},
+                                 {winner_color, undefined}])
+                      end;
+                  _ ->
+                      mnesia:abort(game_ended)
               end
       end).
 

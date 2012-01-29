@@ -10,6 +10,8 @@
          deny/2,
          is_valid_ply/5,
          ply/3,
+         give_up/2,
+         request_draw/2,
          fetch/1,
          getprops/1,
          who_must_turn/1,
@@ -55,11 +57,14 @@
         {status, echessd_game_status()} |
         {winner, echessd_user:echessd_username()} |
         {winner_color, echessd_color()} |
+        {draw_request_from, echessd_user:echessd_username()} |
         {acknowledged, boolean()}.
 
 -type echessd_game_status() ::
         none | checkmate | {draw, stalemate} |
-        {draw, insufficient_material}.
+        {draw, insufficient_material} |
+        {draw, agreement} |
+        give_up.
 
 -type echessd_color() :: atom().
 %% Color of player side.
@@ -190,6 +195,44 @@ ply(GameID, User, Ply) ->
             echessd_log:err(
               "game ~9999p: user ~9999p failed to move ~9999p: ~99999p",
               [GameID, User, Ply, Reason]),
+            Error
+    end.
+
+%% @doc Make user fail the game by giving up.
+%% @spec give_up(GameID, Username) -> ok | {error, Reason}
+%%     GameID = echessd_game_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     Reason = term()
+give_up(GameID, Username) ->
+    case echessd_db:game_give_up(GameID, Username) of
+        ok ->
+            echessd_log:info(
+              "game ~9999p gived up by ~9999p",
+              [GameID, Username]),
+            ok;
+        {error, Reason} = Error ->
+            echessd_log:err(
+              "game ~9999p give up (by ~9999p) failed: ~9999p",
+              [GameID, Username, Reason]),
+            Error
+    end.
+
+%% @doc Make request for a draw by agreement.
+%% @spec request_draw(GameID, Username) -> ok | {error, Reason}
+%%     GameID = echessd_game_id(),
+%%     Username = echessd_user:echessd_user(),
+%%     Reason = term()
+request_draw(GameID, Username) ->
+    case echessd_db:game_request_draw(GameID, Username) of
+        ok ->
+            echessd_log:info(
+              "game ~9999p requested draw by ~9999p",
+              [GameID, Username]),
+            ok;
+        {error, Reason} = Error ->
+            echessd_log:err(
+              "game ~9999p draw request (by ~9999p) failed: ~9999p",
+              [GameID, Username, Reason]),
             Error
     end.
 
