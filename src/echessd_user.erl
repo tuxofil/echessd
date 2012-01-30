@@ -64,7 +64,7 @@ add(Username, UserInfo0) ->
         ok ->
             echessd_log:info(
               "user ~9999p added (~9999p)",
-              [Username, UserInfo0]);
+              [Username, hide_sensitive(UserInfo0)]);
         {error, Reason} ->
             echessd_log:err(
               "user ~9999p add failed: ~9999p",
@@ -143,7 +143,7 @@ setprops(Username, UserInfo0) ->
         ok ->
             echessd_log:info(
               "user ~9999p props updated: ~9999p",
-              [Username, UserInfo0]),
+              [Username, hide_sensitive(UserInfo0)]),
             ok;
         {error, Reason} = FinalError ->
             echessd_log:err(
@@ -176,6 +176,13 @@ lang_info(UserInfo) ->
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+hide_sensitive(UserInfo) ->
+    lists:map(
+      fun({password, _}) ->
+              {password, '*********'};
+         (Other) -> Other
+      end, UserInfo).
 
 is_valid_username([_ | _] = String) ->
     lists:all(
