@@ -161,7 +161,6 @@ echessd source tree.
 === TODO list ===
 
 <pre>
-- add mouse support to make moves;
 - time limitation for moves;
 - describe system architecture;
 - add users 'extra_info' property;
