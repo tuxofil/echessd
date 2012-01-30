@@ -8,6 +8,7 @@
 -export([login/0,
          register/0,
          edituser/0,
+         passwd/0,
          eaccess/0,
          home/0,
          game/1,
@@ -107,12 +108,11 @@ edituser() ->
       [{h1, gettext(edit_profile_title)}]) ++
         navigation() ++
         "<br>" ++
+        navig_links(
+          [{"?goto=" ++ ?SECTION_PASSWD_FORM,
+            gettext(predit_passwd_link)}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=" ++ ?SECTION_SAVEUSER ++ ">" ++
-        gettext(predit_passw) ++ ": <input name=editpassword0 type=password><br>" ++
-        gettext(predit_passw_new) ++ ": <input name=editpassword1 type=password><br>" ++
-        gettext(predit_passw_new_confirm) ++ ": "
-        "<input name=editpassword2 type=password><br>" ++
         gettext(fullname) ++ ": <input name=editfullname type=text "
         "value='" ++ Fullname ++ "'><br>" ++
         gettext(timezone) ++ ": <select name=edittimezone>" ++
@@ -136,6 +136,27 @@ edituser() ->
           end, echessd_lib:languages()) ++
         "</select><br>"
         "<input type=submit value='" ++ gettext(predit_save_button) ++ "'>"
+        "</form>"
+        "<br>" ++
+        html_page_footer([]).
+
+%% @doc Makes 'change user password' page content.
+%% @spec passwd() -> io_list()
+passwd() ->
+    html_page_header(
+      "echessd - " ++ gettext(passwd_title),
+      [{h1, gettext(passwd_title)}]) ++
+        navigation() ++
+        "<br>" ++
+        "<form method=post>"
+        "<input name=action type=hidden value=" ++ ?SECTION_PASSWD ++ ">" ++
+        gettext(passwd_passw) ++ ": "
+        "<input name=editpassword0 type=password><br>" ++
+        gettext(passwd_passw_new) ++ ": "
+        "<input name=editpassword1 type=password><br>" ++
+        gettext(passwd_passw_new_confirm) ++ ": "
+        "<input name=editpassword2 type=password><br>" ++
+        "<input type=submit value='" ++ gettext(passwd_save_button) ++ "'>"
         "</form>"
         "<br>" ++
         html_page_footer([]).

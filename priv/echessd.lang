@@ -313,6 +313,10 @@
  [{en, "Edit user preferences"},
   {ru, "Редактирование профиля"}]}.
 
+{text, predit_passwd_link,
+ [{en, "Change password"},
+  {ru, "Изменение пароля"}]}.
+
 {text, predit_lang,
  [{en, "Language"},
   {ru, "Язык интерфейса"}]}.
@@ -321,21 +325,32 @@
  [{en, "Save"},
   {ru, "Сохранить"}]}.
 
-{text, predit_passw,
- [{en, "Your password"},
-  {ru, "Текущий пароль"}]}.
-
-{text, predit_passw_new,
- [{en, "New password"},
-  {ru, "Новый пароль"}]}.
-
-{text, predit_passw_new_confirm,
- [{en, "New password confirm"},
-  {ru, "Подтвердите новый пароль"}]}.
-
 {text, optional,
  [{en, "optional"},
   {ru, "необязательно"}]}.
+
+%% ----------------------------------------------------------------------
+%% Change password page
+
+{text, passwd_title,
+ [{en, "User password change"},
+  {ru, "Смена пароля учётной записи"}]}.
+
+{text, passwd_passw,
+ [{en, "Your current password"},
+  {ru, "Ваш текущий пароль"}]}.
+
+{text, passwd_passw_new,
+ [{en, "New password"},
+  {ru, "Ваш новый пароль"}]}.
+
+{text, passwd_passw_new_confirm,
+ [{en, "New password confirm"},
+  {ru, "Подтвердите новый пароль"}]}.
+
+{text, passwd_save_button,
+ [{en, "Save"},
+  {ru, "Сохранить"}]}.
 
 %% ----------------------------------------------------------------------
 %% Login page
@@ -434,6 +449,10 @@
 {text, err_save_user,
  [{en, "Failed to save user properties"},
   {ru, "Не удалось изменить настройки игрока"}]}.
+
+{text, err_passwd,
+ [{en, "Failed to change user password"},
+  {ru, "Не удалось изменить пароль учётной записи игрока"}]}.
 
 {text, err_new_game,
  [{en, "Failed to create new game"},
