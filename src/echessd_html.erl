@@ -788,8 +788,7 @@ navigation() ->
     navig_links(
       [{"?goto=" ++ S, section_caption(S)} ||
           S <- [?SECTION_HOME, ?SECTION_USERS]] ++
-          [{"?action=" ++ ?SECTION_EXIT, gettext(logout)}],
-      section_caption(echessd_session:get_val(section))).
+          [{"?action=" ++ ?SECTION_EXIT, gettext(logout)}]).
 
 game_navigation(GameID, ShowEndGameLinks) ->
     StrID = integer_to_list(GameID),
