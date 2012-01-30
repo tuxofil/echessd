@@ -50,7 +50,7 @@ register() ->
     ServerZone =
         echessd_lib:time_offset_to_list(
           echessd_lib:local_offset()),
-    {ok, DefLang} = echessd_cfg:default(?CFG_DEF_LANG),
+    DefLang = echessd_cfg:get(?CFG_DEF_LANG),
     html_page_header("echessd - " ++ gettext(rnu_title),
                      [{h1, "echessd - " ++ gettext(rnu_title)}]) ++
         navig_links([{"?goto=" ++ ?SECTION_LOGIN, gettext(rnu_ret_link)}]) ++

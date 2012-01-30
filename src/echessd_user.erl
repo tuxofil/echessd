@@ -164,7 +164,7 @@ lang_info(UserInfo) ->
         [_ | _] = LangName ->
             {LangAbbr, LangName};
         _ ->
-            {ok, DefLangAbbr} = echessd_cfg:default(?CFG_DEF_LANG),
+            DefLangAbbr = echessd_cfg:get(?CFG_DEF_LANG),
             case proplists:get_value(DefLangAbbr, Languages) of
                 [_ | _] = LangName ->
                     {DefLangAbbr, LangName};

@@ -18,6 +18,19 @@
 %%      and store configuration items in ETS table.
 %% @spec read() -> ok
 read() ->
+    catch ets:new(?echessd_cfg, [named_table, public, set]),
+    echessd_log:info("Reading language file..."),
+    LangInfo =
+        case read_lang_file() of
+            {ok, LangInfo0} -> LangInfo0;
+            {error, Reason0} ->
+                echessd_log:err(
+                  "Lang file parse error: ~99999p",
+                  [Reason0]),
+                throw({lang_read_error, Reason0})
+        end,
+    ets:insert(?echessd_cfg, {?CFG_LANG_INFO, LangInfo}),
+    ets:delete(?echessd_cfg, ?CFG_DEF_LANG),
     echessd_log:info("Reading configurations..."),
     Args = init:get_arguments(),
     CfgFile =
@@ -35,21 +48,8 @@ read() ->
             String = binary_to_list(Binary),
             case parse_config(String) of
                 {ok, Config} ->
-                    case read_lang_file() of
-                        {ok, LangInfo} ->
-                            catch ets:new(
-                                    ?echessd_cfg,
-                                    [named_table, public, set]),
-                            ets:insert(
-                              ?echessd_cfg,
-                              [{?CFG_LANG_INFO, LangInfo} | Config]),
-                            ok;
-                        {error, Reason} ->
-                            echessd_log:err(
-                              "Lang file parse error: ~99999p",
-                              [Reason]),
-                            throw({lang_read_error, Reason})
-                    end;
+                    ets:insert(?echessd_cfg, Config),
+                    ok;
                 {error, Reason} ->
                     echessd_log:err(
                       "Configuration file ~99999p parse error: ~99999p",
@@ -195,6 +195,9 @@ parse_val_(?CFG_BIND_PORT, String) ->
     Int = list_to_integer(String),
     true = Int > 0 andalso Int < 65536,
     Int;
+parse_val_(?CFG_DEF_LANG, String) ->
+    {LangAbbr, _LangName} = echessd_lib:parse_language(String),
+    LangAbbr;
 parse_val_(_, Val) ->
     Val.
 

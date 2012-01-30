@@ -120,7 +120,7 @@ gettext(TextID, LangID) ->
     case dict:find({TextID, LangID}, Strings) of
         {ok, Text} -> Text;
         _ ->
-            {ok, DefLang} = echessd_cfg:default(?CFG_DEF_LANG),
+            DefLang = echessd_cfg:get(?CFG_DEF_LANG),
             case dict:find({TextID, DefLang}, Strings) of
                 {ok, Text} -> Text;
                 _ ->

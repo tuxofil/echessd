@@ -21,7 +21,7 @@
 
 -define(CFGS, [?CFG_LOGLEVEL, ?CFG_LOGFILE,
                ?CFG_BIND_ADDR, ?CFG_BIND_PORT,
-               ?CFG_DOC_ROOT]).
+               ?CFG_DOC_ROOT, ?CFG_DEF_LANG]).
 
 -define(MANDATORY_CFGS, []).
 
