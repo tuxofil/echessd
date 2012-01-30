@@ -30,7 +30,10 @@ read() ->
                 throw({lang_read_error, Reason0})
         end,
     ets:insert(?echessd_cfg, {?CFG_LANG_INFO, LangInfo}),
-    ets:delete(?echessd_cfg, ?CFG_DEF_LANG),
+    lists:foreach(
+      fun(CfgItem) ->
+              catch ets:delete(?echessd_cfg, CfgItem)
+      end, ?CFGS),
     echessd_log:info("Reading configurations..."),
     Args = init:get_arguments(),
     CfgFile =
