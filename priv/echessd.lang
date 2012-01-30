@@ -407,3 +407,35 @@
  [{en, "Password confirmation failed"},
   {ru, "Пароль и его подтверждение не совпадают"}]}.
 
+{text, resp_gen_error,
+ [{en, "Response generation failed"},
+  {ru, "Внутренняя ошибка при генерации страницы"}]}.
+
+{text, resp_send_error,
+ [{en, "Response sending failed"},
+  {ru, "Внутренняя ошибка при отправке страницы"}]}.
+
+{text, err_game_confirm,
+ [{en, "Failed to confirm game ~9999p"},
+  {ru, "Не удалось подтвердить партию ~9999p"}]}.
+
+{text, err_game_deny,
+ [{en, "Failed to deny game ~9999p"},
+  {ru, "Не удалось отменить партию ~9999p"}]}.
+
+{text, err_new_user,
+ [{en, "Failed to create new user"},
+  {ru, "Не удалось зарегистрировать игрока"}]}.
+
+{text, err_bad_timezone,
+ [{en, "bad timezone"},
+  {ru, "часовой пояс указан неверно"}]}.
+
+{text, err_save_user,
+ [{en, "Failed to save user properties"},
+  {ru, "Не удалось изменить настройки игрока"}]}.
+
+{text, err_new_game,
+ [{en, "Failed to create new game"},
+  {ru, "Не удалось создать партию"}]}.
+

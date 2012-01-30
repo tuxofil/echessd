@@ -80,11 +80,11 @@ safe_handle(Req, Fun) ->
         catch
             _:{error, Reason} ->
                 echessd_html:error(
-                  "Response generation failed:~n~p", [Reason]);
+                  gettext(resp_gen_error) ++ ":~n~p", [Reason]);
             Type:Reason ->
                 StackTrace = erlang:get_stacktrace(),
                 echessd_html:error(
-                  "Response generation failed:~n~p",
+                  gettext(resp_gen_error) ++ ":~n~p",
                   [{Type, Reason, StackTrace}])
         end,
     ExtraHeaders =
@@ -99,7 +99,7 @@ safe_handle(Req, Fun) ->
             StackTrace2 = erlang:get_stacktrace(),
             Req:ok({?mime_text_html, [],
                     echessd_html:error(
-                      "Response sending failed:~n~p",
+                      gettext(resp_send_error) ++ ":~n~p",
                       [{Type2, Reason2, StackTrace2}])})
     end.
 
@@ -129,7 +129,7 @@ process_get(?SECTION_ACKGAME, _Query, true) ->
                {"game", integer_to_list(GameID)}], true);
         {error, Reason} ->
             echessd_html:error(
-              "Failed to confirm game ~9999p:~n~9999p",
+              gettext(err_game_confirm) ++ ":~n~9999p",
               [GameID, Reason])
     end;
 process_get(?SECTION_DENYGAME, _Query, true) ->
@@ -141,7 +141,7 @@ process_get(?SECTION_DENYGAME, _Query, true) ->
               [{"goto", ?SECTION_HOME}], true);
         {error, Reason} ->
             echessd_html:error(
-              "Failed to deny game ~9999p:~n~9999p",
+              gettext(err_game_deny) ++ ":~n~9999p",
               [GameID, Reason])
     end;
 process_get(_, Query, true) ->
@@ -195,7 +195,7 @@ process_post(?SECTION_REG, Query, false) ->
     StrTimezone = proplists:get_value("regtimezone", Query),
     StrLanguage = proplists:get_value("reglanguage", Query),
     if Password1 /= Password2 ->
-            echessd_html:error("Password confirmation failed");
+            echessd_html:error(gettext(passw_conf_error));
        true ->
             case echessd_lib:list_to_time_offset(StrTimezone) of
                 {ok, Timezone} ->
@@ -213,12 +213,13 @@ process_post(?SECTION_REG, Query, false) ->
                                {"password", Password1}], false);
                         {error, Reason} ->
                             echessd_html:error(
-                              "Failed to create new user:~n~9999p",
+                              gettext(err_new_user) ++ ":~n~9999p",
                               [Reason])
                     end;
                 _ ->
                     echessd_html:error(
-                      "Failed to create new user:~nbad timezone", [])
+                      gettext(err_new_user) ++ ":~n" ++
+                          gettext(err_bad_timezone), [])
             end
     end;
 process_post(?SECTION_SAVEUSER, Query, true) ->
@@ -250,13 +251,13 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                                       [{"goto", ?SECTION_HOME}], true);
                                 {error, Reason} ->
                                     echessd_html:error(
-                                      "Failed to update user "
-                                      "properties:~n~9999p",
+                                      gettext(err_save_user) ++ ":~n~9999p",
                                       [Reason])
                             end;
                         _ ->
                             echessd_html:error(
-                              "Failed to create new user:~nbad timezone", [])
+                              gettext(err_save_user) ++ ":~n" ++
+                                  gettext(err_bad_timezone), [])
                     end
             end;
         _ ->
@@ -290,7 +291,7 @@ process_post(?SECTION_NEWGAME, Query, true) ->
               ?SECTION_HOME, [{"goto", ?SECTION_HOME}], true);
         {error, Reason} ->
             echessd_html:error(
-              "Failed to create new game:~n~9999p", [Reason])
+              gettext(err_new_game) ++ ":~n~9999p", [Reason])
     end;
 process_post(?SECTION_MOVE, Query, true) ->
     User = get(username),
