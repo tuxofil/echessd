@@ -313,6 +313,7 @@ game(GameID, GameInfo, Board, Captures) ->
         end,
     GameStatus = proplists:get_value(status, GameInfo, none),
     Winner = proplists:get_value(winner, GameInfo),
+    IsMyTurn = TurnUser == Iam andalso GameStatus == none,
     html_page_header(
       "echessd - " ++ gettext(game),
       [{h1, gettext(game) ++ " #" ++ integer_to_list(GameID)}]) ++
@@ -344,19 +345,18 @@ game(GameID, GameInfo, Board, Captures) ->
                     _ -> ""
                 end
         end ++
-        chess_table(GameType, Board, IsRotated, LastPly) ++
-        case TurnUser of
-            Iam when GameStatus == none ->
+        chess_table(GameType, Board, IsRotated, IsMyTurn, LastPly) ++
+        if IsMyTurn ->
                 "<form method=post>" ++
                     gettext(move_caption) ++ ":&nbsp;"
                     "<input name=action type=hidden value=move>"
                     "<input name=game type=hidden value=" ++
                     integer_to_list(GameID) ++ ">"
-                    "<input name=move type=text size=4>"
+                    "<input name=move type=text size=5 id=edmv>"
                     "<input type=submit value='" ++ gettext(move_ok_button) ++ "'>"
                     "<input type=reset value='" ++ gettext(move_reset_button) ++ "'>"
                     "</form><br>";
-            _ -> ""
+            true -> ""
         end ++
         captures(Captures) ++
         html_page_footer([]).
@@ -392,7 +392,7 @@ history(GameID) ->
               [{h1, gettext(game_hist_title, [gamelink(GameID)])}]) ++
                 navigation() ++
                 history_navigation(GameID, Step, FullHistoryLen) ++
-                chess_table(GameType, Board, false, LastPly) ++
+                chess_table(GameType, Board, false, false, LastPly) ++
                 captures(Captures) ++
                 html_page_footer([]);
         {error, Reason} ->
@@ -676,74 +676,61 @@ newgame_link(WithUsername) ->
       [{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUsername,
         gettext(new_game_link)}]).
 
-chess_table(GameType, Board, IsRotated, LastPly) ->
-    Letters0 = "abcdefgh",
-    Letters =
-        if IsRotated -> lists:reverse(Letters0);
-           true -> Letters0
+chess_table(_GameType, Board, IsRotated, IsActive, LastPly) ->
+    {ColStep, RowStep} =
+        if IsRotated -> {-1, 1};
+           true -> {1, -1}
         end,
-    put(is_rotated, IsRotated),
-    tag("table", ["cellpadding=0", "cellspacing=0"],
-        tr(td("") ++ [tag("td", ["class=crd_t"], tt([C])) ||
-                         C <- Letters] ++ td("")) ++
-            chess_table_rows(GameType, Board, IsRotated, LastPly) ++
-            tr(td("") ++ [tag("td", ["class=crd_b"], tt([C])) ||
-                             C <- Letters] ++ td(""))).
-
-chess_table_rows(_GameType, Board, false, LastPly) ->
-    chess_table_rows_(tuple_to_list(Board), 8, -1, LastPly, []);
-chess_table_rows(GameType, Board, true, LastPly) ->
-    chess_table_rows_(
-      tuple_to_list(
-        echessd_game:transpose(GameType, Board)), 1, 1, LastPly, []).
-chess_table_rows_([Row | Tail], N, Step, LastPly, Result) ->
-    StrRow =
-        tag("td", ["class=crd_l"], tt(integer_to_list(N))) ++
-        chess_table_row(Row, N, Step, LastPly) ++
-        tag("td", ["class=crd_r"], tt(integer_to_list(N))),
-    chess_table_rows_(Tail, N + Step, Step, LastPly, [tr(StrRow) | Result]);
-chess_table_rows_(_, _, _, _, Result) ->
-    lists:reverse(Result).
-
-chess_table_row(Row, N, Step, LastPly) when is_tuple(Row) ->
-    put(row_index, N),
-    erase(col_index),
-    chess_table_row_(
-      tuple_to_list(Row),
-      first_chess_cell_class(N, Step > 0), LastPly).
-chess_table_row_([Chessman | Tail], CellClass, LastPly) ->
-    Col =
-        case get(col_index) of
-            Col0 when is_integer(Col0) ->
-                put(col_index, Col0 + 1), Col0;
-            _ ->
-                put(col_index, 2), 1
+    Color =
+        fun(C, R) when (C + R) rem 2 == 0 -> "bc";
+           (_, _) -> "wc"
         end,
-    ExtraAttrs =
-        case LastPly of
-            [A, B, C, D | _] ->
-                CurInd =
-                    [case get(is_rotated) of
-                         true -> $a - Col + 8;
-                         _ -> $a + Col - 1
-                     end, $1 + get(row_index) - 1],
-                if [A, B] == CurInd orelse [C, D] == CurInd ->
-                        ["style='border-style:solid;'"];
-                   true -> []
-                end;
-            _ -> []
+    LastPlyStyle = ["style='border-style:solid;'"],
+    ExtraAction =
+        fun(Crd) when IsActive ->
+                ["onclick=\"mv('" ++ Crd ++ "');\""];
+           (_) -> []
         end,
-    tag("td", ["class=" ++ CellClass] ++ ExtraAttrs, chessman(Chessman)) ++
-        chess_table_row_(Tail, next_chess_cell_class(CellClass), LastPly);
-chess_table_row_(_, _, _) -> "".
+    tag(
+      "table", ["cellpadding=0", "cellspacing=0"],
+      tr(td("") ++ [tag("td", ["class=crd_t"], tt([$a + C - 1])) ||
+                       C <- cseq(ColStep)] ++ td("")) ++
+          lists:map(
+            fun(R) ->
+                    tr(tag("td", ["class=crd_l"], tt([$1 + R - 1])) ++
+                           lists:map(
+                             fun(C) ->
+                                     Crd = [$a + C - 1, $1 + R - 1],
+                                     ExtraStyle =
+                                         proplists:get_value(
+                                           inply(LastPly, Crd),
+                                           [{true, LastPlyStyle}], []),
+                                     tag("td",
+                                         ["class=" ++ Color(C, R)] ++
+                                             ExtraStyle ++
+                                             ExtraAction(Crd),
+                                         chessman(cell(Board, C, R)))
+                             end, cseq(ColStep)) ++
+                           tag("td", ["class=crd_r"], tt([$1 + R - 1])))
+            end, cseq(RowStep)) ++
+          tr(td("") ++ [tag("td", ["class=crd_b"], tt([$a + C - 1])) ||
+                           C <- cseq(ColStep)] ++ td(""))) ++
+        if IsActive ->
+                tag("script",
+                    "function mv(crd) {"
+                    "document.getElementById('edmv').value += crd;"
+                    "}");
+           true -> ""
+        end.
 
-first_chess_cell_class(Row, false) when Row rem 2 == 0 -> "wc";
-first_chess_cell_class(_, false) -> "bc";
-first_chess_cell_class(Row, _) ->
-    next_chess_cell_class(first_chess_cell_class(Row, false)).
+cell(Board, C, R) -> element(C, element(8 - R + 1, Board)).
 
-next_chess_cell_class("wc") -> "bc";
-next_chess_cell_class("bc") -> "wc".
+cseq(1) -> lists:seq(1, 8);
+cseq(-1) -> lists:seq(8, 1, -1).
+
+inply([A, B, _C, _D | _], [A, B]) -> true;
+inply([_A, _B, C, D | _], [C, D]) -> true;
+inply(_, _) -> false.
 
 captures([_ | _] = Captures) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],

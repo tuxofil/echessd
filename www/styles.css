@@ -34,6 +34,7 @@ a:hover {
 td.wc, td.bc, td.crd_t, td.crd_b, td.crd_l, td.crd_r {
     text-align: center;
     vertical-align: middle;
+    cursor: default;
 }
 
 td.wc, td.bc {
