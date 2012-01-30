@@ -305,6 +305,10 @@ process_post(?SECTION_MOVE, Query, true) ->
         [_ | _] ->
             case echessd_game:ply(GameID, User, Ply) of
                 ok -> nop;
+                {error, not_your_turn} ->
+                    %% silently ignore this
+                    %% (maybe caused by old page update)
+                    nop;
                 Error -> put(error, Error)
             end;
         _ -> nop
