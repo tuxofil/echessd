@@ -30,13 +30,14 @@
 %% @doc Makes 'login' page content.
 %% @spec login() -> io_list()
 login() ->
-    html_page_header("echessd - Login", [{h1, "echessd login"}]) ++
-        navig_links([{"?goto=" ++ ?SECTION_REG, "Register new user"}]) ++
+    html_page_header("echessd - " ++ gettext(lgn_title),
+                     [{h1, "echessd - " ++ gettext(lgn_title)}]) ++
+        navig_links([{"?goto=" ++ ?SECTION_REG, gettext(lgn_rnu_link)}]) ++
         "<form method=post>"
-        "<input name=action type=hidden value=login>"
-        "Login:    <input name=username type=text><br>"
-        "Password: <input name=password type=password><br>"
-        "<input type=submit value='Login'>"
+        "<input name=action type=hidden value=login>" ++
+        gettext(lgn_login) ++ ": <input name=username type=text><br>" ++
+        gettext(lgn_passw) ++ ": <input name=password type=password><br>"
+        "<input type=submit value='" ++ gettext(lgn_ok_button) ++ "'>"
         "</form>" ++
         html_page_footer([]).
 
@@ -50,16 +51,17 @@ register() ->
         echessd_lib:time_offset_to_list(
           echessd_lib:local_offset()),
     {ok, DefLang} = echessd_cfg:default(?CFG_DEF_LANG),
-    html_page_header("echessd - Register new user",
-                     [{h1, "echessd register form"}]) ++
-        navig_links([{"?goto=" ++ ?SECTION_LOGIN, "Return to login form"}]) ++
+    html_page_header("echessd - " ++ gettext(rnu_title),
+                     [{h1, "echessd - " ++ gettext(rnu_title)}]) ++
+        navig_links([{"?goto=" ++ ?SECTION_LOGIN, gettext(rnu_ret_link)}]) ++
         "<form method=post>"
-        "<input name=action type=hidden value=register>"
-        "Login:    <input name=regusername type=text><br>"
-        "Password: <input name=regpassword1 type=password><br>"
-        "Confirm password: <input name=regpassword2 type=password><br>"
-        "Full name: <input name=regfullname type=text> (optional)<br>"
-        "Timezone: <select name=regtimezone>" ++
+        "<input name=action type=hidden value=register>" ++
+        gettext(rnu_login) ++ ": <input name=regusername type=text><br>" ++
+        gettext(rnu_passw) ++ ": <input name=regpassword1 type=password><br>" ++
+        gettext(rnu_passw_conf) ++ ": <input name=regpassword2 type=password><br>" ++
+        gettext(rnu_fullname) ++ ": <input name=regfullname type=text> (" ++
+        gettext(rnu_optional) ++ ")<br>" ++
+        gettext(rnu_timezone) ++ ": <select name=regtimezone>" ++
         lists:map(
           fun(Zone) when Zone == ServerZone ->
                   "<option value='" ++ Zone ++ "' selected>" ++
@@ -67,8 +69,8 @@ register() ->
              (Zone) ->
                   "<option value='" ++ Zone ++ "'>" ++ Zone ++ "</option>"
           end, Timezones) ++
-        "</select><br>"
-        "Language: <select name=reglanguage>" ++
+        "</select><br>" ++
+        gettext(rnu_language) ++ ": <select name=reglanguage>" ++
         lists:map(
           fun({LangAbbr, LangName}) ->
                   "<option value='" ++ atom_to_list(LangAbbr) ++ "'" ++
@@ -79,7 +81,7 @@ register() ->
                       LangName ++ "</option>"
           end, echessd_lib:languages()) ++
         "</select><br>"
-        "<input type=submit value='Register'>"
+        "<input type=submit value='" ++ gettext(rnu_ok_button) ++ "'>"
         "</form>" ++
         html_page_footer([]).
 
@@ -106,12 +108,14 @@ edituser() ->
         navigation() ++
         "<br>" ++
         "<form method=post>"
-        "<input name=action type=hidden value=" ++ ?SECTION_SAVEUSER ++ ">"
-        "Your password: <input name=editpassword0 type=password><br>"
-        "New password: <input name=editpassword1 type=password><br>"
-        "New password confirm: <input name=editpassword2 type=password><br>"
-        "Fullname: <input name=editfullname type=text value='" ++ Fullname ++ "'><br>"
-        "Timezone: <select name=edittimezone>" ++
+        "<input name=action type=hidden value=" ++ ?SECTION_SAVEUSER ++ ">" ++
+        gettext(predit_passw) ++ ": <input name=editpassword0 type=password><br>" ++
+        gettext(predit_passw_new) ++ ": <input name=editpassword1 type=password><br>" ++
+        gettext(predit_passw_new_confirm) ++ ": "
+        "<input name=editpassword2 type=password><br>" ++
+        gettext(fullname) ++ ": <input name=editfullname type=text "
+        "value='" ++ Fullname ++ "'><br>" ++
+        gettext(timezone) ++ ": <select name=edittimezone>" ++
         lists:map(
           fun(Zone) when Zone == Timezone ->
                   "<option value='" ++ Zone ++ "' selected>" ++
@@ -119,8 +123,8 @@ edituser() ->
              (Zone) ->
                   "<option value='" ++ Zone ++ "'>" ++ Zone ++ "</option>"
           end, Timezones) ++
-        "</select><br>"
-        "Language: <select name=editlanguage>" ++
+        "</select><br>" ++
+        gettext(predit_lang) ++ ": <select name=editlanguage>" ++
         lists:map(
           fun({LangAbbr, LangName}) ->
                   "<option value='" ++ atom_to_list(LangAbbr) ++ "'" ++
@@ -131,7 +135,7 @@ edituser() ->
                       LangName ++ "</option>"
           end, echessd_lib:languages()) ++
         "</select><br>"
-        "<input type=submit value=Save>"
+        "<input type=submit value='" ++ gettext(predit_save_button) ++ "'>"
         "</form>"
         "<br>" ++
         html_page_footer([]).
@@ -142,7 +146,8 @@ home() ->
     Username = get(username),
     {ok, UserInfo} = echessd_user:getprops(Username),
     html_page_header(
-      "echessd - Home", [{h1, gettext(home) ++ ": " ++ Username}]) ++
+      "echessd - " ++ gettext(home),
+      [{h1, gettext(home) ++ ": " ++ Username}]) ++
         navigation() ++
         navig_links([{"?goto=" ++ ?SECTION_EDITUSER,
                       gettext(edit_profile_title)}]) ++
@@ -180,7 +185,7 @@ user(Username) ->
                     user(Username, UserInfo);
                 {error, Reason} ->
                     ?MODULE:error(
-                       "Unable to fetch user ~9999p properties:~n~p",
+                       gettext(user_fetch_error) ++ ":~n~p",
                        [Username, Reason])
             end
     end.
@@ -205,7 +210,7 @@ newgame() ->
             newgame(Opponent, OpponentProperties);
         {error, Reason} ->
             ?MODULE:error(
-               "Unable to fetch user ~9999p properties:~n~p",
+               gettext(user_fetch_error) ++ ":~n~p",
                [Opponent, Reason])
     end.
 newgame(Opponent, OpponentProperties) ->
@@ -214,27 +219,29 @@ newgame(Opponent, OpponentProperties) ->
     Iam = get(username),
     H2Title =
         if Iam == Opponent ->
-                "Test game: " ++ Iam ++ " vs " ++ Iam;
-           true -> "Game: " ++ Iam ++ " vs " ++ Opponent
+                gettext(ng_title_h2_test, [Iam, Iam]);
+           true ->
+                gettext(ng_title_h2_normal, [Iam, Opponent])
         end,
     ColorSelector =
         if Iam == Opponent ->
                 "<input name=color type=hidden value=white>";
            true ->
-                "Color: <select name=color>"
-                    "<option value='random'>Choose randomly</option>"
-                    "<option value='white'>White</option>"
-                    "<option value='black'>Black</option>"
+                gettext(ng_color) ++ ": <select name=color>"
+                    "<option value='random'>" ++ gettext(ng_color_random) ++ "</option>"
+                    "<option value='white'>" ++ gettext(ng_color_white) ++ "</option>"
+                    "<option value='black'>" ++ gettext(ng_color_black) ++ "</option>"
                     "</select><br>"
         end,
-    html_page_header("echessd - New game", [{h1, "New game"}]) ++
+    html_page_header("echessd - " ++ gettext(ng_title),
+                     [{h1, gettext(ng_title)}]) ++
         navigation() ++
         h2(H2Title) ++
         "<form method=post>"
         "<input name=action type=hidden value=" ++ ?SECTION_NEWGAME ++ ">"
         "<input name=gametype type=hidden value=classic>"
         ++ ColorSelector ++
-        "<input type=submit value='Create'>"
+        "<input type=submit value='" ++ gettext(ng_ok_button) ++ "'>"
         "</form>" ++
         html_page_footer([]).
 
@@ -249,11 +256,11 @@ game(GameID) ->
                     game(GameID, GameInfo, Board, Captures);
                 _ ->
                     ?MODULE:error(
-                       "Game #~w isn`t confirmed yet!", [GameID])
+                       gettext(game_not_confirmed_error, [GameID]))
             end;
         {error, Reason} ->
             ?MODULE:error(
-               "Unable to fetch game #~9999p properties:~n~p",
+               gettext(game_fetch_error) ++ ":~n~p",
                [GameID, Reason])
     end.
 game(GameID, GameInfo, Board, Captures) ->
@@ -292,37 +299,41 @@ game(GameID, GameInfo, Board, Captures) ->
         game_navigation(GameID, IsMyGame andalso GameStatus == none) ++
         case GameStatus of
             checkmate ->
-                h2("Game over: checkmate, winner: " ++
-                       userlink(Winner));
+                h2(gettext(gt_over_checkmate, [userlink(Winner)]));
             give_up ->
-                h2("Game over: gived up, winner: " ++
-                       userlink(Winner));
+                h2(gettext(gt_over_giveup, [userlink(Winner)]));
+            {draw, stalemate} ->
+                h2(gettext(gt_over_stalemate));
+            {draw, insufficient_material} ->
+                h2(gettext(gt_over_insufficient_material));
+            {draw, agreement} ->
+                h2(gettext(gt_over_agreement));
             {draw, DrawType} ->
-                h2("Game over: draw (" ++
-                       atom_to_list(DrawType) ++ ")");
+                h2(gettext(gt_over_draw, [DrawType]));
             _ ->
                 case proplists:get_value(
                        draw_request_from, GameInfo) of
                     Iam when IsMyGame ->
                         tag("div", ["class=warning"],
-                            "You have been proposed draw...");
+                            gettext(gt_youre_drawing));
                     OppUser when IsMyGame ->
                         tag("div", ["class=warning"],
-                            userlink(OppUser) ++ " is proposing draw");
+                            gettext(gt_opponent_drawing,
+                                    [userlink(OppUser)]));
                     _ -> ""
                 end
         end ++
         chess_table(GameType, Board, IsRotated, LastPly) ++
         case TurnUser of
             Iam when GameStatus == none ->
-                "<form method=post>"
-                    "Move:&nbsp;"
+                "<form method=post>" ++
+                    gettext(move_caption) ++ ":&nbsp;"
                     "<input name=action type=hidden value=move>"
                     "<input name=game type=hidden value=" ++
                     integer_to_list(GameID) ++ ">"
                     "<input name=move type=text size=4>"
-                    "<input type=submit value=OK>"
-                    "<input type=reset value=Reset>"
+                    "<input type=submit value='" ++ gettext(move_ok_button) ++ "'>"
+                    "<input type=reset value='" ++ gettext(move_reset_button) ++ "'>"
                     "</form><br>";
             _ -> ""
         end ++
@@ -356,8 +367,8 @@ history(GameID) ->
                     _ -> undefined
                 end,
             html_page_header(
-              "echessd - Game history",
-              [{h1, "Game " ++ gamelink(GameID) ++ " history"}]) ++
+              "echessd - " ++ gettext(game_hist_title_main),
+              [{h1, gettext(game_hist_title, [gamelink(GameID)])}]) ++
                 navigation() ++
                 history_navigation(GameID, Step, FullHistoryLen) ++
                 chess_table(GameType, Board, false, LastPly) ++
@@ -365,7 +376,7 @@ history(GameID) ->
                 html_page_footer([]);
         {error, Reason} ->
             ?MODULE:error(
-               "Unable to fetch game #~9999p properties:~n~p",
+               gettext(game_fetch_error) ++ ":~n~p",
                [GameID, Reason])
     end.
 
@@ -373,16 +384,15 @@ history(GameID) ->
 %% @spec draw_confirm(GameID) -> io_list()
 %%     GameID = echessd_game:echessd_game_id()
 draw_confirm(GameID) ->
-    html_page_header("echessd - Game draw by agreement confirmation",
-                     [{h1, "You are about tie proposal!"}]) ++
+    html_page_header("echessd - " ++ gettext(draw_confirm_title),
+                     [{h1, gettext(draw_confirm_title)}]) ++
         tag("div", ["class=warning"],
-            "Do you want to propose to end the game with "
-            "draw by agreement?") ++
+            gettext(draw_confirm_text)) ++
         "<form method=post>"
         "<input type=hidden name=action value=" ++ ?SECTION_DRAW ++ ">"
         "<input type=hidden name=game value=" ++
         integer_to_list(GameID) ++ ">"
-        "<input type=submit value='Propose draw'>"
+        "<input type=submit value='" ++ gettext(draw_button) ++ "'>"
         "</form>" ++
         navig_links([{"javascript: history.back();",
                       gettext(ouch_back_link)}]) ++
@@ -398,16 +408,15 @@ giveup_confirm(GameID) ->
         [N || {users, L} <- GameInfo,
               {N, C} <- L, lists:member(C, [?white, ?black])],
     [Opponent | _] = Players -- [Iam],
-    html_page_header("echessd - Game give up confirmation",
-                     [{h1, "You are about giving up!"}]) ++
+    html_page_header("echessd - " ++ gettext(giveup_confirm_title),
+                     [{h1, gettext(giveup_confirm_title)}]) ++
         tag("div", ["class=warning"],
-            "Do you wish to '" ++ userlink(Opponent) ++
-                "' to win this game?") ++
+            gettext(giveup_confirm_text, [userlink(Opponent)])) ++
         "<form method=post>"
         "<input type=hidden name=action value=" ++ ?SECTION_GIVEUP ++ ">"
         "<input type=hidden name=game value=" ++
         integer_to_list(GameID) ++ ">"
-        "<input type=submit value='Give up'>"
+        "<input type=submit value='" ++ gettext(giveup_button) ++ "'>"
         "</form>" ++
         navig_links([{"javascript: history.back();",
                       gettext(ouch_back_link)}]) ++
@@ -416,8 +425,9 @@ giveup_confirm(GameID) ->
 %% @doc Makes 'under construction' page content.
 %% @spec notyet() -> io_list()
 notyet() ->
-    html_page_header("echessd - Under construction",
-                     [{h1, "Not implemented yet"}]) ++
+    html_page_header("echessd - " ++ gettext(not_implemented_title),
+                     [{h1, gettext(not_implemented_title)}]) ++
+        h2(gettext(not_implemented_text)) ++
         navig_links([{"javascript: history.back();", "Back"}]) ++
         html_page_footer([]).
 
@@ -425,7 +435,8 @@ notyet() ->
 %% @spec error(Message) -> io_list()
 %%     Message = io_list()
 error(Message) ->
-    html_page_header("echessd - Error", [{h1, "echessd error"}]) ++
+    html_page_header("echessd - " ++ gettext(error_page_title),
+                     [{h1, gettext(error_page_title)}]) ++
         tag("div", ["class=error"], pre(Message)) ++
         "<br>" ++
         navig_links([{"javascript: history.back();", gettext(back_link)}]) ++
@@ -441,7 +452,7 @@ error(Format, Args) ->
 %% @doc Makes 'access denied' page content.
 %% @spec eaccess() -> io_list()
 eaccess() ->
-    ?MODULE:error("ACCESS DENIED").
+    ?MODULE:error(gettext(access_denied)).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
@@ -821,4 +832,6 @@ format_error(Term) ->
 
 gettext(TextID) ->
     echessd_lib:gettext(TextID, get(language)).
+gettext(TextID, Args) ->
+    io_lib:format(gettext(TextID), Args).
 

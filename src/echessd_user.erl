@@ -238,12 +238,9 @@ check_property({timezone, V} = I) ->
 check_property({language = Key, A} = I) ->
     if is_atom(A) -> I;
        is_list(A) ->
-            List =
-                [{atom_to_list(N), N} ||
-                    {N, _} <- echessd_lib:languages()],
-            A1 = string:to_lower(echessd_lib:strip(A, " \t\r\n")),
-            case [V || {K, V} <- List, K == A1] of
-                [Parsed | _] -> {Key, Parsed};
+            case echessd_lib:parse_language(A) of
+                {LangAbbr, _LangName} ->
+                    {Key, LangAbbr};
                 _ ->
                     throw({error, {unsupported_language, A}})
             end;

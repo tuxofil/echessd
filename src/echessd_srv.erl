@@ -178,7 +178,10 @@ process_post(?SECTION_LOGIN, Query, LoggedIn) ->
                     echessd_log:debug(
                       "session ~9999p created for user ~9999p",
                       [SID, Username]),
-                    add_extra_headers([{"Set-Cookie", "sid=" ++ SID}]),
+                    add_extra_headers([{"Set-Cookie", "sid=" ++ SID},
+                                       {"Set-Cookie",
+                                        "lang=" ++ atom_to_list(
+                                                     get(language))}]),
                     process_show();
                 _ ->
                     echessd_html:eaccess()
@@ -229,7 +232,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
     case echessd_user:auth(Username, Password0) of
         {ok, _UserInfo} ->
             if Password1 /= Password2 ->
-                    echessd_html:error("Password confirmation failed");
+                    echessd_html:error(gettext(passw_conf_error));
                true ->
                     case echessd_lib:list_to_time_offset(StrTimezone) of
                         {ok, Timezone} ->
@@ -362,4 +365,7 @@ process_goto(Query) ->
 
 get_query_item(Key) ->
     proplists:get_value(Key, get(query_proplist), "").
+
+gettext(TextID) ->
+    echessd_lib:gettext(TextID, get(language)).
 

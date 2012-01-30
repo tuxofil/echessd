@@ -13,6 +13,7 @@
          escape_html_entities/1,
          gettext/2,
          languages/0,
+         parse_language/1,
          administrative_offsets/0,
          time_offset_to_list/1,
          list_to_time_offset/1,
@@ -140,6 +141,21 @@ gettext(TextID, LangID) ->
 languages() ->
     {Languages, _Strings} = echessd_cfg:get(?CFG_LANG_INFO),
     Languages.
+
+%% @doc Parses language identifier.
+%% @spec parse_language(String) -> {LangAbbreviation, LangName} | undefined
+%%     LangAbbreviation = atom(),
+%%     LangName = string()
+parse_language([_ | _] = String) ->
+    Languages = languages(),
+    List = [{atom_to_list(N), N} || {N, _} <- Languages],
+    Stripped = string:to_lower(strip(String, " \t\r\n")),
+    case [V || {K, V} <- List, K == Stripped] of
+        [Parsed | _] ->
+            {Parsed, proplists:get_value(Parsed, Languages)};
+        _ -> undefined
+    end;
+parse_language(_) -> undefined.
 
 %% @doc Return list of all adminitrative time offsets.
 %% @spec administrative_offsets() -> Offsets

@@ -96,7 +96,13 @@ read(Cookie) ->
                 _ ->
                     echessd_session:del(SID)
             end;
-        _ -> nop
+        _ ->
+            case echessd_lib:parse_language(
+                   proplists:get_value("lang", Cookie)) of
+                {LangAbbr, _LangName} ->
+                    put(language, LangAbbr);
+                _ -> nop
+            end
     end, ok.
 
 %% @doc Get session variable value.

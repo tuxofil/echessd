@@ -3,6 +3,9 @@
   {ru, "Русский"}
  ]}.
 
+%% ----------------------------------------------------------------------
+%% Common navigation
+
 {text, home,
  [{en, "Home"},
   {ru, "Главная"}]}.
@@ -11,49 +14,98 @@
  [{en, "Users"},
   {ru, "Игроки"}]}.
 
+{text, logout,
+ [{en, "Logout"},
+  {ru, "Выйти"}]}.
+
+%% ----------------------------------------------------------------------
+%% Register new user page
+
+{text, rnu_title,
+ [{en, "Register new user"},
+  {ru, "Регистрация нового игрока"}]}.
+
+{text, rnu_ret_link,
+ [{en, "Return to login form"},
+  {ru, "Вернуться к странице входа"}]}.
+
+{text, rnu_login,
+ [{en, "Login"},
+  {ru, "Логин"}]}.
+
+{text, rnu_passw,
+ [{en, "Password"},
+  {ru, "Пароль"}]}.
+
+{text, rnu_passw_conf,
+ [{en, "Confirm password"},
+  {ru, "Подтвердите пароль"}]}.
+
+{text, rnu_fullname,
+ [{en, "Full name"},
+  {ru, "Полное имя"}]}.
+
+{text, rnu_optional,
+ [{en, "optional"},
+  {ru, "не обязательно"}]}.
+
+{text, rnu_timezone,
+ [{en, "Timezone"},
+  {ru, "Часовой пояс"}]}.
+
+{text, rnu_language,
+ [{en, "Language"},
+  {ru, "Язык интерфейса"}]}.
+
+{text, rnu_ok_button,
+ [{en, "Register"},
+  {ru, "Зарегистрироваться"}]}.
+
+%% ----------------------------------------------------------------------
+%% User page
+
 {text, user,
  [{en, "User"},
   {ru, "Игрок"}]}.
 
-{text, refresh,
- [{en, "Refresh"},
-  {ru, "Обновить"}]}.
+{text, login,
+ [{en, "login"},
+  {ru, "Логин"}]}.
 
-{text, history,
- [{en, "History"},
-  {ru, "История"}]}.
+{text, fullname,
+ [{en, "Full name"},
+  {ru, "Полное имя"}]}.
 
-{text, req_draw,
- [{en, "Draw"},
-  {ru, "Ничья"}]}.
+{text, not_sure,
+ [{en, "Not Sure"},
+  {ru, "Не Уверен"}]}.
 
-{text, do_giveup,
- [{en, "GiveUp"},
-  {ru, "Сдаться"}]}.
+{text, registered,
+ [{en, "Registered"},
+  {ru, "Зарегистрирован"}]}.
 
-{text, prev,
- [{en, "Previous"},
-  {ru, "Предыдущий"}]}.
+{text, unknown,
+ [{en, "unknown"},
+  {ru, "неизвестно"}]}.
 
-{text, next,
- [{en, "Next"},
-  {ru, "Следующий"}]}.
+{text, timezone,
+ [{en, "Timezone"},
+  {ru, "Часовой пояс"}]}.
 
-{text, game,
- [{en, "Game"},
-  {ru, "Партия"}]}.
+{text, language,
+ [{en, "Language"},
+  {ru, "Язык"}]}.
 
-{text, badmove,
- [{en, "You can not move such way. "},
-  {ru, "Вы не можете так походить. "}]}.
+{text, user_games,
+ [{en, "User games"},
+  {ru, "Текущие партии"}]}.
 
-{text, king_in_check,
- [{en, "Your King is in check!"},
-  {ru, "Шах королю!"}]}.
+{text, unconf_games,
+ [{en, "Unconfirmed games"},
+  {ru, "Неподтверждённые партии"}]}.
 
-{text, error,
- [{en, "ERROR"},
-  {ru, "ОШИБКА"}]}.
+%% ----------------------------------------------------------------------
+%% Game list at user page
 
 {text, draw,
  [{en, "draw"},
@@ -91,57 +143,253 @@
  [{en, "vs"},
   {ru, "против"}]}.
 
-{text, unconf_games,
- [{en, "Unconfirmed games"},
-  {ru, "Неподтверждённые партии"}]}.
+%% ----------------------------------------------------------------------
+%% Give up confirmation page
 
-{text, user_games,
- [{en, "User games"},
-  {ru, "Текущие партии"}]}.
+{text, giveup_confirm_title,
+ [{en, "Game give up confirmation"},
+  {ru, "Подтверждение поражения"}]}.
 
-{text, timezone,
- [{en, "Timezone"},
-  {ru, "Часовой пояс"}]}.
+{text, giveup_confirm_text,
+ [{en, "Do you wish to '~s' to win this game?"},
+  {ru, "Хотите отдать победу в руки '~s'?"}]}.
 
-{text, language,
- [{en, "Language"},
-  {ru, "Язык"}]}.
+{text, giveup_button,
+ [{en, "Give up"},
+  {ru, "Сдаюсь"}]}.
 
-{text, registered,
- [{en, "Registered"},
-  {ru, "Зарегистрирован"}]}.
+%% ----------------------------------------------------------------------
+%% Draw by agreement confirmation page
 
-{text, unknown,
- [{en, "unknown"},
-  {ru, "неизвестно"}]}.
+{text, draw_confirm_title,
+ [{en, "Game draw by agreement confirmation"},
+  {ru, "Предложение ничьи"}]}.
 
-{text, fullname,
- [{en, "Full name"},
-  {ru, "Полное имя"}]}.
+{text, draw_confirm_text,
+ [{en, "Do you want to propose to end the game with draw by agreement?"},
+  {ru, "Вы действительно хотите предложить ничью?"}]}.
 
-{text, not_sure,
- [{en, "Not Sure"},
-  {ru, "Не Уверен"}]}.
+{text, draw_button,
+ [{en, "Propose draw"},
+  {ru, "Предложить ничью"}]}.
 
-{text, optional,
- [{en, "optional"},
-  {ru, "необязательно"}]}.
+%% ----------------------------------------------------------------------
+%% Game history page
 
-{text, login,
- [{en, "login"},
-  {ru, "Логин"}]}.
+{text, game_hist_title_main,
+ [{en, "Game history"},
+  {ru, "История партии"}]}.
+
+{text, game_hist_title,
+ [{en, "Game ~s history"},
+  {ru, "История партии ~s"}]}.
+
+{text, prev,
+ [{en, "Previous"},
+  {ru, "Предыдущий"}]}.
+
+{text, next,
+ [{en, "Next"},
+  {ru, "Следующий"}]}.
+
+%% ----------------------------------------------------------------------
+%% Game page
+
+{text, game,
+ [{en, "Game"},
+  {ru, "Партия"}]}.
+
+{text, new_game_link,
+ [{en, "Start new game"},
+  {ru, "Начать новую партию"}]}.
+
+{text, refresh,
+ [{en, "Refresh"},
+  {ru, "Обновить"}]}.
+
+{text, history,
+ [{en, "History"},
+  {ru, "История"}]}.
+
+{text, req_draw,
+ [{en, "Draw"},
+  {ru, "Ничья"}]}.
+
+{text, do_giveup,
+ [{en, "GiveUp"},
+  {ru, "Сдаться"}]}.
+
+{text, badmove,
+ [{en, "You can not move such way. "},
+  {ru, "Вы не можете так походить. "}]}.
+
+{text, king_in_check,
+ [{en, "Your King is in check!"},
+  {ru, "Шах королю!"}]}.
+
+{text, move_caption,
+ [{en, "Move"},
+  {ru, "Ход"}]}.
+
+{text, move_ok_button,
+ [{en, "OK"},
+  {ru, "Готово"}]}.
+
+{text, move_reset_button,
+ [{en, "Reset"},
+  {ru, "Отмена"}]}.
+
+{text, gt_over_checkmate,
+ [{en, "Game over: checkmate, winner: ~s"},
+  {ru, "Партия окончена: мат, победитель: ~s"}]}.
+
+{text, gt_over_giveup,
+ [{en, "Game over: gived up, winner: ~s"},
+  {ru, "Партия окончена. Победитель: ~s"}]}.
+
+{text, gt_over_stalemate,
+ [{en, "Game over: draw (stalemate)"},
+  {ru, "Партия окончена: ничья (пат)"}]}.
+
+{text, gt_over_insufficient_material,
+ [{en, "Game over: draw (insufficient material)"},
+  {ru, "Партия окончена: ничья (мало фигур)"}]}.
+
+{text, gt_over_agreement,
+ [{en, "Game over: draw (agreement)"},
+  {ru, "Партия окончена: ничья по договорённости"}]}.
+
+{text, gt_over_draw,
+ [{en, "Game over: draw (~9999p)"},
+  {ru, "Партия окончена: ничья (~9999p)"}]}.
+
+{text, gt_youre_drawing,
+ [{en, "You have been proposed draw..."},
+  {ru, "Вы предложили ничью..."}]}.
+
+{text, gt_opponent_drawing,
+ [{en, "~s is proposing draw"},
+  {ru, "~s предлагает Вам ничью"}]}.
+
+%% ----------------------------------------------------------------------
+%% New game page
+
+{text, ng_title,
+ [{en, "New game"},
+  {ru, "Новая партия"}]}.
+
+{text, ng_ok_button,
+ [{en, "Create"},
+  {ru, "Создать"}]}.
+
+{text, ng_color,
+ [{en, "Color"},
+  {ru, "Цвет фигур"}]}.
+
+{text, ng_color_random,
+ [{en, "Choose randomly"},
+  {ru, "Случайно"}]}.
+
+{text, ng_color_white,
+ [{en, "White"},
+  {ru, "Белые"}]}.
+
+{text, ng_color_black,
+ [{en, "Black"},
+  {ru, "Чёрные"}]}.
+
+{text, ng_title_h2_test,
+ [{en, "Test game: ~s vs ~s"},
+  {ru, "Тестовая партия: ~s против ~s"}]}.
+
+{text, ng_title_h2_normal,
+ [{en, "Game: ~s vs ~s"},
+  {ru, "Партия: ~s против ~s"}]}.
+
+%% ----------------------------------------------------------------------
+%% Edit preferences page
 
 {text, edit_profile_title,
  [{en, "Edit user preferences"},
   {ru, "Редактирование профиля"}]}.
 
-{text, logout,
- [{en, "Logout"},
-  {ru, "Выйти"}]}.
+{text, predit_lang,
+ [{en, "Language"},
+  {ru, "Язык интерфейса"}]}.
 
-{text, new_game_link,
- [{en, "Start new game"},
-  {ru, "Начать новую партию"}]}.
+{text, predit_save_button,
+ [{en, "Save"},
+  {ru, "Сохранить"}]}.
+
+{text, predit_passw,
+ [{en, "Your password"},
+  {ru, "Текущий пароль"}]}.
+
+{text, predit_passw_new,
+ [{en, "New password"},
+  {ru, "Новый пароль"}]}.
+
+{text, predit_passw_new_confirm,
+ [{en, "New password confirm"},
+  {ru, "Подтвердите новый пароль"}]}.
+
+{text, optional,
+ [{en, "optional"},
+  {ru, "необязательно"}]}.
+
+%% ----------------------------------------------------------------------
+%% Login page
+
+{text, lgn_title,
+ [{en, "Login"},
+  {ru, "Вход"}]}.
+
+{text, lgn_rnu_link,
+ [{en, "Register new user"},
+  {ru, "Зарегистрироваться"}]}.
+
+{text, lgn_login,
+ [{en, "Login"},
+  {ru, "Логин"}]}.
+
+{text, lgn_passw,
+ [{en, "Password"},
+  {ru, "Пароль"}]}.
+
+{text, lgn_ok_button,
+ [{en, "Login"},
+  {ru, "Войти"}]}.
+
+%% ----------------------------------------------------------------------
+%% Common messages (error reports etc)
+
+{text, error,
+ [{en, "ERROR"},
+  {ru, "ОШИБКА"}]}.
+
+{text, user_fetch_error,
+ [{en, "Unable to fetch user #~9999p properties"},
+  {ru, "Не удалось найти игрока ~9999p"}]}.
+
+{text, access_denied,
+ [{en, "ACCESS DENIED"},
+  {ru, "В ДОСТУПЕ ОТКАЗАНО"}]}.
+
+{text, game_fetch_error,
+ [{en, "Unable to fetch game #~9999p properties"},
+  {ru, "Не удалось найти партию #~9999p"}]}.
+
+{text, not_implemented_title,
+ [{en, "Not implemented yet"},
+  {ru, "В стадии разработки"}]}.
+
+{text, not_implemented_text,
+ [{en, "Sorry! This page is under construction!"},
+  {ru, "Звыняйте, эта страница в стадии разработки!"}]}.
+
+{text, error_page_title,
+ [{en, "Error"},
+  {ru, "Ошибка"}]}.
 
 {text, back_link,
  [{en, "Back"},
@@ -150,4 +398,12 @@
 {text, ouch_back_link,
  [{en, "No, get out of here!"},
   {ru, "Ой, не надо, хочу назад!"}]}.
+
+{text, game_not_confirmed_error,
+ [{en, "Game #~w isn`t confirmed yet!"},
+  {ru, "Партия #~w ещё не подтверждена!"}]}.
+
+{text, passw_conf_error,
+ [{en, "Password confirmation failed"},
+  {ru, "Пароль и его подтверждение не совпадают"}]}.
 
