@@ -6,7 +6,7 @@ BEAMS=$(patsubst src/%.erl, ebin/%.beam, $(SRCS))
 all: $(BEAMS)
 
 ebin/%.beam: src/%.erl include/*.hrl
-	erlc -I ./include -o ./ebin $<
+	erlc -I ./include -pa ./ebin -o ./ebin $<
 
 doc: ebin/echessd.beam
 	@echo Making documentation...

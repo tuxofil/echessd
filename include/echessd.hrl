@@ -18,10 +18,16 @@
 -define(CFG_DOC_ROOT, doc_root).
 -define(CFG_LANG_INFO, lang_info).
 -define(CFG_DEF_LANG, default_language).
+-define(CFG_HTTPD_MOD, httpd_engine).
 
 -define(CFGS, [?CFG_LOGLEVEL, ?CFG_LOGFILE,
                ?CFG_BIND_ADDR, ?CFG_BIND_PORT,
-               ?CFG_DOC_ROOT, ?CFG_DEF_LANG]).
+               ?CFG_DOC_ROOT, ?CFG_DEF_LANG,
+               ?CFG_HTTPD_MOD]).
+
+%% available HTTPD implementations
+-define(HTTPD_MODULES,
+        [echessd_httpd_mochiweb, echessd_httpd_inets]).
 
 -define(MANDATORY_CFGS, []).
 

@@ -458,3 +458,7 @@
  [{en, "Failed to create new game"},
   {ru, "Не удалось создать партию"}]}.
 
+{text, http_404_err,
+ [{en, "404: Object not found"},
+  {ru, "404: Объект не найден"}]}.
+

@@ -69,7 +69,7 @@ You always can obtain latest Erlang version on
 <a target="top" href="http://www.erlang.org/download.html">Erlang download page</a>
 or use one provided by your software repository.
 
-For echessd to run
+In case of mochiweb usage (configuration parameter httpd_engine is set to 'mochiweb')
 <a target="top" href="https://github.com/mochi/mochiweb">mochiweb</a>
 Erlang application must be installed.
 mochiweb - is a lightweight and free HTTP server written on Erlang.
@@ -164,7 +164,6 @@ echessd source tree.
 - time limitation for moves;
 - describe system architecture;
 - add users 'extra_info' property;
-- improve error reports;
-- dispose of 'mochiweb' dependency.
+- improve error reports.
 </pre>
 

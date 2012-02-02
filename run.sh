@@ -24,7 +24,6 @@ exec erl -sname "echessd" \
     -setcookie echessd_secret_cookie \
     $SASL $NOSHELL \
     -pa ./ebin \
-    -pa ./contrib/mochiweb/ebin \
     -mnesia dir \"./db/mnesia\" \
     -echessd_config ./echessd.conf \
     -s mnesia \

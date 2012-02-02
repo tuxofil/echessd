@@ -99,6 +99,8 @@ default(?CFG_LOGFILE) ->
     {ok, "echessd.log"};
 default(?CFG_DEF_LANG) ->
     {ok, en};
+default(?CFG_HTTPD_MOD) ->
+    {ok, echessd_httpd_inets};
 default(_) ->
     undefined.
 
@@ -201,6 +203,16 @@ parse_val_(?CFG_BIND_PORT, String) ->
 parse_val_(?CFG_DEF_LANG, String) ->
     {LangAbbr, _LangName} = echessd_lib:parse_language(String),
     LangAbbr;
+parse_val_(?CFG_HTTPD_MOD, String0) ->
+    String = string:to_lower(String0),
+    List = [{atom_to_list(A), A} || A <- ?HTTPD_MODULES],
+    case [M || {K, M} <- List,
+               K == String orelse
+                   K == "echessd_httpd_" ++ String] of
+        [Mod | _] -> Mod;
+        _ ->
+            throw({error, {unsupported_httpd_module, String0}})
+    end;
 parse_val_(_, Val) ->
     Val.
 

@@ -37,9 +37,9 @@ init(_StartArgs) ->
          {echessd_log, start_link, []},
          permanent, 100, worker, [echessd_log]},
 
-        %% HTTP request handler
-        {echessd_srv,
-         {echessd_srv, start_link, []},
+        %% HTTPD warden process
+        {echessd_web_warden,
+         {echessd_web_warden, start_link, []},
          permanent, 100, worker, dynamic}
        ]}}.
 

@@ -39,6 +39,7 @@ hup() ->
     {ok, Node} = connect_server(),
     ok = rpc:call(Node, echessd_cfg, read, []),
     ok = rpc:call(Node, echessd_log, reopen, []),
+    ok = rpc:call(Node, echessd_web_warden, reconfig, []),
     halt(0).
 
 %% @doc Checks if Erlang node with running echessd exists.

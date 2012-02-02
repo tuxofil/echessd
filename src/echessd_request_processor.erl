@@ -1,121 +1,34 @@
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
-%%% @since 20 Jan 2012
+%%% @since 2 Feb 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc HTTP request handler callback module.
+%%% @doc HTTP request processing functions
 
--module(echessd_srv).
+-module(echessd_request_processor).
 
--export([start_link/0, loop/1]).
+-export([process_get/1, process_post/1]).
 
 -include("echessd.hrl").
-
--define(HTTP_GET, 'GET').
--define(HTTP_POST, 'POST').
-
--define(mime_text_html, "text/html").
 
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Start mochiweb HTTP server.
-%% @spec start_link() -> {ok, pid()}
-start_link() ->
-    BindAddr = echessd_cfg:get(?CFG_BIND_ADDR),
-    BindPort = echessd_cfg:get(?CFG_BIND_PORT),
-    {ok, _Pid} = Ok =
-        mochiweb_http:start_link(
-          [{name, ?MODULE},
-           {loop, fun loop/1},
-           {ip, BindAddr},
-           {port, BindPort}
-          ]),
-    echessd_log:info(
-      "HTTP server listens at ~s:~w",
-      [echessd_lib:ip2str(BindAddr), BindPort]),
-    Ok.
+process_get(Query) ->
+    put(query_proplist, Query),
+    echessd_log:debug("GET query=~9999p", [Query]),
+    Action = proplists:get_value("action", Query),
+    process_get(Action, Query, get(logged_in)).
 
-%% @doc Callback for HTTP request handling
-%%      (Request is a parameterized module).
-%% @spec loop(Request) -> term()
-%%     Request = mochiweb_request()
-loop(Request) ->
-    {ok, IP} =
-        case inet_parse:address(Request:get(peer)) of
-            {ok, _} = Ok -> Ok;
-            {error, PeerReason} ->
-                throw(PeerReason)
-        end,
-    Method = Request:get(method),
-    Path = Request:get(path),
-    Cookie = Request:parse_cookie(),
-    echessd_log:debug(
-      "~s> Method=~9999p; Path=~9999p; Cookie=~9999p",
-      [echessd_lib:ip2str(IP), Method, Path, Cookie]),
-    echessd_session:read(Cookie),
-    put(doc_root, DocRoot = echessd_cfg:get(?CFG_DOC_ROOT)),
-    if Method == ?HTTP_GET ->
-            case lists:prefix("/res/", Path) of
-                true ->
-                    "/res/" ++ ResName = Path,
-                    Request:serve_file(ResName, DocRoot);
-                _ ->
-                    safe_handle(Request, fun process_get/1)
-            end;
-       Method == ?HTTP_POST ->
-            safe_handle(Request, fun process_post/1);
-       true ->
-            Request:respond({501, [], []})
-    end.
+process_post(Query) ->
+    put(query_proplist, Query),
+    echessd_log:debug("POST query=~9999p", [Query]),
+    Action = proplists:get_value("action", Query),
+    process_post(Action, Query, get(logged_in)).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-safe_handle(Req, Fun) ->
-    erase(extra_headers),
-    erase(error),
-    Content =
-        try Fun(Req)
-        catch
-            _:{error, Reason} ->
-                echessd_html:error(
-                  gettext(resp_gen_error) ++ ":~n~p", [Reason]);
-            Type:Reason ->
-                StackTrace = erlang:get_stacktrace(),
-                echessd_html:error(
-                  gettext(resp_gen_error) ++ ":~n~p",
-                  [{Type, Reason, StackTrace}])
-        end,
-    ExtraHeaders =
-        case get(extra_headers) of
-            [_ | _] = ExtraHeaders0 ->
-                ExtraHeaders0;
-            _ -> []
-        end,
-    try Req:ok({?mime_text_html, ExtraHeaders, Content})
-    catch
-        Type2:Reason2 ->
-            StackTrace2 = erlang:get_stacktrace(),
-            Req:ok({?mime_text_html, [],
-                    echessd_html:error(
-                      gettext(resp_send_error) ++ ":~n~p",
-                      [{Type2, Reason2, StackTrace2}])})
-    end.
-
-add_extra_headers(ExtraHeaders) ->
-    put(extra_headers,
-        case get(extra_headers) of
-            [_ | _] = ExtraHeaders0 ->
-                ExtraHeaders0;
-            _ -> []
-        end ++ ExtraHeaders).
-
-process_get(Req) ->
-    put(query_proplist, Query = Req:parse_qs()),
-    echessd_log:debug("GET query=~9999p", [Query]),
-    Action = proplists:get_value("action", Query),
-    process_get(Action, Query, get(logged_in)).
 process_get(?SECTION_EXIT, _Query, true) ->
     echessd_session:del(get(sid)),
     echessd_html:login();
@@ -156,11 +69,6 @@ process_get(_, Query, _) ->
             echessd_html:login()
     end.
 
-process_post(Req) ->
-    put(query_proplist, Query = Req:parse_post()),
-    echessd_log:debug("POST query=~9999p", [Query]),
-    Action = proplists:get_value("action", Query),
-    process_post(Action, Query, get(logged_in)).
 process_post(?SECTION_LOGIN, Query, LoggedIn) ->
     Username = proplists:get_value("username", Query),
     Password = proplists:get_value("password", Query),
@@ -178,10 +86,10 @@ process_post(?SECTION_LOGIN, Query, LoggedIn) ->
                     echessd_log:debug(
                       "session ~9999p created for user ~9999p",
                       [SID, Username]),
-                    add_extra_headers([{"Set-Cookie", "sid=" ++ SID},
-                                       {"Set-Cookie",
-                                        "lang=" ++ atom_to_list(
-                                                     get(language))}]),
+                    echessd_httpd_lib:add_extra_headers(
+                      [{"Set-Cookie", "sid=" ++ SID},
+                       {"Set-Cookie",
+                        "lang=" ++ atom_to_list(get(language))}]),
                     process_show();
                 _ ->
                     echessd_html:eaccess()
