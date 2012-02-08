@@ -153,7 +153,7 @@ setprops(Username, UserInfo0) ->
     end.
 
 %% @doc Fetch language information from users info.
-%% @spec lang_info(UserInfo) -> {LangAbbr, LangName},
+%% @spec lang_info(UserInfo) -> {LangAbbr, LangName}
 %%     UserInfo = echessd_user_info(),
 %%     LangAbbr = atom(),
 %%     LangName = string()
