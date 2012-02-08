@@ -223,7 +223,6 @@ echessd application supervision tree:
 
 <pre>
 - time limitation for moves;
-- describe system architecture;
 - add users 'extra_info' property;
 - improve error reports.
 </pre>
