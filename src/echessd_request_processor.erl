@@ -13,12 +13,24 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
+%% @doc Handles HTTP GET request and return HTML page contents.
+%% @spec process_get(Query) -> HtmlPageContent
+%%     Query = [{Key, Value}],
+%%     Key = string(),
+%%     Value = string(),
+%%     HtmlPageContent = io_list()
 process_get(Query) ->
     put(query_proplist, Query),
     echessd_log:debug("GET query=~9999p", [Query]),
     Action = proplists:get_value("action", Query),
     process_get(Action, Query, get(logged_in)).
 
+%% @doc Handles HTTP POST request and return HTML page contents.
+%% @spec process_post(Query) -> HtmlPageContent
+%%     Query = [{Key, Value}],
+%%     Key = string(),
+%%     Value = string(),
+%%     HtmlPageContent = io_list()
 process_post(Query) ->
     put(query_proplist, Query),
     echessd_log:debug("POST query=~9999p", [Query]),
