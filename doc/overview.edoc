@@ -27,6 +27,7 @@
   <ol>
    <li>{@section Security considerations}</li>
    <li>{@section Configuration file format}</li>
+   <li>{@section Server architecture}</li>
    <li>{@section TODO list}</li>
   </ol>
  </li>
@@ -157,6 +158,66 @@ pair, separated by one or more spaces or tabs.
 Details for echessd existing configuration parameters you can
 found in ./echessd.conf configuration file in top directory of
 echessd source tree.
+
+=== Server architecture ===
+
+Erlang modules interaction:
+
+<pre><tt>
+               BROWSER
+            (client side)
+                  |
+                  |
+            HTTPD engine
+            (server side)
+                  |
+                  |
+    echessd_httpd_(inets|mochiweb)
+       (HTTPD engine interface)
+                  |
+                  |
+      echessd_request_processor
+        |         |           \
+        |         |            \---------------------
+        |         |                     \            \
+        |    echessd_html ----------\   |            |
+        |                           |   |            |
+        |                         echessd_game  echessd_user
+ echessd_session                    |       |      |
+        |                           |       |      |
+        |            echessd_rules_classic  |      |
+ Non-persistent                             |      |
+  storage (ETS)                            echessd_db
+                                               |
+                                               |
+                                             mnesia
+                                               |
+                                               |
+                                           Persistent
+                                            storage
+</tt></pre><hr/>
+
+echessd application supervision tree:
+
+<pre><tt>
+               echessd_app
+              (application)
+                    |
+                    |
+               echessd_sup
+              (supervisor)
+                |      |
+                |      |
+ echessd_web_warden  echessd_log
+         |
+         |
+    HTTPD engine
+ (inets or mochiweb)
+         |
+         |
+     arbitrary
+ connection handler
+</tt></pre><hr/>
 
 === TODO list ===
 
