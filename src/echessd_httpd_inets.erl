@@ -52,6 +52,7 @@ start_link(BindAddr, BindPort, DocRoot) ->
 -define(mime_text_plain, "text/plain").
 -define(mime_text_html, "text/html").
 
+%% @hidden
 do(ModData) ->
     case ModData#mod.request_uri of
         "/res/" ++ ResFile0 when ModData#mod.method == ?HTTP_GET ->
@@ -75,10 +76,13 @@ do(ModData) ->
             process(ModData, Query)
     end.
 
+%% @hidden
 load(_Line, _AccIn) -> ok.
 
+%% @hidden
 store(OptVal, _Config) -> {ok, OptVal}.
 
+%% @hidden
 remove(_ConfigDB) -> ok.
 
 %% ----------------------------------------------------------------------

@@ -11,6 +11,7 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
+%% @hidden
 behaviour_info(callbacks) ->
     [{start_link, 3}];
 behaviour_info(_) ->

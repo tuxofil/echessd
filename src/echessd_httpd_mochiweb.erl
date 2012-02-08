@@ -44,6 +44,7 @@ start_link(BindAddr, BindPort, _DocRoot) ->
 
 %% @doc Callback for HTTP request handling
 %%      (Request is a parameterized module).
+%% @hidden
 %% @spec loop(Request) -> term()
 %%     Request = mochiweb_request()
 loop(Request) ->

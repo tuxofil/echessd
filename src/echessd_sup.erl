@@ -21,6 +21,7 @@ start_link() ->
     supervisor:start_link(?MODULE, no_args).
 
 %% @doc Calls initialisation procedures and return child workers spec.
+%% @hidden
 %% @spec init(StartArgs) -> {ok, WorkersSpec}
 %%     StartArgs = term(),
 %%     WorkersSpec = tuple()

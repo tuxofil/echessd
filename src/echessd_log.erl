@@ -87,10 +87,12 @@ reopen() ->
 
 -record(state, {file_descr}).
 
+%% @hidden
 init(_Args) ->
     process_flag(trap_exit, true),
     {ok, #state{file_descr = openlog()}}.
 
+%% @hidden
 handle_cast({log, T, MC, F, A}, State) ->
     file:write(
       State#state.file_descr,
@@ -102,12 +104,15 @@ handle_cast(reopen, State) ->
 handle_cast(_Request, State) ->
     {noreply, State}.
 
+%% @hidden
 handle_info(_Request, State) ->
     {noreply, State}.
 
+%% @hidden
 handle_call(_Request, _From, State) ->
     {noreply, State}.
 
+%% @hidden
 terminate(Reason, State) ->
     IoDevice = State#state.file_descr,
     file:write(
@@ -118,6 +123,7 @@ terminate(Reason, State) ->
     catch file:close(IoDevice),
     ok.
 
+%% @hidden
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 

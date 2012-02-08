@@ -15,18 +15,23 @@
 %% API: 'application' behaviour callback functions
 %% ----------------------------------------------------------------------
 
+%% @hidden
 start(_StartType, _StartArgs) ->
     echessd_sup:start_link().
 
+%% @hidden
 start_phase(_Phase, _StartType, _PhaseArgs) ->
     ok.
 
+%% @hidden
 prep_stop(_State) ->
     ok.
 
+%% @hidden
 stop(_State) ->
     ok.
 
+%% @hidden
 config_change(_Changed, _New, _Removed) ->
     ok.
 

@@ -45,15 +45,18 @@ reconfig() ->
          server
         }).
 
+%% @hidden
 init(_Args) ->
     process_flag(trap_exit, true),
     self() ! ?reconfig,
     echessd_log:info("~w> started", [?MODULE]),
     {ok, #state{}}.
 
+%% @hidden
 handle_cast(_Request, State) ->
     {noreply, State}.
 
+%% @hidden
 handle_info(?reconfig, State) ->
     echessd_log:debug("~w> got reconfig signal!", [?MODULE]),
     BindAddr = echessd_cfg:get(?CFG_BIND_ADDR),
@@ -118,14 +121,17 @@ handle_info({'EXIT', From, Reason}, State)
 handle_info(_Request, State) ->
     {noreply, State}.
 
+%% @hidden
 handle_call(_Request, _From, State) ->
     {noreply, State}.
 
+%% @hidden
 terminate(Reason, _State) ->
     echessd_log:info(
       "~w> terminating due to: ~99999p",
       [?MODULE, Reason]).
 
+%% @hidden
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
