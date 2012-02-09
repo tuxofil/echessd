@@ -25,7 +25,7 @@
                   echessd_html,
                   echessd_rules_classic,
                   echessd_web_warden,
-                  echessd_httpdengine,
+                  echessd_httpd,
                   echessd_httpd_lib,
                   echessd_httpd_inets,
                   echessd_httpd_mochiweb

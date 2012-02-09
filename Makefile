@@ -1,6 +1,9 @@
 .PHONY: all doc clean cleanall
 
-SRCS=$(wildcard src/*.erl)
+COMPILE_FIRST_SOURCES=src/echessd_httpd.erl
+
+ALLSRCS=$(wildcard src/*.erl)
+SRCS=$(COMPILE_FIRST_SOURCES) $(filter-out $(COMPILE_FIRST_SOURCES),$(ALLSRCS))
 BEAMS=$(patsubst src/%.erl, ebin/%.beam, $(SRCS))
 
 all: $(BEAMS)

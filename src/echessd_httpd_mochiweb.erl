@@ -5,7 +5,7 @@
 
 -module(echessd_httpd_mochiweb).
 
--behaviour(echessd_httpdengine).
+-behaviour(echessd_httpd).
 
 %% API exports
 -export([start_link/3]).

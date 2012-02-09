@@ -3,7 +3,7 @@
 %%% @copyright 2012, Aleksey Morarash
 %%% @doc HTTPD engine behaviour
 
--module(echessd_httpdengine).
+-module(echessd_httpd).
 
 -export([behaviour_info/1]).
 
