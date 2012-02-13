@@ -14,8 +14,25 @@
 -export([do/1, load/2, store/2, remove/1]).
 
 -include("echessd.hrl").
--include_lib("inets/include/httpd.hrl").
 -include_lib("kernel/include/file.hrl").
+
+-ifndef(WITHOUT_INETS_HEADER).
+-include_lib("inets/include/httpd.hrl").
+-else.
+-record(mod,{init_data,
+             data=[],
+             socket_type=ip_comm,
+             socket,
+             config_db,
+             method,
+             absolute_uri=[],
+             request_uri,
+             http_version,
+             request_line,
+             parsed_header=[],
+             entity_body,
+             connection}).
+-endif.
 
 %% ----------------------------------------------------------------------
 %% API functions
