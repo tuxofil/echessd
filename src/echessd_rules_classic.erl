@@ -130,14 +130,10 @@ can_move(Board, Color, History) ->
 %%     Board = echessd_game:echessd_board(),
 %%     Color = echessd_game:echessd_color()
 %%     History = echessd_game:echessd_history(),
-%%     DrawType = stalemate | insufficient_material
+%%     DrawType = stalemate
 gameover_status(Board, Color, History) ->
     case can_move(Board, Color, History) of
-        true ->
-            case insufficient_material_check(Board) of
-                true -> {draw, insufficient_material};
-                _ -> none
-            end;
+        true -> none;
         _ ->
             KingIndex = whereis_my_king(History, Color),
             case is_cell_under_attack(
@@ -346,10 +342,6 @@ search_rook(Board, I, Step, Color) ->
         ?empty -> search_rook(Board, I2, Step, Color);
         _ -> ?null
     end.
-
-insufficient_material_check(Board) ->
-    %% todo: implement
-    false.
 
 %% ----------------------------------------------------------------------
 %% low level tools

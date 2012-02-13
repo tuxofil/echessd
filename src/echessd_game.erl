@@ -62,7 +62,6 @@
 
 -type echessd_game_status() ::
         none | checkmate | {draw, stalemate} |
-        {draw, insufficient_material} |
         {draw, agreement} |
         give_up.
 

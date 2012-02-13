@@ -326,8 +326,6 @@ game(GameID, GameInfo, Board, Captures) ->
                 h2(gettext(gt_over_giveup, [userlink(Winner)]));
             {draw, stalemate} ->
                 h2(gettext(gt_over_stalemate));
-            {draw, insufficient_material} ->
-                h2(gettext(gt_over_insufficient_material));
             {draw, agreement} ->
                 h2(gettext(gt_over_agreement));
             {draw, DrawType} ->

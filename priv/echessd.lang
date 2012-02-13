@@ -251,10 +251,6 @@
  [{en, "Game over: draw (stalemate)"},
   {ru, "Партия окончена: ничья (пат)"}]}.
 
-{text, gt_over_insufficient_material,
- [{en, "Game over: draw (insufficient material)"},
-  {ru, "Партия окончена: ничья (мало фигур)"}]}.
-
 {text, gt_over_agreement,
  [{en, "Game over: draw (agreement)"},
   {ru, "Партия окончена: ничья по договорённости"}]}.
