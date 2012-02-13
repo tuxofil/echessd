@@ -102,10 +102,10 @@ process(ModData, Query) ->
         catch
             _:{error, Reason} ->
                 echessd_html:error(
-                  gettext(resp_gen_error) ++ ":~n~p", [Reason]);
+                  gettext(txt_resp_gen_error) ++ ":~n~p", [Reason]);
             Type:Reason ->
                 echessd_html:error(
-                  gettext(resp_gen_error) ++ ":~n~p",
+                  gettext(txt_resp_gen_error) ++ ":~n~p",
                   [{Type, Reason, erlang:get_stacktrace()}])
         end,
     try
@@ -129,7 +129,7 @@ process(ModData, Query) ->
              [{response,
                {501,
                 echessd_html:error(
-                  gettext(resp_send_error) ++ ":~n~p",
+                  gettext(txt_resp_send_error) ++ ":~n~p",
                   [{Type2, Reason2, erlang:get_stacktrace()}])}}]}
     end.
 
@@ -191,13 +191,13 @@ serve_file(ModData, Filename0) ->
                     {break,
                      [{response,
                        {404,
-                        echessd_html:error(gettext(http_404_err), [])}}]}
+                        echessd_html:error(gettext(txt_http_404_err), [])}}]}
             end;
         {error, _Reason} ->
             {break,
              [{response,
                {404,
-                echessd_html:error(gettext(http_404_err), [])}}]}
+                echessd_html:error(gettext(txt_http_404_err), [])}}]}
     end.
 
 gettext(TextID) ->

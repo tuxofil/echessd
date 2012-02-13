@@ -54,7 +54,7 @@ process_get(?SECTION_ACKGAME, _Query, true) ->
                {"game", integer_to_list(GameID)}], true);
         {error, Reason} ->
             echessd_html:error(
-              gettext(err_game_confirm) ++ ":~n~9999p",
+              gettext(txt_err_game_confirm) ++ ":~n~9999p",
               [GameID, Reason])
     end;
 process_get(?SECTION_DENYGAME, _Query, true) ->
@@ -66,7 +66,7 @@ process_get(?SECTION_DENYGAME, _Query, true) ->
               [{"goto", ?SECTION_HOME}], true);
         {error, Reason} ->
             echessd_html:error(
-              gettext(err_game_deny) ++ ":~n~9999p",
+              gettext(txt_err_game_deny) ++ ":~n~9999p",
               [GameID, Reason])
     end;
 process_get(_, Query, true) ->
@@ -115,7 +115,7 @@ process_post(?SECTION_REG, Query, false) ->
     StrTimezone = proplists:get_value("regtimezone", Query),
     StrLanguage = proplists:get_value("reglanguage", Query),
     if Password1 /= Password2 ->
-            echessd_html:error(gettext(passw_conf_error));
+            echessd_html:error(gettext(txt_passw_conf_error));
        true ->
             case echessd_lib:list_to_time_offset(StrTimezone) of
                 {ok, Timezone} ->
@@ -133,13 +133,13 @@ process_post(?SECTION_REG, Query, false) ->
                                {"password", Password1}], false);
                         {error, Reason} ->
                             echessd_html:error(
-                              gettext(err_new_user) ++ ":~n~9999p",
+                              gettext(txt_err_new_user) ++ ":~n~9999p",
                               [Reason])
                     end;
                 _ ->
                     echessd_html:error(
-                      gettext(err_new_user) ++ ":~n" ++
-                          gettext(err_bad_timezone), [])
+                      gettext(txt_err_new_user) ++ ":~n" ++
+                          gettext(txt_err_bad_timezone), [])
             end
     end;
 process_post(?SECTION_PASSWD, Query, true) ->
@@ -150,7 +150,7 @@ process_post(?SECTION_PASSWD, Query, true) ->
     case echessd_user:auth(Username, Password0) of
         {ok, _UserInfo} ->
             if Password1 /= Password2 ->
-                    echessd_html:error(gettext(passw_conf_error));
+                    echessd_html:error(gettext(txt_passw_conf_error));
                true ->
                     NewUserInfo = [{password, Password1}],
                     case echessd_user:setprops(
@@ -161,7 +161,7 @@ process_post(?SECTION_PASSWD, Query, true) ->
                               [{"goto", ?SECTION_HOME}], true);
                         {error, Reason} ->
                             echessd_html:error(
-                              gettext(err_passwd) ++ ":~n~9999p",
+                              gettext(txt_err_passwd) ++ ":~n~9999p",
                               [Reason])
                     end
             end;
@@ -188,13 +188,13 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                       [{"goto", ?SECTION_HOME}], true);
                 {error, Reason} ->
                     echessd_html:error(
-                      gettext(err_save_user) ++ ":~n~9999p",
+                      gettext(txt_err_save_user) ++ ":~n~9999p",
                       [Reason])
             end;
         _ ->
             echessd_html:error(
-              gettext(err_save_user) ++ ":~n" ++
-                  gettext(err_bad_timezone), [])
+              gettext(txt_err_save_user) ++ ":~n" ++
+                  gettext(txt_err_bad_timezone), [])
     end;
 process_post(?SECTION_NEWGAME, Query, true) ->
     {Opponent, _UserInfo} =
@@ -224,7 +224,7 @@ process_post(?SECTION_NEWGAME, Query, true) ->
               ?SECTION_HOME, [{"goto", ?SECTION_HOME}], true);
         {error, Reason} ->
             echessd_html:error(
-              gettext(err_new_game) ++ ":~n~9999p", [Reason])
+              gettext(txt_err_new_game) ++ ":~n~9999p", [Reason])
     end;
 process_post(?SECTION_MOVE, Query, true) ->
     User = get(username),

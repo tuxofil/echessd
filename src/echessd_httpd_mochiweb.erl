@@ -83,10 +83,10 @@ process(Req) ->
         catch
             _:{error, Reason} ->
                 echessd_html:error(
-                  gettext(resp_gen_error) ++ ":~n~p", [Reason]);
+                  gettext(txt_resp_gen_error) ++ ":~n~p", [Reason]);
             Type:Reason ->
                 echessd_html:error(
-                  gettext(resp_gen_error) ++ ":~n~p",
+                  gettext(txt_resp_gen_error) ++ ":~n~p",
                   [{Type, Reason, erlang:get_stacktrace()}])
         end,
     Headers = echessd_httpd_lib:get_extra_headers(),
@@ -96,7 +96,7 @@ process(Req) ->
             Req:ok(
               {?mime_text_html, [],
                echessd_html:error(
-                 gettext(resp_send_error) ++ ":~n~p",
+                 gettext(txt_resp_send_error) ++ ":~n~p",
                  [{Type2, Reason2, erlang:get_stacktrace()}])})
     end.
 
