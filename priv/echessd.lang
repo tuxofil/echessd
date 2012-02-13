@@ -104,6 +104,10 @@
  [{en, "Unconfirmed games"},
   {ru, "Неподтверждённые партии"}]}.
 
+{text, user_ended_games,
+ [{en, "User ended games"},
+  {ru, "Завершённые партии"}]}.
+
 %% ----------------------------------------------------------------------
 %% Game list at user page
 

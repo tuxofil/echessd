@@ -540,12 +540,18 @@ user_games(Username, UserInfo, ShowNotAcknowledged) ->
           fun({_GameID, GameInfo}) ->
                   proplists:get_value(acknowledged, GameInfo)
           end, UserGames),
-    case Confirmed of
+    %% split ended
+    {NotEnded, Ended} =
+        lists:partition(
+          fun({_GameID, GameInfo}) ->
+                  proplists:get_value(status, GameInfo) == none
+          end, Confirmed),
+    case NotEnded of
         [_ | _] ->
             h2(gettext(user_games) ++ ":") ++
                 string:join(
                   [user_game_(Username, I, L) ||
-                      {I, L} <- Confirmed], "<br>") ++
+                      {I, L} <- NotEnded], "<br>") ++
                 "<br>";
         _ -> ""
     end ++
@@ -555,6 +561,15 @@ user_games(Username, UserInfo, ShowNotAcknowledged) ->
                     string:join(
                       [user_unconfirmed_game_(Username, I, L) ||
                           {I, L} <- NotConfirmed], "<br>") ++
+                    "<br>";
+            _ -> ""
+        end ++
+        case Ended of
+            [_ | _] ->
+                h2(gettext(user_ended_games) ++ ":") ++
+                    string:join(
+                      [user_game_(Username, I, L) ||
+                          {I, L} <- Ended], "<br>") ++
                     "<br>";
             _ -> ""
         end.
