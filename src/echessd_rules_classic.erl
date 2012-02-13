@@ -563,6 +563,7 @@ promotion_dec([$s | _]) -> ?knight;
 promotion_dec([$h | _]) -> ?knight;
 promotion_dec([$b | _]) -> ?bishop;
 promotion_dec([$q | _]) -> ?queen;
+promotion_dec([]) -> ?queen;
 promotion_dec([_ | _] = Str) ->
     throw({error, {bad_promotion_type, Str}});
 promotion_dec(_) ->
