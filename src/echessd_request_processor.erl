@@ -77,6 +77,12 @@ process_get(_, Query, _) ->
     case proplists:get_value("goto", Query) of
         ?SECTION_REG ->
             echessd_html:register();
+        ?SECTION_GAME ->
+            echessd_html:game(
+              list_to_integer(get_query_item("game")));
+        ?SECTION_HISTORY ->
+            echessd_html:history(
+              list_to_integer(get_query_item("game")));
         _ ->
             echessd_html:login()
     end.
