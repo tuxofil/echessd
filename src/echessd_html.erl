@@ -380,6 +380,11 @@ history(GameID) ->
             History = lists:sublist(FullHistory, Step),
             {Board, Captures} =
                 echessd_game:from_scratch(GameType, History),
+            %% Rotate board only on my game when i am black:
+            IsRotated =
+                lists:member(
+                  {get(username), ?black},
+                  proplists:get_value(users, GameInfo, [])),
             LastPly =
                 case lists:reverse(History) of
                     [LastPly0 | _] -> LastPly0;
@@ -390,7 +395,7 @@ history(GameID) ->
               [{h1, gettext(txt_game_hist_title, [gamelink(GameID)])}]) ++
                 navigation() ++
                 history_navigation(GameID, Step, FullHistoryLen) ++
-                chess_table(GameType, Board, false, false, LastPly) ++
+                chess_table(GameType, Board, IsRotated, false, LastPly) ++
                 captures(Captures) ++
                 html_page_footer([]);
         {error, Reason} ->
