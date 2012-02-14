@@ -192,7 +192,7 @@ home() ->
 %% @spec users() -> io_list()
 users() ->
     {ok, Users0} = echessd_user:list(),
-    Users = lists:usort(Users0) -- get(username),
+    Users = lists:usort(Users0) -- [get(username)],
     Title = gettext(txt_users),
     html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
         navigation() ++
