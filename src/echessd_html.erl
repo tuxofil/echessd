@@ -829,12 +829,18 @@ history_navigation(GameID, Step, MaxStep) ->
     BaseURL = "?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID ++ "&step=",
     navig_links(
       if Step > 0 ->
-              [{BaseURL ++ integer_to_list(Step - 1), gettext(txt_prev)}];
-         true -> [{undefined, gettext(txt_prev)}]
+              [{BaseURL ++ "0", gettext(txt_first)},
+               {BaseURL ++ integer_to_list(Step - 1), gettext(txt_prev)}];
+         true ->
+              [{undefined, gettext(txt_first)},
+               {undefined, gettext(txt_prev)}]
       end ++
           if Step < MaxStep ->
-                  [{BaseURL ++ integer_to_list(Step + 1), gettext(txt_next)}];
-             true -> [{undefined, gettext(txt_next)}]
+                  [{BaseURL ++ integer_to_list(MaxStep), gettext(txt_last)},
+                   {BaseURL ++ integer_to_list(Step + 1), gettext(txt_next)}];
+             true ->
+                  [{undefined, gettext(txt_last)},
+                   {undefined, gettext(txt_next)}]
           end).
 
 format_error({error, Reason}) ->
