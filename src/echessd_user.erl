@@ -106,10 +106,11 @@ auth(Username, Password) when is_binary(Password) ->
                       [Username]),
                     Ok;
                 _ ->
+                    Reason = password_incorrect,
                     echessd_log:err(
-                      "user ~9999p authentication failed: "
-                      "password incorrect"),
-                    {error, password_incorrect}
+                      "user ~9999p authentication failed: ~9999p",
+                      [Username, Reason]),
+                    {error, Reason}
             end;
         {error, Reason} = Error ->
             echessd_log:err(
