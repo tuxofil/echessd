@@ -294,6 +294,10 @@
  [{en, "Create"},
   {ru, "Создать"}]}.
 
+{text, txt_ng_private,
+ [{en, "Not accessible by other people"},
+  {ru, "Недоступна другим на обозрение"}]}.
+
 {text, txt_ng_color,
  [{en, "Color"},
   {ru, "Цвет фигур"}]}.

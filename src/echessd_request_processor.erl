@@ -230,8 +230,15 @@ process_post(?SECTION_NEWGAME, Query, true) ->
             true -> GameType0;
             _ -> ?GAME_CLASSIC
         end,
+    Private =
+        case proplists:get_value("private", Query) of
+            [_ | _] -> true;
+            _ -> false
+        end,
     Iam = get(username),
-    case echessd_game:add(GameType, Iam, Color, Opponent, []) of
+    case echessd_game:add(
+           GameType, Iam, Color, Opponent,
+           [{private, Private}]) of
         {ok, GameID} when Iam == Opponent ->
             process_get(
               ?SECTION_GAME,

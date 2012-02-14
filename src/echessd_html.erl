@@ -272,6 +272,8 @@ newgame(Opponent, OpponentProperties) ->
         "<input name=action type=hidden value=" ++ ?SECTION_NEWGAME ++ ">"
         "<input name=gametype type=hidden value=classic>"
         ++ ColorSelector ++
+        "<label for=prv><input name=private type=checkbox id=prv>&nbsp;" ++
+        gettext(txt_ng_private) ++ "</label><br>"
         "<input type=submit value='" ++ gettext(txt_ng_ok_button) ++ "'>"
         "</form>" ++
         html_page_footer([]).
@@ -280,19 +282,14 @@ newgame(Opponent, OpponentProperties) ->
 %% @spec game(GameID) -> io_list()
 %%     GameID = echessd_game:echessd_game_id()
 game(GameID) ->
-    case echessd_game:fetch(GameID) of
-        {ok, GameInfo, {Board, Captures}} ->
-            case proplists:get_value(acknowledged, GameInfo) of
-                true ->
-                    game(GameID, GameInfo, Board, Captures);
-                _ ->
-                    ?MODULE:error(
-                       gettext(txt_game_not_confirmed_error, [GameID]))
-            end;
-        {error, Reason} ->
-            ?MODULE:error(
-               gettext(txt_game_fetch_error) ++ ":~n~p",
-               [GameID, Reason])
+    case fetch_game(GameID) of
+        {ok, GameInfo} ->
+            GameType = proplists:get_value(type, GameInfo),
+            History = proplists:get_value(moves, GameInfo, []),
+            {Board, Captures} =
+                echessd_game:from_scratch(GameType, History),
+            game(GameID, GameInfo, Board, Captures);
+        ErrorContent -> ErrorContent
     end.
 game(GameID, GameInfo, Board, Captures) ->
     Iam = get(username),
@@ -373,46 +370,45 @@ game(GameID, GameInfo, Board, Captures) ->
 %% @spec history(GameID) -> io_list()
 %%     GameID = echessd_game:echessd_game_id()
 history(GameID) ->
-    case echessd_game:getprops(GameID) of
+    case fetch_game(GameID) of
         {ok, GameInfo} ->
-            GameType = proplists:get_value(type, GameInfo),
-            FullHistory = proplists:get_value(moves, GameInfo, []),
-            FullHistoryLen = length(FullHistory),
-            StrStep = proplists:get_value("step", get(query_proplist)),
-            Step =
-                try list_to_integer(StrStep) of
-                    Int when Int >= 0 andalso Int =< FullHistoryLen ->
-                        Int;
-                    _ -> FullHistoryLen
-                catch
-                    _:_ -> FullHistoryLen
-                end,
-            History = lists:sublist(FullHistory, Step),
-            {Board, Captures} =
-                echessd_game:from_scratch(GameType, History),
-            %% Rotate board only on my game when i am black:
-            IsRotated =
-                lists:member(
-                  {get(username), ?black},
-                  proplists:get_value(users, GameInfo, [])),
-            LastPly =
-                case lists:reverse(History) of
-                    [LastPly0 | _] -> LastPly0;
-                    _ -> undefined
-                end,
-            html_page_header(
-              "echessd - " ++ gettext(txt_game_hist_title_main),
-              [{h1, gettext(txt_game_hist_title, [gamelink(GameID)])}]) ++
-                navigation() ++
-                history_navigation(GameID, Step, FullHistoryLen) ++
-                chess_table(GameType, Board, IsRotated, false, LastPly) ++
-                captures(Captures) ++
-                html_page_footer([]);
-        {error, Reason} ->
-            ?MODULE:error(
-               gettext(txt_game_fetch_error) ++ ":~n~p",
-               [GameID, Reason])
+            history(GameID, GameInfo);
+        ErrorContent -> ErrorContent
     end.
+history(GameID, GameInfo) ->
+    GameType = proplists:get_value(type, GameInfo),
+    FullHistory = proplists:get_value(moves, GameInfo, []),
+    FullHistoryLen = length(FullHistory),
+    StrStep = proplists:get_value("step", get(query_proplist)),
+    Step =
+        try list_to_integer(StrStep) of
+            Int when Int >= 0 andalso Int =< FullHistoryLen ->
+                Int;
+            _ -> FullHistoryLen
+        catch
+            _:_ -> FullHistoryLen
+        end,
+    History = lists:sublist(FullHistory, Step),
+    {Board, Captures} =
+        echessd_game:from_scratch(GameType, History),
+    %% Rotate board only on my game when i am black:
+    IsRotated =
+        lists:member(
+          {get(username), ?black},
+          proplists:get_value(users, GameInfo, [])),
+    LastPly =
+        case lists:reverse(History) of
+            [LastPly0 | _] -> LastPly0;
+            _ -> undefined
+        end,
+    html_page_header(
+      "echessd - " ++ gettext(txt_game_hist_title_main),
+      [{h1, gettext(txt_game_hist_title, [gamelink(GameID)])}]) ++
+        navigation() ++
+        history_navigation(GameID, Step, FullHistoryLen) ++
+        chess_table(GameType, Board, IsRotated, false, LastPly) ++
+        captures(Captures) ++
+        html_page_footer([]).
 
 %% @doc Makes 'draw confirmation' page content.
 %% @spec draw_confirm(GameID) -> io_list()
@@ -492,6 +488,45 @@ eaccess() ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
+fetch_game(GameID) ->
+    case echessd_game:getprops(GameID) of
+        {ok, GameInfo} ->
+            case proplists:get_value(private, GameInfo) of
+                true ->
+                    case is_my_game(GameInfo) of
+                        true -> {ok, GameInfo};
+                        _ ->
+                            Reason = no_such_game,
+                            ?MODULE:error(
+                               gettext(txt_game_fetch_error) ++ ":~n~p",
+                               [GameID, Reason])
+                    end;
+                _ ->
+                    case proplists:get_value(
+                           acknowledged, GameInfo) of
+                        true -> {ok, GameInfo};
+                        _ ->
+                            ?MODULE:error(
+                               gettext(
+                                 txt_game_not_confirmed_error,
+                                 [GameID]))
+                    end
+            end;
+        {error, Reason} ->
+            ?MODULE:error(
+               gettext(txt_game_fetch_error) ++ ":~n~p",
+               [GameID, Reason])
+    end.
+
+is_my_game(GameInfo) ->
+    Iam = get(username),
+    Users = proplists:get_value(users, GameInfo, []),
+    case [N || {N, C} <- Users, N == Iam,
+               lists:member(C, [?white, ?black])] of
+        [_ | _] -> true;
+        _ -> false
+    end.
+
 user_info(Username, UserInfo) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         tr(
@@ -540,7 +575,12 @@ user_games(Username, UserInfo, ShowNotAcknowledged) ->
           fun(GameID) ->
                   case echessd_game:getprops(GameID) of
                       {ok, GameInfo} ->
-                          [{GameID, GameInfo}];
+                          Visible =
+                              not (proplists:get_value(private, GameInfo) == true)
+                              orelse is_my_game(GameInfo),
+                          if Visible -> [{GameID, GameInfo}];
+                             true -> []
+                          end;
                       {error, Reason} ->
                           echessd_log:err(
                             "Failed to fetch game #~w props: "

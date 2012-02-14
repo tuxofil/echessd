@@ -53,6 +53,7 @@
 -type echessd_game_property() ::
         {type, echessd_game_type()} |
         {time, erlang:timestamp()} |
+        {private, boolean()} |
         {creator, echessd_user:echessd_username()} |
         {users, [{echessd_user:echessd_username(), echessd_color()}]} |
         {status, echessd_game_status()} |
