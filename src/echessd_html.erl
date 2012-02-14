@@ -836,11 +836,11 @@ history_navigation(GameID, Step, MaxStep) ->
                {undefined, gettext(txt_prev)}]
       end ++
           if Step < MaxStep ->
-                  [{BaseURL ++ integer_to_list(MaxStep), gettext(txt_last)},
-                   {BaseURL ++ integer_to_list(Step + 1), gettext(txt_next)}];
+                  [{BaseURL ++ integer_to_list(Step + 1), gettext(txt_next)},
+                   {BaseURL ++ integer_to_list(MaxStep), gettext(txt_last)}];
              true ->
-                  [{undefined, gettext(txt_last)},
-                   {undefined, gettext(txt_next)}]
+                  [{undefined, gettext(txt_next)},
+                   {undefined, gettext(txt_last)}]
           end).
 
 format_error({error, Reason}) ->
