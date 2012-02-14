@@ -811,10 +811,14 @@ section_caption(?SECTION_USERS) -> gettext(txt_users);
 section_caption(Other) -> Other.
 
 navigation() ->
-    navig_links(
-      [{"?goto=" ++ S, section_caption(S)} ||
-          S <- [?SECTION_HOME, ?SECTION_USERS]] ++
-          [{"?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}]).
+    case get(username) of
+        [_ | _] ->
+            navig_links(
+              [{"?goto=" ++ S, section_caption(S)} ||
+                  S <- [?SECTION_HOME, ?SECTION_USERS]] ++
+                  [{"?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}]);
+        _ -> ""
+    end.
 
 game_navigation(GameID, ShowEndGameLinks) ->
     StrID = integer_to_list(GameID),
