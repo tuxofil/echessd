@@ -74,8 +74,19 @@ process(Req) ->
         try
             case Req:get(method) of
                 ?HTTP_GET ->
-                    Query = Req:parse_qs(),
-                    echessd_request_processor:process_get(Query);
+                    case {Req:parse_qs(), Req:get(path)} of
+                        {[], "/" ++ Str} ->
+                            Query =
+                                try
+                                    Int = list_to_integer(Str),
+                                    true = Int > 0,
+                                    [{"goto", ?SECTION_GAME},
+                                     {"game", Str}]
+                                catch _:_ -> [] end,
+                            echessd_request_processor:process_get(Query);
+                        {Query, _} ->
+                            echessd_request_processor:process_get(Query)
+                    end;
                 ?HTTP_POST ->
                     Query = Req:parse_post(),
                     echessd_request_processor:process_post(Query)

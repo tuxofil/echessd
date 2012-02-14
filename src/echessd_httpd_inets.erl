@@ -79,11 +79,18 @@ do(ModData) ->
         "/favicon.ico" ++ _ when ModData#mod.method == ?HTTP_GET ->
             serve_file(ModData, "favicon.ico");
         _ ->
-            {_, GetQueryString} =
+            {Path, GetQueryString} =
                 split4pathNquery(ModData#mod.request_uri),
             Query =
                 httpd:parse_query(
                   case ModData#mod.method of
+                      ?HTTP_GET when GetQueryString == [] ->
+                          try
+                              "/" ++ Str = Path,
+                              Int = list_to_integer(Str),
+                              true = Int > 0,
+                              "goto=" ++ ?SECTION_GAME ++ "&game=" ++ Str
+                          catch _:_ -> GetQueryString end;
                       ?HTTP_GET -> GetQueryString;
                       ?HTTP_POST -> ModData#mod.entity_body;
                       Other ->
