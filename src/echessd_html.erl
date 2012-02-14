@@ -496,7 +496,7 @@ fetch_game(GameID) ->
                     case is_my_game(GameInfo) of
                         true -> {ok, GameInfo};
                         _ ->
-                            Reason = no_such_game,
+                            Reason = {no_such_game, GameID},
                             ?MODULE:error(
                                gettext(txt_game_fetch_error) ++ ":~n~p",
                                [GameID, Reason])
