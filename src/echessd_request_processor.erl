@@ -120,6 +120,11 @@ process_post(?SECTION_REG, Query, false) ->
     Password2 = proplists:get_value("regpassword2", Query),
     StrTimezone = proplists:get_value("regtimezone", Query),
     StrLanguage = proplists:get_value("reglanguage", Query),
+    ShowInList =
+        case proplists:get_value("regshowinlist", Query) of
+            [_ | _] -> true;
+            _ -> false
+        end,
     if Password1 /= Password2 ->
             echessd_html:error(gettext(txt_passw_conf_error));
        true ->
@@ -131,6 +136,7 @@ process_post(?SECTION_REG, Query, false) ->
                             {fullname, Fullname},
                             {timezone, Timezone},
                             {language, StrLanguage},
+                            {show_in_list, ShowInList},
                             {created, now()}]) of
                         ok ->
                             process_post(
@@ -179,12 +185,18 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
     Fullname = proplists:get_value("editfullname", Query),
     StrTimezone = proplists:get_value("edittimezone", Query),
     StrLanguage = proplists:get_value("editlanguage", Query),
+    ShowInList =
+        case proplists:get_value("editshowinlist", Query) of
+            [_ | _] -> true;
+            _ -> false
+        end,
     case echessd_lib:list_to_time_offset(StrTimezone) of
         {ok, Timezone} ->
             NewUserInfo =
                 [{fullname, Fullname},
                  {timezone, Timezone},
-                 {language, StrLanguage}],
+                 {language, StrLanguage},
+                 {show_in_list, ShowInList}],
             case echessd_user:setprops(
                    Username, NewUserInfo) of
                 ok ->

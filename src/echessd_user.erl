@@ -31,6 +31,7 @@
         {fullname, string()} |
         {timezone, echessd_lib:administrative_offset()} |
         {language, atom()} |
+        {show_in_list, boolean()} |
         {games, [echessd_game:echessd_game_id()]}.
 
 %% ----------------------------------------------------------------------
@@ -254,6 +255,11 @@ check_property({language = Key, A} = I) ->
             end;
        true ->
             throw({error, {bad_language, A}})
+    end;
+check_property({show_in_list, B} = I) ->
+    if is_boolean(B) -> I;
+       true ->
+            throw({error, {bad_show_in_list, B}})
     end;
 check_property({K, _V}) ->
     throw({error, {unknown_property, K}}).

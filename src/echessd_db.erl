@@ -80,7 +80,12 @@ list_users() ->
       fun() ->
               mnesia:foldl(
                 fun(HRec, Acc) ->
-                        [HRec#hrec.key | Acc]
+                        case proplists:get_value(
+                               show_in_list, HRec#hrec.val) of
+                            false -> Acc;
+                            _ ->
+                                [HRec#hrec.key | Acc]
+                        end
                 end, [], ?dbt_users)
       end).
 

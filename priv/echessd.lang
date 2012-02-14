@@ -57,6 +57,10 @@
  [{en, "Language"},
   {ru, "Язык интерфейса"}]}.
 
+{text, txt_rnu_show_in_list,
+ [{en, "Show me in common list"},
+  {ru, "Отображать меня в общем списке"}]}.
+
 {text, txt_rnu_ok_button,
  [{en, "Register"},
   {ru, "Зарегистрироваться"}]}.
