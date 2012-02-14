@@ -31,6 +31,7 @@
 %% ----------------------------------------------------------------------
 
 -export_type([echessd_board/0,
+              echessd_game_info/0,
               echessd_color/0,
               echessd_ply/0,
               echessd_history/0,
