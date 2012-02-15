@@ -1,6 +1,7 @@
 {languages,
  [{en, "English"},
-  {ru, "Русский"}
+  {ru, "Русский"},
+  {ua, "Українська"}
  ]}.
 
 %% ----------------------------------------------------------------------
@@ -8,473 +9,582 @@
 
 {text, txt_home,
  [{en, "Home"},
-  {ru, "Главная"}]}.
+  {ru, "Главная"},
+  {ua, "Головна"}]}.
 
 {text, txt_users,
  [{en, "Users"},
-  {ru, "Игроки"}]}.
+  {ru, "Игроки"},
+  {ua, "Гравці"}]}.
 
 {text, txt_logout,
  [{en, "Logout"},
-  {ru, "Выйти"}]}.
+  {ru, "Выйти"},
+  {ua, "Вийти"}]}.
 
 %% ----------------------------------------------------------------------
 %% Register new user page
 
 {text, txt_rnu_title,
  [{en, "Register new user"},
-  {ru, "Регистрация нового игрока"}]}.
+  {ru, "Регистрация нового игрока"},
+  {ua, "Реєстрація нового гравця"}]}.
 
 {text, txt_rnu_ret_link,
  [{en, "Return to login form"},
-  {ru, "Вернуться к странице входа"}]}.
+  {ru, "Вернуться к странице входа"},
+  {ua, "Повернутися до сторінки входу"}]}.
 
 {text, txt_rnu_login,
  [{en, "Login"},
-  {ru, "Логин"}]}.
+  {ru, "Логин"},
+  {ua, "Логін"}]}.
 
 {text, txt_rnu_passw,
  [{en, "Password"},
-  {ru, "Пароль"}]}.
+  {ru, "Пароль"},
+  {ua, "Пароль"}]}.
 
 {text, txt_rnu_passw_conf,
  [{en, "Confirm password"},
-  {ru, "Подтвердите пароль"}]}.
+  {ru, "Подтвердите пароль"},
+  {ua, "Підтвердіть пароль"}]}.
 
 {text, txt_rnu_fullname,
  [{en, "Full name"},
-  {ru, "Полное имя"}]}.
+  {ru, "Полное имя"},
+  {ua, "Повне ім’я"}]}.
 
 {text, txt_rnu_optional,
  [{en, "optional"},
-  {ru, "не обязательно"}]}.
+  {ru, "не обязательно"},
+  {ua, "не обов’язково"}]}.
 
 {text, txt_rnu_timezone,
  [{en, "Timezone"},
-  {ru, "Часовой пояс"}]}.
+  {ru, "Часовой пояс"},
+  {ua, "Часовий пояс"}]}.
 
 {text, txt_rnu_language,
  [{en, "Language"},
-  {ru, "Язык интерфейса"}]}.
+  {ru, "Язык интерфейса"},
+  {ua, "Мова інтерфейсу"}]}.
 
 {text, txt_rnu_show_in_list,
  [{en, "Show me in common list"},
-  {ru, "Отображать меня в общем списке"}]}.
+  {ru, "Отображать меня в общем списке"},
+  {ua, "Відображати мене у загальному списку"}]}.
 
 {text, txt_rnu_ok_button,
  [{en, "Register"},
-  {ru, "Зарегистрироваться"}]}.
+  {ru, "Зарегистрироваться"},
+  {ua, "Зареєструватися"}]}.
 
 %% ----------------------------------------------------------------------
 %% User page
 
 {text, txt_user,
  [{en, "User"},
-  {ru, "Игрок"}]}.
+  {ru, "Игрок"},
+  {ua, "Гравець"}]}.
 
 {text, txt_login,
  [{en, "login"},
-  {ru, "Логин"}]}.
+  {ru, "Логин"},
+  {ua, "Логін"}]}.
 
 {text, txt_fullname,
  [{en, "Full name"},
-  {ru, "Полное имя"}]}.
+  {ru, "Полное имя"},
+  {ua, "Повне ім’я"}]}.
 
 {text, txt_not_sure,
  [{en, "Not Sure"},
-  {ru, "Не Уверен"}]}.
+  {ru, "Не Уверен"},
+  {ua, "Не Впевнений"}]}.
 
 {text, txt_registered,
  [{en, "Registered"},
-  {ru, "Зарегистрирован"}]}.
+  {ru, "Зарегистрирован"},
+  {ua, "Зареєстрований"}]}.
 
 {text, txt_unknown,
  [{en, "unknown"},
-  {ru, "неизвестно"}]}.
+  {ru, "неизвестно"},
+  {ua, "невідомо"}]}.
 
 {text, txt_timezone,
  [{en, "Timezone"},
-  {ru, "Часовой пояс"}]}.
+  {ru, "Часовой пояс"},
+  {ua, "Часовий пояс"}]}.
 
 {text, txt_language,
  [{en, "Language"},
-  {ru, "Язык"}]}.
+  {ru, "Язык"},
+  {ua, "Мова"}]}.
 
 {text, txt_user_games,
  [{en, "User games"},
-  {ru, "Текущие партии"}]}.
+  {ru, "Текущие партии"},
+  {ua, "Поточні партії"}]}.
 
 {text, txt_unconf_games,
  [{en, "Unconfirmed games"},
-  {ru, "Неподтверждённые партии"}]}.
+  {ru, "Неподтверждённые партии"},
+  {ua, "Непідтверджені партії"}]}.
 
 {text, txt_user_ended_games,
  [{en, "User ended games"},
-  {ru, "Завершённые партии"}]}.
+  {ru, "Завершённые партии"},
+  {ua, "Завершені партії"}]}.
 
 %% ----------------------------------------------------------------------
 %% Game list at user page
 
 {text, txt_draw,
  [{en, "draw"},
-  {ru, "ничья"}]}.
+  {ru, "ничья"},
+  {ua, "нічия"}]}.
 
 {text, txt_checkmate,
  [{en, "checkmate"},
-  {ru, "мат"}]}.
+  {ru, "мат"},
+  {ua, "мат"}]}.
 
 {text, txt_win_giveup,
  [{en, "win (gived up)"},
-  {ru, "выиграно (сдался)"}]}.
+  {ru, "выиграно (сдался)"},
+  {ua, "виграно (здався)"}]}.
 
 {text, txt_loose_giveup,
  [{en, "loose (gived up)"},
-  {ru, "проиграно (сдался)"}]}.
+  {ru, "проиграно (сдался)"},
+  {ua, "програно (здався)"}]}.
 
 {text, txt_gived_up,
  [{en, "gived up"},
-  {ru, "сдался"}]}.
+  {ru, "сдался"},
+  {ua, "здався"}]}.
 
 {text, txt_win,
  [{en, "win"},
-  {ru, "выиграно"}]}.
+  {ru, "выиграно"},
+  {ua, "виграно"}]}.
 
 {text, txt_loose,
  [{en, "loose"},
-  {ru, "проиграно"}]}.
+  {ru, "проиграно"},
+  {ua, "програно"}]}.
 
 {text, txt_test_game,
  [{en, "test"},
-  {ru, "тестовая игра"}]}.
+  {ru, "тестовая игра"},
+  {ua, "тестова гра"}]}.
 
 {text, txt_vs,
  [{en, "vs"},
-  {ru, "против"}]}.
+  {ru, "против"},
+  {ua, "проти"}]}.
 
 %% ----------------------------------------------------------------------
 %% Give up confirmation page
 
 {text, txt_giveup_confirm_title,
  [{en, "Game give up confirmation"},
-  {ru, "Подтверждение поражения"}]}.
+  {ru, "Подтверждение поражения"},
+  {ua, "Підтвердження поразки"}]}.
 
 {text, txt_giveup_confirm_text,
  [{en, "Do you wish to '~s' to win this game?"},
-  {ru, "Хотите отдать победу в руки '~s'?"}]}.
+  {ru, "Хотите отдать победу в руки '~s'?"},
+  {ua, "Бажаєте віддати перемогу '~s'?"}]}.
 
 {text, txt_giveup_button,
  [{en, "Give up"},
-  {ru, "Сдаюсь"}]}.
+  {ru, "Сдаюсь"},
+  {ua, "Здаюся"}]}.
 
 %% ----------------------------------------------------------------------
 %% Draw by agreement confirmation page
 
 {text, txt_draw_confirm_title,
  [{en, "Game draw by agreement confirmation"},
-  {ru, "Предложение ничьи"}]}.
+  {ru, "Предложение ничьи"},
+  {ua, "Пропозиція нічиї"}]}.
 
 {text, txt_draw_confirm_text,
  [{en, "Do you want to propose to end the game with draw by agreement?"},
-  {ru, "Вы действительно хотите предложить ничью?"}]}.
+  {ru, "Вы действительно хотите предложить ничью?"},
+  {ua, "Ви дійсно бажаєте запропонувати нічию?"}]}.
 
 {text, txt_draw_button,
  [{en, "Propose draw"},
-  {ru, "Предложить ничью"}]}.
+  {ru, "Предложить ничью"},
+  {ua, "Запропонувати нічию"}]}.
 
 %% ----------------------------------------------------------------------
 %% Game history page
 
 {text, txt_game_hist_title_main,
  [{en, "Game history"},
-  {ru, "История партии"}]}.
+  {ru, "История партии"},
+  {ua, "Історія партії"}]}.
 
 {text, txt_game_hist_title,
  [{en, "Game ~s history"},
-  {ru, "История партии ~s"}]}.
+  {ru, "История партии ~s"},
+  {ua, "Історія партії ~s"}]}.
 
 {text, txt_first,
  [{en, "First"},
-  {ru, "Первый"}]}.
+  {ru, "Первый"},
+  {ua, "Перший"}]}.
 
 {text, txt_prev,
  [{en, "Previous"},
-  {ru, "Предыдущий"}]}.
+  {ru, "Предыдущий"},
+  {ua, "Попередній"}]}.
 
 {text, txt_next,
  [{en, "Next"},
-  {ru, "Следующий"}]}.
+  {ru, "Следующий"},
+  {ua, "Наступний"}]}.
 
 {text, txt_last,
  [{en, "Last"},
-  {ru, "Последний"}]}.
+  {ru, "Последний"},
+  {ua, "Останній"}]}.
 
 %% ----------------------------------------------------------------------
 %% Game page
 
 {text, txt_game,
  [{en, "Game"},
-  {ru, "Партия"}]}.
+  {ru, "Партия"},
+  {ua, "Партія"}]}.
 
 {text, txt_new_game_link,
  [{en, "Start new game"},
-  {ru, "Начать новую партию"}]}.
+  {ru, "Начать новую партию"},
+  {ua, "Почати нову партію"}]}.
 
 {text, txt_refresh,
  [{en, "Refresh"},
-  {ru, "Обновить"}]}.
+  {ru, "Обновить"},
+  {ua, "Оновити"}]}.
 
 {text, txt_history,
  [{en, "History"},
-  {ru, "История"}]}.
+  {ru, "История"},
+  {ua, "Історія"}]}.
 
 {text, txt_req_draw,
  [{en, "Draw"},
-  {ru, "Ничья"}]}.
+  {ru, "Ничья"},
+  {ua, "Нічия"}]}.
 
 {text, txt_do_giveup,
  [{en, "GiveUp"},
-  {ru, "Сдаться"}]}.
+  {ru, "Сдаться"},
+  {ua, "Здатися"}]}.
 
 {text, txt_badmove,
  [{en, "You can not move such way. "},
-  {ru, "Вы не можете так походить. "}]}.
+  {ru, "Вы не можете так походить. "},
+  {ua, "Ви не можете так ходити. "}]}.
 
 {text, txt_king_in_check,
  [{en, "Your King is in check!"},
-  {ru, "Шах королю!"}]}.
+  {ru, "Шах королю!"},
+  {ua, "Шах королю!"}]}.
 
 {text, txt_move_caption,
  [{en, "Move"},
-  {ru, "Ход"}]}.
+  {ru, "Ход"},
+  {ua, "Хід"}]}.
 
 {text, txt_move_ok_button,
  [{en, "OK"},
-  {ru, "Готово"}]}.
+  {ru, "Готово"},
+  {ua, "Готово"}]}.
 
 {text, txt_move_reset_button,
  [{en, "Reset"},
-  {ru, "Отмена"}]}.
+  {ru, "Отмена"},
+  {ua, "Відміна"}]}.
 
 {text, txt_gt_over_checkmate,
  [{en, "Game over: checkmate, winner: ~s"},
-  {ru, "Партия окончена: мат, победитель: ~s"}]}.
+  {ru, "Партия окончена: мат, победитель: ~s"},
+  {ua, "Партію завершено: мат, переможець: ~s"}]}.
 
 {text, txt_gt_over_giveup,
  [{en, "Game over: gived up, winner: ~s"},
-  {ru, "Партия окончена. Победитель: ~s"}]}.
+  {ru, "Партия окончена. Победитель: ~s"},
+  {ua, "Партію завершено. Переможець: ~s"}]}.
 
 {text, txt_gt_over_stalemate,
  [{en, "Game over: draw (stalemate)"},
-  {ru, "Партия окончена: ничья (пат)"}]}.
+  {ru, "Партия окончена: ничья (пат)"},
+  {ua, "Партію завершено: нічия (пат)"}]}.
 
 {text, txt_gt_over_agreement,
  [{en, "Game over: draw (agreement)"},
-  {ru, "Партия окончена: ничья по договорённости"}]}.
+  {ru, "Партия окончена: ничья по договорённости"},
+  {ua, "Партію завершено: нічия за домовленістю"}]}.
 
 {text, txt_gt_over_draw,
  [{en, "Game over: draw (~9999p)"},
-  {ru, "Партия окончена: ничья (~9999p)"}]}.
+  {ru, "Партия окончена: ничья (~9999p)"},
+  {ua, "Партію завершено: нічия (~9999p)"}]}.
 
 {text, txt_gt_youre_drawing,
  [{en, "You have been proposed draw..."},
-  {ru, "Вы предложили ничью..."}]}.
+  {ru, "Вы предложили ничью..."},
+  {ua, "Ви запропонували нічию..."}]}.
 
 {text, txt_gt_opponent_drawing,
  [{en, "~s is proposing draw"},
-  {ru, "~s предлагает Вам ничью"}]}.
+  {ru, "~s предлагает Вам ничью"},
+  {ua, "~s пропонує Вам нічию"}]}.
 
 %% ----------------------------------------------------------------------
 %% New game page
 
 {text, txt_ng_title,
  [{en, "New game"},
-  {ru, "Новая партия"}]}.
+  {ru, "Новая партия"},
+  {ua, "Нова партія"}]}.
 
 {text, txt_ng_ok_button,
  [{en, "Create"},
-  {ru, "Создать"}]}.
+  {ru, "Создать"},
+  {ua, "Створити"}]}.
 
 {text, txt_ng_private,
  [{en, "Not accessible by other people"},
-  {ru, "Недоступна другим на обозрение"}]}.
+  {ru, "Недоступна другим на обозрение"},
+  {ua, "Не показувати іншим"}]}.
 
 {text, txt_ng_color,
  [{en, "Color"},
-  {ru, "Цвет фигур"}]}.
+  {ru, "Цвет фигур"},
+  {ua, "Колір фігур"}]}.
 
 {text, txt_ng_color_random,
  [{en, "Choose randomly"},
-  {ru, "Случайно"}]}.
+  {ru, "Случайно"},
+  {ua, "Випадково"}]}.
 
 {text, txt_ng_color_white,
  [{en, "White"},
-  {ru, "Белые"}]}.
+  {ru, "Белые"},
+  {ua, "Білі"}]}.
 
 {text, txt_ng_color_black,
  [{en, "Black"},
-  {ru, "Чёрные"}]}.
+  {ru, "Чёрные"},
+  {ua, "Чорні"}]}.
 
 {text, txt_ng_title_h2_test,
  [{en, "Test game: ~s vs ~s"},
-  {ru, "Тестовая партия: ~s против ~s"}]}.
+  {ru, "Тестовая партия: ~s против ~s"},
+  {ua, "Тестова партія: ~s проти ~s"}]}.
 
 {text, txt_ng_title_h2_normal,
  [{en, "Game: ~s vs ~s"},
-  {ru, "Партия: ~s против ~s"}]}.
+  {ru, "Партия: ~s против ~s"},
+  {ua, "Партія: ~s проти ~s"}]}.
 
 %% ----------------------------------------------------------------------
 %% Edit preferences page
 
 {text, txt_edit_profile_title,
  [{en, "Edit user preferences"},
-  {ru, "Редактирование профиля"}]}.
+  {ru, "Редактирование профиля"},
+  {ua, "Редагування профілю"}]}.
 
 {text, txt_predit_passwd_link,
  [{en, "Change password"},
-  {ru, "Изменение пароля"}]}.
+  {ru, "Изменение пароля"},
+  {ua, "Зміна паролю"}]}.
 
 {text, txt_predit_lang,
  [{en, "Language"},
-  {ru, "Язык интерфейса"}]}.
+  {ru, "Язык интерфейса"},
+  {ua, "Мова інтерфейсу"}]}.
 
 {text, txt_predit_save_button,
  [{en, "Save"},
-  {ru, "Сохранить"}]}.
+  {ru, "Сохранить"},
+  {ua, "Зберегти"}]}.
 
 {text, txt_optional,
  [{en, "optional"},
-  {ru, "необязательно"}]}.
+  {ru, "необязательно"},
+  {ua, "необов’язково"}]}.
 
 %% ----------------------------------------------------------------------
 %% Change password page
 
 {text, txt_passwd_title,
  [{en, "User password change"},
-  {ru, "Смена пароля учётной записи"}]}.
+  {ru, "Смена пароля учётной записи"},
+  {ua, "Зміна паролю облікового запису"}]}.
 
 {text, txt_passwd_passw,
  [{en, "Your current password"},
-  {ru, "Ваш текущий пароль"}]}.
+  {ru, "Ваш текущий пароль"},
+  {ua, "Ваш поточний пароль"}]}.
 
 {text, txt_passwd_passw_new,
  [{en, "New password"},
-  {ru, "Ваш новый пароль"}]}.
+  {ru, "Ваш новый пароль"},
+  {ua, "Ваш новий пароль"}]}.
 
 {text, txt_passwd_passw_new_confirm,
  [{en, "New password confirm"},
-  {ru, "Подтвердите новый пароль"}]}.
+  {ru, "Подтвердите новый пароль"},
+  {ua, "Підтвердіть новий пароль"}]}.
 
 {text, txt_passwd_save_button,
  [{en, "Save"},
-  {ru, "Сохранить"}]}.
+  {ru, "Сохранить"},
+  {ua, "Зберегти"}]}.
 
 %% ----------------------------------------------------------------------
 %% Login page
 
 {text, txt_lgn_title,
  [{en, "Login"},
-  {ru, "Вход"}]}.
+  {ru, "Вход"},
+  {ua, "Вхід"}]}.
 
 {text, txt_lgn_rnu_link,
  [{en, "Register new user"},
-  {ru, "Зарегистрироваться"}]}.
+  {ru, "Зарегистрироваться"},
+  {ua, "Зареєструватися"}]}.
 
 {text, txt_lgn_login,
  [{en, "Login"},
-  {ru, "Логин"}]}.
+  {ru, "Логин"},
+  {ua, "Логін"}]}.
 
 {text, txt_lgn_passw,
  [{en, "Password"},
-  {ru, "Пароль"}]}.
+  {ru, "Пароль"},
+  {ua, "Пароль"}]}.
 
 {text, txt_lgn_ok_button,
  [{en, "Login"},
-  {ru, "Войти"}]}.
+  {ru, "Войти"},
+  {ua, "Увійти"}]}.
 
 %% ----------------------------------------------------------------------
 %% Common messages (error reports etc)
 
 {text, txt_error,
  [{en, "ERROR"},
-  {ru, "ОШИБКА"}]}.
+  {ru, "ОШИБКА"},
+  {ua, "ПОМИЛКА"}]}.
 
 {text, txt_user_fetch_error,
  [{en, "Unable to fetch user #~9999p properties"},
-  {ru, "Не удалось найти игрока ~9999p"}]}.
+  {ru, "Не удалось найти игрока ~9999p"},
+  {ua, "Не вдалося знайти гравця ~9999p"}]}.
 
 {text, txt_access_denied,
  [{en, "ACCESS DENIED"},
-  {ru, "В ДОСТУПЕ ОТКАЗАНО"}]}.
+  {ru, "В ДОСТУПЕ ОТКАЗАНО"},
+  {ua, "У ДОСТУПІ ВІДМОВЛЕНО"}]}.
 
 {text, txt_game_fetch_error,
  [{en, "Unable to fetch game #~9999p properties"},
-  {ru, "Не удалось найти партию #~9999p"}]}.
+  {ru, "Не удалось найти партию #~9999p"},
+  {ua, "Не вдалося знайти партію #~9999p"}]}.
 
 {text, txt_not_implemented_title,
  [{en, "Not implemented yet"},
-  {ru, "В стадии разработки"}]}.
+  {ru, "В стадии разработки"},
+  {ua, "Ще не розроблено"}]}.
 
 {text, txt_not_implemented_text,
  [{en, "Sorry! This page is under construction!"},
-  {ru, "Звыняйте, эта страница в стадии разработки!"}]}.
+  {ru, "Звыняйте, эта страница в стадии разработки!"},
+  {ua, "Вибачте, цю сторінку ще не розроблено!"}]}.
 
 {text, txt_error_page_title,
  [{en, "Error"},
-  {ru, "Ошибка"}]}.
+  {ru, "Ошибка"},
+  {ua, "Помилка"}]}.
 
 {text, txt_back_link,
  [{en, "Back"},
-  {ru, "Вернуться"}]}.
+  {ru, "Вернуться"},
+  {ua, "Повернутися"}]}.
 
 {text, txt_ouch_back_link,
  [{en, "No, get out of here!"},
-  {ru, "Ой, не надо, хочу назад!"}]}.
+  {ru, "Ой, не надо, хочу назад!"},
+  {ua, "Заберіть мене звідси!"}]}.
 
 {text, txt_game_not_confirmed_error,
  [{en, "Game #~w isn`t confirmed yet!"},
-  {ru, "Партия #~w ещё не подтверждена!"}]}.
+  {ru, "Партия #~w ещё не подтверждена!"},
+  {ua, "Партію #~w ще не підтверджено!"}]}.
 
 {text, txt_passw_conf_error,
  [{en, "Password confirmation failed"},
-  {ru, "Пароль и его подтверждение не совпадают"}]}.
+  {ru, "Пароль и его подтверждение не совпадают"},
+  {ua, "Пароль та його підтвердження не співпадають"}]}.
 
 {text, txt_resp_gen_error,
  [{en, "Response generation failed"},
-  {ru, "Внутренняя ошибка при генерации страницы"}]}.
+  {ru, "Внутренняя ошибка при генерации страницы"},
+  {ua, "Внутрішня помилка при генеруванні сторінки"}]}.
 
 {text, txt_resp_send_error,
  [{en, "Response sending failed"},
-  {ru, "Внутренняя ошибка при отправке страницы"}]}.
+  {ru, "Внутренняя ошибка при отправке страницы"},
+  {ua, "Внутрішня помилка при надсиланні сторінки"}]}.
 
 {text, txt_err_game_confirm,
  [{en, "Failed to confirm game ~9999p"},
-  {ru, "Не удалось подтвердить партию ~9999p"}]}.
+  {ru, "Не удалось подтвердить партию ~9999p"},
+  {ua, "Не вдалося підтвердити партію ~9999p"}]}.
 
 {text, txt_err_game_deny,
  [{en, "Failed to deny game ~9999p"},
-  {ru, "Не удалось отменить партию ~9999p"}]}.
+  {ru, "Не удалось отменить партию ~9999p"},
+  {ua, "Не вдалося відмінити партію ~9999p"}]}.
 
 {text, txt_err_new_user,
  [{en, "Failed to create new user"},
-  {ru, "Не удалось зарегистрировать игрока"}]}.
+  {ru, "Не удалось зарегистрировать игрока"},
+  {ua, "Не вдалося зареєструвати гравця"}]}.
 
 {text, txt_err_bad_timezone,
  [{en, "bad timezone"},
-  {ru, "часовой пояс указан неверно"}]}.
+  {ru, "часовой пояс указан неверно"},
+  {ua, "часовий пояс вказано невірно"}]}.
 
 {text, txt_err_save_user,
  [{en, "Failed to save user properties"},
-  {ru, "Не удалось изменить настройки игрока"}]}.
+  {ru, "Не удалось изменить настройки игрока"},
+  {ua, "Не вдалося змінити налаштування гравця"}]}.
 
 {text, txt_err_passwd,
  [{en, "Failed to change user password"},
-  {ru, "Не удалось изменить пароль учётной записи игрока"}]}.
+  {ru, "Не удалось изменить пароль учётной записи игрока"},
+  {ua, "Не вдалося змінити пароль облікового запису гравця"}]}.
 
 {text, txt_err_new_game,
  [{en, "Failed to create new game"},
-  {ru, "Не удалось создать партию"}]}.
+  {ru, "Не удалось создать партию"},
+  {ua, "Не вдалося створити партію"}]}.
 
 {text, txt_http_404_err,
  [{en, "404: Object not found"},
-  {ru, "404: Объект не найден"}]}.
+  {ru, "404: Объект не найден"},
+  {ua, "404: Об’єкт не знайдено"}]}.
 
