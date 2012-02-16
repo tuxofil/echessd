@@ -31,16 +31,15 @@
 %% @doc Makes 'login' page content.
 %% @spec login() -> io_list()
 login() ->
-    html_page_header("echessd - " ++ gettext(txt_lgn_title),
-                     [{h1, "echessd - " ++ gettext(txt_lgn_title)}]) ++
+    Content =
         navig_links([{"?goto=" ++ ?SECTION_REG, gettext(txt_lgn_rnu_link)}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=login>" ++
         gettext(txt_lgn_login) ++ ": <input name=username type=text><br>" ++
         gettext(txt_lgn_passw) ++ ": <input name=password type=password><br>"
         "<input type=submit value='" ++ gettext(txt_lgn_ok_button) ++ "'>"
-        "</form>" ++
-        html_page_footer([]).
+        "</form>",
+    log_reg_page("echessd - " ++ gettext(txt_lgn_title), Content).
 
 %% @doc Makes 'register new user' page content.
 %% @spec register() -> io_list()
@@ -52,8 +51,7 @@ register() ->
         echessd_lib:time_offset_to_list(
           echessd_lib:local_offset()),
     DefLang = echessd_cfg:get(?CFG_DEF_LANG),
-    html_page_header("echessd - " ++ gettext(txt_rnu_title),
-                     [{h1, "echessd - " ++ gettext(txt_rnu_title)}]) ++
+    Content =
         navig_links([{"?goto=" ++ ?SECTION_LOGIN, gettext(txt_rnu_ret_link)}]) ++
         "<form method=post>"
         "<input name=action type=hidden value=register>" ++
@@ -86,8 +84,8 @@ register() ->
         "<input type=checkbox id=sil name=regshowinlist checked>&nbsp;"
         ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
         "<input type=submit value='" ++ gettext(txt_rnu_ok_button) ++ "'>"
-        "</form>" ++
-        html_page_footer([]).
+        "</form>",
+    log_reg_page("echessd - " ++ gettext(txt_rnu_title), Content).
 
 %% @doc Makes 'edit user properties' page content.
 %% @spec edituser() -> io_list()
@@ -487,6 +485,23 @@ eaccess() ->
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+log_reg_page(Title, Content) ->
+    html_page_header(Title, []) ++
+        navig_links(
+          lists:map(
+            fun(Lang) ->
+                    Section =
+                        case get(section) of
+                            [_ | _] = Section0 -> Section0;
+                            _ -> ?SECTION_LOGIN
+                        end,
+                    {"/?goto=" ++ Section ++ "&lang=" ++ Lang, Lang}
+            end,
+            [atom_to_list(A) || {A, _} <- echessd_lib:languages()])) ++
+        h1(Title) ++
+        Content ++
+        html_page_footer([]).
 
 fetch_game(GameID) ->
     case echessd_game:getprops(GameID) of

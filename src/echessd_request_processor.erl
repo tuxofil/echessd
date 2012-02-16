@@ -74,8 +74,21 @@ process_get(_, Query, true) ->
     put(query_proplist, Query),
     process_show();
 process_get(_, Query, _) ->
+    case proplists:get_value("lang", Query) of
+        [_ | _] = Lang0 ->
+            case echessd_lib:parse_language(Lang0) of
+                {Abbr, _} ->
+                    echessd_httpd_lib:add_extra_headers(
+                      [{"Set-Cookie",
+                        "lang=" ++ atom_to_list(Abbr)}]),
+                    put(language, Abbr);
+                _ -> nop
+            end;
+        _ -> nop
+    end,
     case proplists:get_value("goto", Query) of
         ?SECTION_REG ->
+            put(section, ?SECTION_REG),
             echessd_html:register();
         ?SECTION_GAME ->
             echessd_html:game(
@@ -84,6 +97,7 @@ process_get(_, Query, _) ->
             echessd_html:history(
               list_to_integer(get_query_item("game")));
         _ ->
+            put(section, ?SECTION_LOGIN),
             echessd_html:login()
     end.
 
