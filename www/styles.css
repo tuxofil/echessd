@@ -76,3 +76,11 @@ td.crd_l, td.crd_r {
     color: orange;
 }
 
+td.hbc {
+    width: 25%;
+}
+
+input.hb {
+    width: 100%;
+}
+

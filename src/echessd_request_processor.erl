@@ -93,9 +93,6 @@ process_get(_, Query, _) ->
         ?SECTION_GAME ->
             echessd_html:game(
               list_to_integer(get_query_item("game")));
-        ?SECTION_HISTORY ->
-            echessd_html:history(
-              list_to_integer(get_query_item("game")));
         _ ->
             put(section, ?SECTION_LOGIN),
             echessd_html:login()
@@ -309,11 +306,20 @@ process_show() ->
     process_show(
       echessd_session:get_val(section)).
 process_show(?SECTION_GAME) ->
+    Step =
+        try list_to_integer(get_query_item("step")) of
+            Int when Int >= 0 ->
+                case get_query_item("hgo") of
+                    "<<" -> 0;
+                    "<" -> Int - 1;
+                    ">" -> Int + 1;
+                    ">>" -> last;
+                    _ -> Int
+                end;
+            _ -> last
+        catch _:_ -> last end,
     echessd_html:game(
-      list_to_integer(get_query_item("game")));
-process_show(?SECTION_HISTORY) ->
-    echessd_html:history(
-      list_to_integer(get_query_item("game")));
+      list_to_integer(get_query_item("game")), Step);
 process_show(?SECTION_USERS) ->
     echessd_html:users();
 process_show(?SECTION_USER) ->

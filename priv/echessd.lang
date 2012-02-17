@@ -223,39 +223,6 @@
   {ua, "Запропонувати нічию"}]}.
 
 %% ----------------------------------------------------------------------
-%% Game history page
-
-{text, txt_game_hist_title_main,
- [{en, "Game history"},
-  {ru, "История партии"},
-  {ua, "Історія партії"}]}.
-
-{text, txt_game_hist_title,
- [{en, "Game ~s history"},
-  {ru, "История партии ~s"},
-  {ua, "Історія партії ~s"}]}.
-
-{text, txt_first,
- [{en, "First"},
-  {ru, "Первый"},
-  {ua, "Перший"}]}.
-
-{text, txt_prev,
- [{en, "Previous"},
-  {ru, "Предыдущий"},
-  {ua, "Попередній"}]}.
-
-{text, txt_next,
- [{en, "Next"},
-  {ru, "Следующий"},
-  {ua, "Наступний"}]}.
-
-{text, txt_last,
- [{en, "Last"},
-  {ru, "Последний"},
-  {ua, "Останній"}]}.
-
-%% ----------------------------------------------------------------------
 %% Game page
 
 {text, txt_game,
@@ -272,11 +239,6 @@
  [{en, "Refresh"},
   {ru, "Обновить"},
   {ua, "Оновити"}]}.
-
-{text, txt_history,
- [{en, "History"},
-  {ru, "История"},
-  {ua, "Історія"}]}.
 
 {text, txt_req_draw,
  [{en, "Draw"},

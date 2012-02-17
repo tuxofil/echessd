@@ -11,8 +11,7 @@
          passwd/0,
          eaccess/0,
          home/0,
-         game/1,
-         history/1,
+         game/2,
          draw_confirm/1,
          giveup_confirm/1,
          users/0,
@@ -277,21 +276,28 @@ newgame(Opponent, OpponentProperties) ->
         html_page_footer([]).
 
 %% @doc Makes 'game' page content.
-%% @spec game(GameID) -> io_list()
-%%     GameID = echessd_game:echessd_game_id()
-game(GameID) ->
+%% @spec game(GameID, Step) -> io_list()
+%%     GameID = echessd_game:echessd_game_id(),
+%%     Step = integer() | last
+game(GameID, Step) ->
     case fetch_game(GameID) of
-        {ok, GameInfo} ->
-            GameType = proplists:get_value(type, GameInfo),
-            History = proplists:get_value(moves, GameInfo, []),
-            {Board, Captures} =
-                echessd_game:from_scratch(GameType, History),
-            game(GameID, GameInfo, Board, Captures);
+        {ok, GameInfo} -> game(GameID, GameInfo, Step);
         ErrorContent -> ErrorContent
     end.
-game(GameID, GameInfo, Board, Captures) ->
+game(GameID, GameInfo, Step) ->
     Iam = get(username),
     GameType = proplists:get_value(type, GameInfo),
+    FullHistory = proplists:get_value(moves, GameInfo, []),
+    FullHistoryLen = length(FullHistory),
+    History =
+        case Step of
+            last -> FullHistory;
+            _ -> lists:sublist(FullHistory, Step)
+        end,
+    HistoryLen = length(History),
+    IsLast = HistoryLen == FullHistoryLen,
+    {Board, Captures} =
+        echessd_game:from_scratch(GameType, History),
     Players =
         [I || {users, L} <- GameInfo, {_, C} = I <- L,
               lists:member(C, [?black, ?white])],
@@ -311,8 +317,7 @@ game(GameID, GameInfo, Board, Captures) ->
                     lists:member(?black, MyColors)
         end,
     LastPly =
-        case lists:reverse(
-               proplists:get_value(moves, GameInfo, [])) of
+        case lists:reverse(History) of
             [LastPly0 | _] -> LastPly0;
             _ -> undefined
         end,
@@ -348,8 +353,10 @@ game(GameID, GameInfo, Board, Captures) ->
                     _ -> ""
                 end
         end ++
-        chess_table(GameType, Board, IsRotated, IsMyTurn, LastPly) ++
-        if IsMyTurn ->
+        chess_table(
+          GameID, HistoryLen, IsLast, GameType, Board,
+          IsRotated, IsMyTurn, LastPly) ++
+        if IsMyTurn andalso IsLast ->
                 "<form method=post>" ++
                     gettext(txt_move_caption) ++ ":&nbsp;"
                     "<input name=action type=hidden value=move>"
@@ -361,50 +368,6 @@ game(GameID, GameInfo, Board, Captures) ->
                     "</form><br>";
             true -> ""
         end ++
-        captures(Captures) ++
-        html_page_footer([]).
-
-%% @doc Makes 'game history' page content.
-%% @spec history(GameID) -> io_list()
-%%     GameID = echessd_game:echessd_game_id()
-history(GameID) ->
-    case fetch_game(GameID) of
-        {ok, GameInfo} ->
-            history(GameID, GameInfo);
-        ErrorContent -> ErrorContent
-    end.
-history(GameID, GameInfo) ->
-    GameType = proplists:get_value(type, GameInfo),
-    FullHistory = proplists:get_value(moves, GameInfo, []),
-    FullHistoryLen = length(FullHistory),
-    StrStep = proplists:get_value("step", get(query_proplist)),
-    Step =
-        try list_to_integer(StrStep) of
-            Int when Int >= 0 andalso Int =< FullHistoryLen ->
-                Int;
-            _ -> FullHistoryLen
-        catch
-            _:_ -> FullHistoryLen
-        end,
-    History = lists:sublist(FullHistory, Step),
-    {Board, Captures} =
-        echessd_game:from_scratch(GameType, History),
-    %% Rotate board only on my game when i am black:
-    IsRotated =
-        lists:member(
-          {get(username), ?black},
-          proplists:get_value(users, GameInfo, [])),
-    LastPly =
-        case lists:reverse(History) of
-            [LastPly0 | _] -> LastPly0;
-            _ -> undefined
-        end,
-    html_page_header(
-      "echessd - " ++ gettext(txt_game_hist_title_main),
-      [{h1, gettext(txt_game_hist_title, [gamelink(GameID)])}]) ++
-        navigation() ++
-        history_navigation(GameID, Step, FullHistoryLen) ++
-        chess_table(GameType, Board, IsRotated, false, LastPly) ++
         captures(Captures) ++
         html_page_footer([]).
 
@@ -742,6 +705,8 @@ pre(String) -> tag("pre", String).
 a(URL, Caption) -> tag("a", ["href='" ++ URL ++ "'"], Caption).
 
 tag(Tag, Value) -> tag(Tag, [], Value).
+tag(Tag, Attrs, Value) when is_atom(Tag) ->
+    tag(atom_to_list(Tag), Attrs, Value);
 tag(Tag, Attrs, Value) ->
     "<" ++ Tag ++
         [" " ++ V || V <- Attrs] ++
@@ -759,7 +724,8 @@ newgame_link(WithUsername) ->
       [{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUsername,
         gettext(txt_new_game_link)}]).
 
-chess_table(_GameType, Board, IsRotated, IsActive, LastPly) ->
+chess_table(GameID, Step, IsLast, _GameType, Board,
+            IsRotated, IsActive, LastPly) ->
     {ColStep, RowStep} =
         if IsRotated -> {-1, 1};
            true -> {1, -1}
@@ -797,7 +763,11 @@ chess_table(_GameType, Board, IsRotated, IsActive, LastPly) ->
                            tag("td", ["class=crd_r"], tt([$1 + R - 1])))
             end, cseq(RowStep)) ++
           tr(td("") ++ [tag("td", ["class=crd_b"], tt([$a + C - 1])) ||
-                           C <- cseq(ColStep)] ++ td(""))) ++
+                           C <- cseq(ColStep)] ++ td("")) ++
+          tr(
+            td("") ++
+                tag("td", ["colspan=8"], hist_buttons(GameID, Step, IsLast)) ++
+                td(""))) ++
         if IsActive ->
                 tag("script",
                     "function mv(crd) {"
@@ -805,6 +775,41 @@ chess_table(_GameType, Board, IsRotated, IsActive, LastPly) ->
                     "}");
            true -> ""
         end.
+
+hist_buttons(_GameID, 0, true) -> "";
+hist_buttons(GameID, Step, IsLast) ->
+    PrevDisabled =
+        if Step > 0 -> "";
+           true -> " disabled"
+        end,
+    NextDisabled =
+        if IsLast -> " disabled";
+           true -> ""
+        end,
+    BtnFirst =
+        "<input type=submit class=hb name=hgo value='&lt;&lt;'" ++
+        PrevDisabled ++ ">",
+    BtnPrev =
+        "<input type=submit class=hb name=hgo value='&lt;'" ++
+        PrevDisabled ++ ">",
+    BtnNext =
+        "<input type=submit class=hb name=hgo value='&gt;'" ++
+        NextDisabled ++ ">",
+    BtnLast =
+        "<input type=submit class=hb name=hgo value='&gt;&gt;'" ++
+        NextDisabled ++ ">",
+    tag(
+      form, ["method=get"],
+      ["<input type=hidden name=goto value=" ++ ?SECTION_GAME ++ ">"
+       "<input type=hidden name=game value=" ++ integer_to_list(GameID) ++ ">"
+       "<input type=hidden name=step value=" ++ integer_to_list(Step) ++ ">",
+       tag(
+         table, ["cellpadding=0", "cellspacing=0", "width='100%'"],
+         tr(
+           [tag(td, ["class=hbc"], BtnFirst),
+            tag(td, ["class=hbc"], BtnPrev),
+            tag(td, ["class=hbc"], BtnNext),
+            tag(td, ["class=hbc"], BtnLast)]))]).
 
 cell(Board, C, R) -> element(C, element(8 - R + 1, Board)).
 
@@ -888,33 +893,13 @@ navigation() ->
 game_navigation(GameID, ShowEndGameLinks) ->
     StrID = integer_to_list(GameID),
     navig_links(
-      [{"?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, gettext(txt_refresh)},
-       {"?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID, gettext(txt_history)}] ++
+      [{"?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, gettext(txt_refresh)}] ++
           if ShowEndGameLinks ->
                   [{"?goto=" ++ ?SECTION_DRAW_CONFIRM ++
                         "&game=" ++ StrID, gettext(txt_req_draw)},
                    {"?goto=" ++ ?SECTION_GIVEUP_CONFIRM ++
                         "&game=" ++ StrID, gettext(txt_do_giveup)}];
              true -> []
-          end).
-
-history_navigation(GameID, Step, MaxStep) ->
-    StrID = integer_to_list(GameID),
-    BaseURL = "?goto=" ++ ?SECTION_HISTORY ++ "&game=" ++ StrID ++ "&step=",
-    navig_links(
-      if Step > 0 ->
-              [{BaseURL ++ "0", gettext(txt_first)},
-               {BaseURL ++ integer_to_list(Step - 1), gettext(txt_prev)}];
-         true ->
-              [{undefined, gettext(txt_first)},
-               {undefined, gettext(txt_prev)}]
-      end ++
-          if Step < MaxStep ->
-                  [{BaseURL ++ integer_to_list(Step + 1), gettext(txt_next)},
-                   {BaseURL ++ integer_to_list(MaxStep), gettext(txt_last)}];
-             true ->
-                  [{undefined, gettext(txt_next)},
-                   {undefined, gettext(txt_last)}]
           end).
 
 format_error({error, Reason}) ->
