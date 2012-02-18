@@ -137,13 +137,6 @@ edituser() ->
                       LangName ++ "</option>"
           end, echessd_lib:languages()) ++
         "</select><br>"
-        "<label for=sil>"
-        "<input type=checkbox id=sil name=editshowinlist" ++
-        case proplists:get_value(show_in_list, UserInfo) of
-            false -> "";
-            _ -> " checked"
-        end ++ ">&nbsp;"
-        ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
         ++ gettext(txt_style) ++ ": <select name=editstyle>" ++
         lists:map(
           fun({N, TxtID, _F}) ->
@@ -153,6 +146,13 @@ edituser() ->
                       end ++ ">" ++ gettext(TxtID) ++ "</option>"
           end, ?STYLES) ++
         "</select><br>"
+        "<label for=sil>"
+        "<input type=checkbox id=sil name=editshowinlist" ++
+        case proplists:get_value(show_in_list, UserInfo) of
+            false -> "";
+            _ -> " checked"
+        end ++ ">&nbsp;"
+        ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
         "<input type=submit class=btn value='" ++
         gettext(txt_predit_save_button) ++ "'>"
         "</form>"
