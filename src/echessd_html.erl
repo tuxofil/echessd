@@ -36,7 +36,7 @@ login() ->
         "<input name=action type=hidden value=login>" ++
         gettext(txt_lgn_login) ++ ": <input name=username type=text><br>" ++
         gettext(txt_lgn_passw) ++ ": <input name=password type=password><br>"
-        "<input type=submit value='" ++ gettext(txt_lgn_ok_button) ++ "'>"
+        "<input type=submit class=btn value='" ++ gettext(txt_lgn_ok_button) ++ "'>"
         "</form>",
     log_reg_page("echessd - " ++ gettext(txt_lgn_title), Content).
 
@@ -82,7 +82,8 @@ register() ->
         "<label for=sil>"
         "<input type=checkbox id=sil name=regshowinlist checked>&nbsp;"
         ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
-        "<input type=submit value='" ++ gettext(txt_rnu_ok_button) ++ "'>"
+        "<input type=submit class=btn value='" ++
+        gettext(txt_rnu_ok_button) ++ "'>"
         "</form>",
     log_reg_page("echessd - " ++ gettext(txt_rnu_title), Content).
 
@@ -152,7 +153,8 @@ edituser() ->
                       end ++ ">" ++ gettext(TxtID) ++ "</option>"
           end, ?STYLES) ++
         "</select><br>"
-        "<input type=submit value='" ++ gettext(txt_predit_save_button) ++ "'>"
+        "<input type=submit class=btn value='" ++
+        gettext(txt_predit_save_button) ++ "'>"
         "</form>"
         "<br>" ++
         html_page_footer([]).
@@ -173,7 +175,8 @@ passwd() ->
         "<input name=editpassword1 type=password><br>" ++
         gettext(txt_passwd_passw_new_confirm) ++ ": "
         "<input name=editpassword2 type=password><br>" ++
-        "<input type=submit value='" ++ gettext(txt_passwd_save_button) ++ "'>"
+        "<input type=submit class=btn value='" ++
+        gettext(txt_passwd_save_button) ++ "'>"
         "</form>"
         "<br>" ++
         html_page_footer([]).
@@ -281,7 +284,8 @@ newgame(Opponent, OpponentProperties) ->
         ++ ColorSelector ++
         "<label for=prv><input name=private type=checkbox id=prv>&nbsp;" ++
         gettext(txt_ng_private) ++ "</label><br>"
-        "<input type=submit value='" ++ gettext(txt_ng_ok_button) ++ "'>"
+        "<input type=submit class=btn value='" ++
+        gettext(txt_ng_ok_button) ++ "'>"
         "</form>" ++
         html_page_footer([]).
 
@@ -377,8 +381,10 @@ game(GameID, GameInfo, Step) ->
                     "<input name=game type=hidden value=" ++
                     integer_to_list(GameID) ++ ">"
                     "<input name=move type=text size=5 id=edmv>"
-                    "<input type=submit value='" ++ gettext(txt_move_ok_button) ++ "'>"
-                    "<input type=reset value='" ++ gettext(txt_move_reset_button) ++ "'>"
+                    "<input type=submit class=btn value='" ++
+                    gettext(txt_move_ok_button) ++ "'>"
+                    "<input type=reset class=btn value='" ++
+                    gettext(txt_move_reset_button) ++ "'>"
                     "</form><br>";
             true -> ""
         end ++
@@ -397,7 +403,8 @@ draw_confirm(GameID) ->
         "<input type=hidden name=action value=" ++ ?SECTION_DRAW ++ ">"
         "<input type=hidden name=game value=" ++
         integer_to_list(GameID) ++ ">"
-        "<input type=submit value='" ++ gettext(txt_draw_button) ++ "'>"
+        "<input type=submit class=btn value='" ++
+        gettext(txt_draw_button) ++ "'>"
         "</form>" ++
         navig_links([{"javascript: history.back();",
                       gettext(txt_ouch_back_link)}]) ++
@@ -421,7 +428,8 @@ giveup_confirm(GameID) ->
         "<input type=hidden name=action value=" ++ ?SECTION_GIVEUP ++ ">"
         "<input type=hidden name=game value=" ++
         integer_to_list(GameID) ++ ">"
-        "<input type=submit value='" ++ gettext(txt_giveup_button) ++ "'>"
+        "<input type=submit class=btn value='" ++
+        gettext(txt_giveup_button) ++ "'>"
         "</form>" ++
         navig_links([{"javascript: history.back();",
                       gettext(txt_ouch_back_link)}]) ++
