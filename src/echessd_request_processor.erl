@@ -91,8 +91,7 @@ process_get(_, Query, _) ->
             put(section, ?SECTION_REG),
             echessd_html:register();
         ?SECTION_GAME ->
-            echessd_html:game(
-              list_to_integer(get_query_item("game")));
+            process_show(?SECTION_GAME);
         _ ->
             put(section, ?SECTION_LOGIN),
             echessd_html:login()
