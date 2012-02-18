@@ -1,0 +1,78 @@
+/*
+###-------------------------------------------------------------------
+### File    : bw.css
+### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+### Created : 18 Feb 2012
+### License : FreeBSD
+### Description : web pages style definitions
+###
+###-------------------------------------------------------------------
+*/
+
+body, td, p, div, span, form, input, textarea, select, button, h1, h2 {
+    margin: 0;
+    padding: 0;
+    font-family: verdana, arial;
+}
+
+body {
+    margin-top: 10;
+    margin-bottom: 10;
+    background-color: white;
+}
+
+a {
+    color: black;
+    text-decoration: underline;
+}
+
+td.wc, td.bc, td.crd_t, td.crd_b, td.crd_l, td.crd_r {
+    text-align: center;
+    vertical-align: middle;
+    cursor: default;
+}
+
+td.wc, td.bc {
+    height: 40;
+    width: 40;
+    font-size: 30px;
+    border-color: black;
+    border-width: 2;
+}
+
+td.captures {
+    font-size: 30px;
+}
+
+td.bc {
+    background-color: #808080;
+}
+
+td.wc {
+    background-color: white;
+}
+
+td.crd_t, td.crd_b {
+    height: 20;
+}
+
+td.crd_l, td.crd_r {
+    width: 20;
+}
+
+.error {
+    font-weight: bold;
+}
+
+.warning {
+    font-weight: bold;
+}
+
+td.hbc {
+    width: 25%;
+}
+
+input.hb {
+    width: 100%;
+}
+

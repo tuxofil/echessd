@@ -12,6 +12,7 @@
          random_elem/1,
          escape_html_entities/1,
          gettext/2,
+         parse_style/1,
          languages/0,
          parse_language/1,
          administrative_offsets/0,
@@ -131,6 +132,18 @@ gettext(TextID, LangID) ->
                       [TextID, LangID, DefLang]),
                     ""
             end
+    end.
+
+%% @doc Parses style name.
+%% @spec parse_style(String) -> {StyleName, StyleNameTextID, StyleFilename}
+%%     String = string(),
+%%     StyleName = atom(),
+%%     StyleNameTextID = atom(),
+%%     StyleFilename = string()
+parse_style(String) ->
+    case [I || {N, _T, _F} = I <- ?STYLES, atom_to_list(N) == String] of
+        [Style | _] -> Style;
+        _ -> hd(?STYLES)
     end.
 
 %% @doc Return list of supported languages.

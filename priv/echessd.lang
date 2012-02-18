@@ -386,6 +386,26 @@
   {ru, "необязательно"},
   {ua, "необов’язково"}]}.
 
+{text, txt_style,
+ [{en, "Style"},
+  {ru, "Оформление"},
+  {ua, "Зовнішній вигляд"}]}.
+
+{text, txt_style_default,
+ [{en, "Default"},
+  {ru, "По умолчанию"},
+  {ua, "Звичайний"}]}.
+
+{text, txt_style_bw,
+ [{en, "Black&White"},
+  {ru, "Чёрно-белый"},
+  {ua, "Чорно-білий"}]}.
+
+{text, txt_style_linux,
+ [{en, "Linux"},
+  {ru, "Linux"},
+  {ua, "Linux"}]}.
+
 %% ----------------------------------------------------------------------
 %% Change password page
 

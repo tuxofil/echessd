@@ -103,6 +103,7 @@ edituser() ->
             timezone, UserInfo,
             echessd_lib:local_offset())),
     {OldLangAbbr, _OldLangName} = echessd_user:lang_info(UserInfo),
+    OldStyle = proplists:get_value(style, UserInfo),
     html_page_header(
       "echessd - " ++ gettext(txt_edit_profile_title),
       [{h1, gettext(txt_edit_profile_title)}]) ++
@@ -142,6 +143,15 @@ edituser() ->
             _ -> " checked"
         end ++ ">&nbsp;"
         ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
+        ++ gettext(txt_style) ++ ": <select name=editstyle>" ++
+        lists:map(
+          fun({N, TxtID, _F}) ->
+                  "<option value=" ++ atom_to_list(N) ++
+                      if N == OldStyle -> " selected";
+                         true -> ""
+                      end ++ ">" ++ gettext(TxtID) ++ "</option>"
+          end, ?STYLES) ++
+        "</select><br>"
         "<input type=submit value='" ++ gettext(txt_predit_save_button) ++ "'>"
         "</form>"
         "<br>" ++
@@ -671,13 +681,29 @@ user_unconfirmed_game_(Owner, GameID, GameInfo) ->
                       "&game=" ++ StrGameID ++"'"], "Deny").
 
 html_page_header(Title, Options) ->
+    echessd_log:debug("~99999p, ~99999p", [Title, Options]),
+    UserStyle =
+        case echessd_session:get_val(userinfo) of
+            UserInfo when is_list(UserInfo) ->
+                proplists:get_value(style, UserInfo);
+            _ -> undefined
+        end,
+    echessd_log:debug("UserStyle: ~99999p", [UserStyle]),
+    StylesFilename =
+        case [F || {N, _T, F} <- ?STYLES, N == UserStyle] of
+            [Filename0 | _] -> Filename0;
+            _ ->
+                {_N, _T, Filename0} = hd(?STYLES),
+                Filename0
+        end,
+    echessd_log:debug("StyleFilename: ~99999p", [StylesFilename]),
     "<html>\n\n"
         "<head>\n"
         "<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>\n"
         "<meta http-equiv='Content-Style-Type' content='text/css'>\n"
         "<meta http-equiv='Content-Script-Type' content='text/javascript'>\n"
         "<title>" ++ Title ++ "</title>\n"
-        "<link rel='stylesheet' href='/res/styles.css'>\n"
+        "<link rel='stylesheet' href='/res/" ++ StylesFilename ++ "'>\n"
         "</head>\n\n"
         "<body>\n\n" ++
         case [S || {h1, S} <- Options] of

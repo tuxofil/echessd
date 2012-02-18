@@ -201,17 +201,24 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
             [_ | _] -> true;
             _ -> false
         end,
+    {StyleName, _TxtID, _Filename} =
+        echessd_lib:parse_style(
+          proplists:get_value("editstyle", Query)),
     case echessd_lib:list_to_time_offset(StrTimezone) of
         {ok, Timezone} ->
             NewUserInfo =
                 [{fullname, Fullname},
                  {timezone, Timezone},
                  {language, StrLanguage},
+                 {style, StyleName},
                  {show_in_list, ShowInList}],
             case echessd_user:setprops(
                    Username, NewUserInfo) of
                 ok ->
                     echessd_session:read([{"sid", get(sid)}]),
+                    {ok, FinalUserInfo} =
+                        echessd_user:getprops(Username),
+                    echessd_session:set_val(userinfo, FinalUserInfo),
                     process_get(
                       ?SECTION_HOME,
                       [{"goto", ?SECTION_HOME}], true);
