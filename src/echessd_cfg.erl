@@ -101,6 +101,8 @@ default(?CFG_DEF_LANG) ->
     {ok, en};
 default(?CFG_HTTPD_MOD) ->
     {ok, echessd_httpd_inets};
+default(?CFG_XMPP_ENABLED) ->
+    {ok, false};
 default(?CFG_XMPP_USER) ->
     {ok, ""};
 default(?CFG_XMPP_SERVER) ->
@@ -218,6 +220,17 @@ parse_val_(?CFG_HTTPD_MOD, String0) ->
         [Mod | _] -> Mod;
         _ ->
             throw({error, {unsupported_httpd_module, String0}})
+    end;
+parse_val_(?CFG_XMPP_ENABLED, String0) ->
+    String = string:to_lower(String0),
+    case lists:member(String, ["yes", "true", "1"]) of
+        true -> true;
+        _ ->
+            case lists:member(String, ["no", "false", "0"]) of
+                true -> false;
+                _ ->
+                    throw({error, {bad_xmpp_enabled_value, String0}})
+            end
     end;
 parse_val_(_, Val) ->
     Val.
