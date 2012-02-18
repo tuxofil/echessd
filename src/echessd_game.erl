@@ -12,7 +12,6 @@
          ply/3,
          give_up/2,
          request_draw/2,
-         fetch/1,
          getprops/1,
          who_must_turn/1,
          turn_color/1,
@@ -235,22 +234,6 @@ request_draw(GameID, Username) ->
               "game ~9999p draw request (by ~9999p) failed: ~9999p",
               [GameID, Username, Reason]),
             Error
-    end.
-
-%% @doc Fetches game from database.
-%% @spec fetch(GameID) -> {ok, GameInfo, {Board, Captures}} | {error, Reason}
-%%     GameID = echessd_game_id(),
-%%     GameInfo = echessd_game_info(),
-%%     Board = echessd_board(),
-%%     Captures = [echessd_chessman()],
-%%     Reason = term()
-fetch(GameID) ->
-    case getprops(GameID) of
-        {ok, GameInfo} ->
-            GameType = proplists:get_value(type, GameInfo),
-            History = proplists:get_value(moves, GameInfo, []),
-            {ok, GameInfo, from_scratch(GameType, History)};
-        Error -> Error
     end.
 
 %% @doc Fetches game properties from database.
