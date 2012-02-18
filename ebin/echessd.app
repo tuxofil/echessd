@@ -20,6 +20,7 @@
                   echessd_request_processor,
                   echessd_user,
                   echessd_game,
+                  echessd_notify,
                   echessd_db,
                   echessd_session,
                   echessd_html,

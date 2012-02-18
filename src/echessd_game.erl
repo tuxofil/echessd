@@ -190,6 +190,7 @@ ply(GameID, User, Ply) ->
             echessd_log:info(
               "game ~9999p: user ~9999p moved ~9999p",
               [GameID, User, Ply]),
+            echessd_notify:ply(GameID, User, Ply),
             ok;
         {error, Reason} = Error ->
             echessd_log:err(
