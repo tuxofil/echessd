@@ -920,7 +920,7 @@ game_navigation(GameID, ShowEndGameLinks) ->
                      true -> ""
                   end ++
                   [{"/?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}];
-          _ -> Links
+          _ -> []
       end,
       [{prepend, gettext(txt_game) ++ " #" ++
             integer_to_list(GameID) ++ ": "}]).
