@@ -850,18 +850,14 @@ captures([_ | _] = Captures) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         case [chessman(F) || {?black, _} = F <- Captures] of
             [_ | _] = Black ->
-                tr(
-                  tag("td", ["class=crd_l"], "&nbsp;") ++
-                      tag("td", ["class=captures"],
-                          lists:reverse(Black)));
+                tr(tag(td, ["class=captures"],
+                       lists:reverse(Black)));
             _ -> ""
         end ++
         case [chessman(F) || {?white, _} = F <- Captures] of
             [_ | _] = White ->
-                tr(
-                  tag("td", ["class=crd_l"], "&nbsp;") ++
-                      tag("td", ["class=captures"],
-                          lists:reverse(White)));
+                tr(tag(td, ["class=captures"],
+                       lists:reverse(White)));
             _ -> ""
         end);
 captures(_) -> "".
