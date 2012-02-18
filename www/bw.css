@@ -60,6 +60,11 @@ td.crd_l, td.crd_r {
     width: 20;
 }
 
+td.crd_t { border-width:1; border-bottom-style: solid; }
+td.crd_r { border-width:1; border-left-style: solid; }
+td.crd_b { border-width:1; border-top-style: solid; }
+td.crd_l { border-width:1; border-right-style: solid; }
+
 .error {
     font-weight: bold;
 }
