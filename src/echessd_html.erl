@@ -334,10 +334,14 @@ game(GameID, GameInfo, Step) ->
     GameStatus = proplists:get_value(status, GameInfo, none),
     Winner = proplists:get_value(winner, GameInfo),
     IsMyTurn = TurnUser == Iam andalso GameStatus == none,
-    html_page_header(
-      "echessd - " ++ gettext(txt_game),
-      [{h1, gettext(txt_game) ++ " #" ++ integer_to_list(GameID)}]) ++
-        navigation() ++
+    Title =
+        if IsMyTurn ->
+                "echessd: " ++ gettext(txt_your_move);
+           true ->
+                "echessd: " ++ gettext(txt_game) ++ " #" ++
+                    integer_to_list(GameID)
+        end,
+    html_page_header(Title, []) ++
         game_navigation(GameID, IsMyGame andalso GameStatus == none) ++
         case GameStatus of
             checkmate ->
@@ -804,38 +808,32 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
 
 hist_buttons(_GameID, 0, true) -> "";
 hist_buttons(GameID, Step, IsLast) ->
-    PrevDisabled =
-        if Step > 0 -> "";
-           true -> " disabled"
+    Hiddens =
+        ["<input type=hidden name=goto value=" ++ ?SECTION_GAME ++ ">"
+         "<input type=hidden name=game value=" ++ integer_to_list(GameID) ++ ">"],
+    HistBtn =
+        fun(_, _, false) -> "";
+           (Caption, LinkStep0, _Enabled) ->
+                LinkStep =
+                    if is_integer(LinkStep0) -> integer_to_list(LinkStep0);
+                       true -> ""
+                    end,
+                tag(form, ["method=get", "action='/'"],
+                    Hiddens ++
+                        "<input type=hidden name=step value=" ++ LinkStep ++ ">"
+                    "<input type=submit class=hb value='" ++ Caption ++ "'")
         end,
-    NextDisabled =
-        if IsLast -> " disabled";
-           true -> ""
-        end,
-    BtnFirst =
-        "<input type=submit class=hb name=hgo value='&lt;&lt;'" ++
-        PrevDisabled ++ ">",
-    BtnPrev =
-        "<input type=submit class=hb name=hgo value='&lt;'" ++
-        PrevDisabled ++ ">",
-    BtnNext =
-        "<input type=submit class=hb name=hgo value='&gt;'" ++
-        NextDisabled ++ ">",
-    BtnLast =
-        "<input type=submit class=hb name=hgo value='&gt;&gt;'" ++
-        NextDisabled ++ ">",
     tag(
-      form, ["method=get"],
-      ["<input type=hidden name=goto value=" ++ ?SECTION_GAME ++ ">"
-       "<input type=hidden name=game value=" ++ integer_to_list(GameID) ++ ">"
-       "<input type=hidden name=step value=" ++ integer_to_list(Step) ++ ">",
-       tag(
-         table, ["cellpadding=0", "cellspacing=0", "width='100%'"],
-         tr(
-           [tag(td, ["class=hbc"], BtnFirst),
-            tag(td, ["class=hbc"], BtnPrev),
-            tag(td, ["class=hbc"], BtnNext),
-            tag(td, ["class=hbc"], BtnLast)]))]).
+      table, ["cellpadding=0", "cellspacing=0", "width='100%'"],
+      tr(
+        [tag(td, ["class=hbc"],
+             tag(form, ["method=get", "action='/'"],
+                 Hiddens ++
+                     "<input type=submit class=hb value='&#8635;'>")),
+         tag(td, ["class=hbc"], HistBtn("&lt;&lt;", 0, Step > 0)),
+         tag(td, ["class=hbc"], HistBtn("&lt;", Step - 1, Step > 0)),
+         tag(td, ["class=hbc"], HistBtn("&gt;", Step + 1, not IsLast)),
+         tag(td, ["class=hbc"], HistBtn("&gt;&gt;", last, not IsLast))])).
 
 cell(Board, C, R) -> element(C, element(8 - R + 1, Board)).
 
@@ -878,23 +876,17 @@ chessman_(?bbishop) -> 9821;
 chessman_(?bknight) -> 9822;
 chessman_(?bpawn  ) -> 9823.
 
-navig_links(List) -> navig_links(List, undefined).
-navig_links([], _Current) -> "";
-navig_links(List, Current) ->
+navig_links(List) ->
+    navig_links(List, []).
+navig_links(List, Options) ->
     tag("div", ["class=navig"],
-        "[&nbsp;" ++
+        proplists:get_value(prepend, Options, "") ++
+            "[&nbsp;" ++
             string:join(
               lists:map(
                 fun({[_ | _] = URL, [_ | _] = Caption}) ->
-                        a(URL,
-                          if Caption == Current ->
-                                  b(Caption);
-                             true -> Caption
-                          end);
-                   ({_, [_ | _] = Caption}) ->
-                        if Caption == Current -> b(Caption);
-                           true -> Caption
-                        end
+                        a(URL, Caption);
+                   ({_, [_ | _] = Caption}) -> Caption
                 end, List), "&nbsp;|&nbsp;") ++
             "&nbsp;]").
 
@@ -906,23 +898,31 @@ navigation() ->
     case get(username) of
         [_ | _] ->
             navig_links(
-              [{"?goto=" ++ S, section_caption(S)} ||
+              [{"/?goto=" ++ S, section_caption(S)} ||
                   S <- [?SECTION_HOME, ?SECTION_USERS]] ++
                   [{"?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}]);
         _ -> ""
     end.
 
-game_navigation(GameID, ShowEndGameLinks) ->
+game_navigation(_GameID, false) -> "";
+game_navigation(GameID, _ShowEndGameLinks) ->
     StrID = integer_to_list(GameID),
+    Links =
+        [{"/?goto=" ++ ?SECTION_DRAW_CONFIRM ++
+              "&game=" ++ StrID, gettext(txt_req_draw)},
+         {"/?goto=" ++ ?SECTION_GIVEUP_CONFIRM ++
+              "&game=" ++ StrID, gettext(txt_do_giveup)}],
     navig_links(
-      [{"?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, gettext(txt_refresh)}] ++
-          if ShowEndGameLinks ->
-                  [{"?goto=" ++ ?SECTION_DRAW_CONFIRM ++
-                        "&game=" ++ StrID, gettext(txt_req_draw)},
-                   {"?goto=" ++ ?SECTION_GIVEUP_CONFIRM ++
-                        "&game=" ++ StrID, gettext(txt_do_giveup)}];
-             true -> []
-          end).
+      case get(username) of
+          [_ | _] ->
+              [{"/?goto=" ++ ?SECTION_HOME,
+                section_caption(?SECTION_HOME)}] ++
+                  Links ++
+                  [{"/?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}];
+          _ -> Links
+      end,
+      [{prepend, gettext(txt_game) ++ " #" ++
+            integer_to_list(GameID) ++ ": "}]).
 
 format_error({error, Reason}) ->
     format_error(Reason);
