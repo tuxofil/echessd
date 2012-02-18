@@ -101,6 +101,12 @@ default(?CFG_DEF_LANG) ->
     {ok, en};
 default(?CFG_HTTPD_MOD) ->
     {ok, echessd_httpd_inets};
+default(?CFG_XMPP_USER) ->
+    {ok, ""};
+default(?CFG_XMPP_SERVER) ->
+    {ok, ""};
+default(?CFG_XMPP_PASSWORD) ->
+    {ok, ""};
 default(_) ->
     undefined.
 
