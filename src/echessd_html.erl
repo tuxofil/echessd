@@ -904,8 +904,7 @@ navigation() ->
         _ -> ""
     end.
 
-game_navigation(_GameID, false) -> "";
-game_navigation(GameID, _ShowEndGameLinks) ->
+game_navigation(GameID, ShowEndGameLinks) ->
     StrID = integer_to_list(GameID),
     Links =
         [{"/?goto=" ++ ?SECTION_DRAW_CONFIRM ++
@@ -917,7 +916,9 @@ game_navigation(GameID, _ShowEndGameLinks) ->
           [_ | _] ->
               [{"/?goto=" ++ ?SECTION_HOME,
                 section_caption(?SECTION_HOME)}] ++
-                  Links ++
+                  if ShowEndGameLinks -> Links;
+                     true -> ""
+                  end ++
                   [{"/?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}];
           _ -> Links
       end,
