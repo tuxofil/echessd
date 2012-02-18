@@ -105,6 +105,9 @@ edituser() ->
             echessd_lib:local_offset())),
     {OldLangAbbr, _OldLangName} = echessd_user:lang_info(UserInfo),
     OldStyle = proplists:get_value(style, UserInfo),
+    JID =
+        echessd_lib:escape_html_entities(
+          proplists:get_value(jid, UserInfo, "")),
     html_page_header(
       "echessd - " ++ gettext(txt_edit_profile_title),
       [{h1, gettext(txt_edit_profile_title)}]) ++
@@ -146,6 +149,9 @@ edituser() ->
                       end ++ ">" ++ gettext(TxtID) ++ "</option>"
           end, ?STYLES) ++
         "</select><br>"
+        ++ gettext(txt_jid) ++ ": <input name=editjid type=text "
+        "value='" ++ JID ++ "'> (" ++
+        gettext(txt_rnu_optional) ++ ")<br>" ++
         "<label for=sil>"
         "<input type=checkbox id=sil name=editshowinlist" ++
         case proplists:get_value(show_in_list, UserInfo) of

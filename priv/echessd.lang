@@ -391,6 +391,11 @@
   {ru, "необязательно"},
   {ua, "необов’язково"}]}.
 
+{text, txt_jid,
+ [{en, "Jabber ID for notifications"},
+  {ru, "Jabber ID для уведомлений"},
+  {ua, "Jabber ID для сповіщень"}]}.
+
 {text, txt_style,
  [{en, "Style"},
   {ru, "Оформление"},

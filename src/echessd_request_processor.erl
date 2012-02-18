@@ -203,6 +203,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
     {StyleName, _TxtID, _Filename} =
         echessd_lib:parse_style(
           proplists:get_value("editstyle", Query)),
+    JID = proplists:get_value("editjid", Query),
     case echessd_lib:list_to_time_offset(StrTimezone) of
         {ok, Timezone} ->
             NewUserInfo =
@@ -210,6 +211,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                  {timezone, Timezone},
                  {language, StrLanguage},
                  {style, StyleName},
+                 {jid, JID},
                  {show_in_list, ShowInList}],
             case echessd_user:setprops(
                    Username, NewUserInfo) of
