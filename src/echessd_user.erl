@@ -33,6 +33,7 @@
         {language, atom()} |
         {show_in_list, boolean()} |
         {style, atom()} |
+        {jid, string()} |
         {games, [echessd_game:echessd_game_id()]}.
 
 %% ----------------------------------------------------------------------
@@ -268,6 +269,7 @@ check_property({style, S} = I) ->
         true -> I;
         _ -> throw({error, {bad_style, S}})
     end;
+check_property({jid, _S} = I) -> I;
 check_property({K, _V}) ->
     throw({error, {unknown_property, K}}).
 
