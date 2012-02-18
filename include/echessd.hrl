@@ -117,11 +117,13 @@
 -define(STYLE_DEFAULT, default).
 -define(STYLE_BW, bw).
 -define(STYLE_LINUX, linux).
+-define(STYLE_GLAM, glam).
 
 -define(
    STYLES,
    [{?STYLE_DEFAULT, txt_style_default, "styles.css"},
     {?STYLE_BW, txt_style_bw, "bw.css"},
+    {?STYLE_GLAM, txt_style_glam, "glamour.css"},
     {?STYLE_LINUX, txt_style_linux, "linux.css"}
    ]).
 

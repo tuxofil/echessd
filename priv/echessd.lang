@@ -406,6 +406,11 @@
   {ru, "Чёрно-белый"},
   {ua, "Чорно-білий"}]}.
 
+{text, txt_style_glam,
+ [{en, "Glamour"},
+  {ru, "Гламурненький"},
+  {ua, "Гламурний"}]}.
+
 {text, txt_style_linux,
  [{en, "Linux"},
   {ru, "Linux"},

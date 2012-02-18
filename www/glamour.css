@@ -1,0 +1,81 @@
+/*
+###-------------------------------------------------------------------
+### File    : glamour.css
+### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+### Created : 18 Feb 2012
+### License : FreeBSD
+### Description : web pages style definitions
+###
+###-------------------------------------------------------------------
+*/
+
+body, td, p, div, span, form, input, textarea, select, button, h1, h2 {
+    margin: 0;
+    padding: 0;
+    font-family: verdana, arial;
+    color: red;
+}
+
+body {
+    margin-top: 10;
+    margin-bottom: 10;
+    background-image: url('/res/pinkstars.gif');
+}
+
+a {
+    color: red;
+    text-decoration: underline;
+}
+
+td.wc, td.bc, td.crd_t, td.crd_b, td.crd_l, td.crd_r {
+    text-align: center;
+    vertical-align: middle;
+    cursor: default;
+}
+
+td.wc, td.bc {
+    height: 40;
+    width: 40;
+    font-size: 30px;
+    border-color: lime;
+    border-width: 3;
+}
+
+td.captures {
+    font-size: 30px;
+}
+
+td.bc {
+    background-color: #a00000;
+}
+
+td.wc {
+    background-color: transparent;
+}
+
+td.crd_t, td.crd_b {
+    height: 20;
+}
+
+td.crd_l, td.crd_r {
+    width: 20;
+}
+
+.error {
+    font-weight: bold;
+    color: red;
+}
+
+.warning {
+    font-weight: bold;
+    color: orange;
+}
+
+td.hbc {
+    width: 20%;
+}
+
+input.hb {
+    width: 100%;
+}
+
