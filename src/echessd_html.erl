@@ -699,14 +699,12 @@ user_unconfirmed_game_(Owner, GameID, GameInfo) ->
                       "&game=" ++ StrGameID ++"'"], "Deny").
 
 html_page_header(Title, Options) ->
-    echessd_log:debug("~99999p, ~99999p", [Title, Options]),
     UserStyle =
         case echessd_session:get_val(userinfo) of
             UserInfo when is_list(UserInfo) ->
                 proplists:get_value(style, UserInfo);
             _ -> undefined
         end,
-    echessd_log:debug("UserStyle: ~99999p", [UserStyle]),
     StylesFilename =
         case [F || {N, _T, F} <- ?STYLES, N == UserStyle] of
             [Filename0 | _] -> Filename0;
@@ -714,7 +712,6 @@ html_page_header(Title, Options) ->
                 {_N, _T, Filename0} = hd(?STYLES),
                 Filename0
         end,
-    echessd_log:debug("StyleFilename: ~99999p", [StylesFilename]),
     "<html>\n\n"
         "<head>\n"
         "<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>\n"
