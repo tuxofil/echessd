@@ -832,7 +832,7 @@ hist_buttons(GameID, Step, IsLast) ->
                 tag(form, ["method=get", "action='/'"],
                     Hiddens ++
                         "<input type=hidden name=step value=" ++ LinkStep ++ ">"
-                    "<input type=submit class=hb value='" ++ Caption ++ "'")
+                    "<input type=submit class=hb value='" ++ Caption ++ "'>")
         end,
     tag(
       table, ["cellpadding=0", "cellspacing=0", "width='100%'"],
