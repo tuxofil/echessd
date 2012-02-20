@@ -892,14 +892,18 @@ navig_links(List) ->
 navig_links(List, Options) ->
     tag("div", ["class=navig"],
         proplists:get_value(prepend, Options, "") ++
-            "[&nbsp;" ++
-            string:join(
-              lists:map(
-                fun({[_ | _] = URL, [_ | _] = Caption}) ->
-                        a(URL, Caption);
-                   ({_, [_ | _] = Caption}) -> Caption
-                end, List), "&nbsp;|&nbsp;") ++
-            "&nbsp;]").
+            case List of
+                [_ | _] ->
+                    "[&nbsp;" ++
+                        string:join(
+                          lists:map(
+                            fun({[_ | _] = URL, [_ | _] = Caption}) ->
+                                    a(URL, Caption);
+                               ({_, [_ | _] = Caption}) -> Caption
+                            end, List), "&nbsp;|&nbsp;") ++
+                        "&nbsp;]";
+                _ -> ""
+            end).
 
 section_caption(?SECTION_HOME) -> gettext(txt_home);
 section_caption(?SECTION_USERS) -> gettext(txt_users);
