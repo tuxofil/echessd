@@ -133,6 +133,26 @@
   {ru, "Неподтверждённые партии"},
   {ua, "Непідтверджені партії"}]}.
 
+{text, txt_waiting_for,
+ [{en, "waiting for ~s..."},
+  {ru, "ожидаем подтверждения от ~s..."},
+  {ua, "очікуємо підтвердження від ~s..."}]}.
+
+{text, txt_waiting_for_you,
+ [{en, "~s is waiting for you!"},
+  {ru, "~s ожидает Вашего подтверждения!"},
+  {ua, "~s чекає на Ваше підтвердження!"}]}.
+
+{text, txt_game_confirm,
+ [{en, "Confirm"},
+  {ru, "Играть"},
+  {ua, "Грати"}]}.
+
+{text, txt_game_deny,
+ [{en, "Deny"},
+  {ru, "Отменить"},
+  {ua, "Відмінити"}]}.
+
 {text, txt_user_ended_games,
  [{en, "User ended games"},
   {ru, "Завершённые партии"},

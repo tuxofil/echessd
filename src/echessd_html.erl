@@ -679,24 +679,27 @@ user_unconfirmed_game_(Owner, GameID, GameInfo) ->
         [{N, C} || {N, C} <- proplists:get_value(users, GameInfo, []),
                    lists:member(C, [?white, ?black])],
     UniquePlayerNames = lists:usort([N || {N, _} <- GamePlayers]),
-    "* #" ++ StrGameID ++
+    "* #" ++ StrGameID ++ " " ++
         case proplists:get_value(creator, GameInfo) of
             Owner ->
                 Opponent = hd(UniquePlayerNames -- [Owner]),
                 OpponentColor = proplists:get_value(Opponent, GamePlayers),
-                " waiting for " ++ userlink(Opponent) ++ " " ++
-                    chessman({OpponentColor, ?king}) ++ "...";
+                gettext(txt_waiting_for,
+                        [userlink(Opponent) ++ " " ++
+                             chessman({OpponentColor, ?king})]);
             Opponent ->
                 OpponentColor = proplists:get_value(Opponent, GamePlayers),
                 AckURL =
                     "?action=" ++ ?SECTION_ACKGAME ++ "&game=" ++ StrGameID,
-                " " ++ userlink(Opponent) ++ " " ++
-                    chessman({OpponentColor, ?king}) ++
-                    " is waiting for you! " ++
-                    tag("a", ["href='" ++ AckURL ++ "'"], "Confirm")
+                gettext(txt_waiting_for_you,
+                        [userlink(Opponent) ++ " " ++
+                             chessman({OpponentColor, ?king})]) ++ " " ++
+                    tag("a", ["href='" ++ AckURL ++ "'"],
+                        gettext(txt_game_confirm))
         end ++ " " ++
         tag("a", ["href='" ++ "?action=" ++ ?SECTION_DENYGAME ++
-                      "&game=" ++ StrGameID ++"'"], "Deny").
+                      "&game=" ++ StrGameID ++"'"],
+            gettext(txt_game_deny)).
 
 html_page_header(Title, Options) ->
     UserStyle =
