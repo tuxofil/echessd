@@ -379,7 +379,7 @@ game(GameID, GameInfo, Step) ->
         end ++
         chess_table(
           GameID, HistoryLen, IsLast, GameType, Board,
-          IsRotated, IsMyTurn, LastPly) ++
+          IsRotated, IsMyTurn andalso IsLast, LastPly) ++
         if IsMyTurn andalso IsLast ->
                 "<form method=post>" ++
                     gettext(txt_move_caption) ++ ":&nbsp;"
@@ -390,7 +390,8 @@ game(GameID, GameInfo, Step) ->
                     "<input type=submit class=btn value='" ++
                     gettext(txt_move_ok_button) ++ "'>"
                     "<input type=reset class=btn value='" ++
-                    gettext(txt_move_reset_button) ++ "'>"
+                    gettext(txt_move_reset_button) ++ "' "
+                    "onclick='clr();'>"
                     "</form><br>";
             true -> ""
         end ++
@@ -778,7 +779,6 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
         fun(C, R) when (C + R) rem 2 == 0 -> "bc";
            (_, _) -> "wc"
         end,
-    LastPlyStyle = ["style='border-style:solid;'"],
     ExtraAction =
         fun(Crd) when IsActive ->
                 ["onclick=\"mv('" ++ Crd ++ "');\""];
@@ -794,15 +794,19 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
                            lists:map(
                              fun(C) ->
                                      Crd = [$a + C - 1, $1 + R - 1],
-                                     ExtraStyle =
+                                     CellClass =
                                          proplists:get_value(
                                            inply(LastPly, Crd),
-                                           [{true, LastPlyStyle}], []),
+                                           [{true, "lastply"}], "cell"),
                                      tag("td",
                                          ["class=" ++ Color(C, R)] ++
-                                             ExtraStyle ++
                                              ExtraAction(Crd),
-                                         chessman(cell(Board, C, R)))
+                                         tag("div",
+                                             ["class=" ++ CellClass] ++
+                                                 if IsActive -> ["id=" ++ Crd];
+                                                    true -> []
+                                                 end,
+                                             chessman(cell(Board, C, R))))
                              end, cseq(ColStep)) ++
                            tag("td", ["class=crd_r"], tt([$1 + R - 1])))
             end, cseq(RowStep)) ++
@@ -813,9 +817,31 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
                 tag("td", ["colspan=8"], hist_buttons(GameID, Step, IsLast)) ++
                 td(""))) ++
         if IsActive ->
+                ExtraCode =
+                    case LastPly of
+                        [A, B, C, D | _] ->
+                            "if(cellID == '"++[A,B]++"' || cellID == '"++[C,D]++"')"
+                                "{elem.className = 'lastply';} else ";
+                        _ -> ""
+                    end,
                 tag("script",
+                    "function clr() {"
+                    "document.getElementById('edmv').value = '';"
+                    "var cols = 'abcdefgh';"
+                    "for(c = 1; c < 9; c++)"
+                    "for(r = 1; r < 9; r++){"
+                    "var empty = '';"
+                    "var cellID = empty.concat(cols.charAt(c - 1), r);"
+                    "var elem = document.getElementById(cellID);"
+                    ++ ExtraCode ++
+                    "elem.className = 'cell';"
+                    "}"
+                    "}"
                     "function mv(crd) {"
-                    "document.getElementById('edmv').value += crd;"
+                    "var mvField = document.getElementById('edmv');"
+                    "if(mvField.value.length >= 4) clr();"
+                    "mvField.value += crd;"
+                    "document.getElementById(crd).className = 'ply';"
                     "}");
            true -> ""
         end.

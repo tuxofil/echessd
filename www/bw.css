@@ -35,9 +35,6 @@ td.wc, td.bc, td.crd_t, td.crd_b, td.crd_l, td.crd_r {
 td.wc, td.bc {
     height: 40;
     width: 40;
-    font-size: 30px;
-    border-color: black;
-    border-width: 2;
 }
 
 td.captures {
@@ -50,6 +47,31 @@ td.bc {
 
 td.wc {
     background-color: white;
+}
+
+div.cell, div.lastply, div.ply {
+    background-color: transparent;
+    height: 38;
+    width: 38;
+    font-size: 30px;
+    text-align: center;
+}
+
+div.cell {
+    border-width: 0;
+    border-style: none;
+}
+
+div.lastply {
+    border-color: black;
+    border-width: 1;
+    border-style: solid;
+}
+
+div.ply {
+    border-color: black;
+    border-width: 1;
+    border-style: solid;
 }
 
 td.crd_t, td.crd_b {
