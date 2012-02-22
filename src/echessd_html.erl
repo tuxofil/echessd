@@ -351,6 +351,17 @@ game(GameID, GameInfo, Step) ->
                 "echessd: " ++ gettext(txt_game) ++ " #" ++
                     integer_to_list(GameID)
         end,
+    {GroupedPossibles, ActiveCells} =
+        if IsMyTurn andalso IsLast ->
+                GroupedPossibles0 =
+                    group_possibles(
+                      echessd_game:possibles(GameType, History), []),
+                {GroupedPossibles0,
+                 lists:usort(
+                   lists:append(
+                     [[I1 | L] || {I1, L} <- GroupedPossibles0]))};
+           true -> {[], []}
+        end,
     html_page_header(Title, []) ++
         game_navigation(GameID, IsMyGame andalso GameStatus == none) ++
         case GameStatus of
@@ -379,9 +390,16 @@ game(GameID, GameInfo, Step) ->
         end ++
         chess_table(
           GameID, HistoryLen, IsLast, GameType, Board,
-          IsRotated, IsMyTurn andalso IsLast, LastPly) ++
+          IsRotated, ActiveCells, LastPly) ++
         if IsMyTurn andalso IsLast ->
-                "<form method=post>" ++
+                Possibles =
+                    echessd_game:possibles(GameType, History),
+                echessd_log:debug("Possibles: ~9999p", [Possibles]),
+                tag(script, ["src='/res/echessd.js'"], "") ++
+                    tag(script,
+                        js_init(GroupedPossibles,
+                                ActiveCells, LastPly)) ++
+                    "<form method=post>" ++
                     gettext(txt_move_caption) ++ ":&nbsp;"
                     "<input name=action type=hidden value=move>"
                     "<input name=game type=hidden value=" ++
@@ -477,6 +495,31 @@ eaccess() ->
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+js_init(Grouped, ActiveCells, LastPly) ->
+    "var ACs = [" ++
+        string:join(["'" ++ C ++ "'" || C <- ActiveCells], ",")
+        ++ "];\n"
+        "var I1s = [" ++
+        string:join(["'" ++ I1 ++ "'" || {I1, _} <- Grouped], ",") ++ "];\n"
+        "var I2s = [" ++
+        string:join(
+          ["[" ++
+               string:join(["'" ++ I2 ++ "'" || I2 <- L], ",")
+           ++ "]" || {_, L} <- Grouped], ",")
+        ++ "];\n"
+        "var LPs = [" ++
+        case LastPly of
+            [A, B, C, D] ->
+                "'" ++ [A, B] ++ "','" ++ [C, D] ++ "'";
+            true -> ""
+        end ++ "];\n".
+
+group_possibles([], Result) -> Result;
+group_possibles([[A, B, C, D] | Tail], [{[A, B], List} | ResTail]) ->
+    group_possibles(Tail, [{[A, B], [[C, D] | List]} | ResTail]);
+group_possibles([[A, B, C, D] | Tail], Result) ->
+    group_possibles(Tail, [{[A, B], [[C, D]]} | Result]).
 
 log_reg_page(Title, Content) ->
     html_page_header(Title, []) ++
@@ -770,7 +813,7 @@ newgame_link(WithUsername) ->
         gettext(txt_new_game_link)}]).
 
 chess_table(GameID, Step, IsLast, _GameType, Board,
-            IsRotated, IsActive, LastPly) ->
+            IsRotated, ActiveCells, LastPly) ->
     {ColStep, RowStep} =
         if IsRotated -> {-1, 1};
            true -> {1, -1}
@@ -780,9 +823,9 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
            (_, _) -> "wc"
         end,
     ExtraAction =
-        fun(Crd) when IsActive ->
+        fun(Crd, true) ->
                 ["onclick=\"mv('" ++ Crd ++ "');\""];
-           (_) -> []
+           (_, _) -> []
         end,
     tag(
       "table", ["cellpadding=0", "cellspacing=0"],
@@ -794,13 +837,16 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
                            lists:map(
                              fun(C) ->
                                      Crd = [$a + C - 1, $1 + R - 1],
+                                     IsActive =
+                                         lists:member(
+                                           Crd, ActiveCells),
                                      CellClass =
                                          proplists:get_value(
                                            inply(LastPly, Crd),
                                            [{true, "lastply"}], "cell"),
                                      tag("td",
                                          ["class=" ++ Color(C, R)] ++
-                                             ExtraAction(Crd),
+                                             ExtraAction(Crd, IsActive),
                                          tag("div",
                                              ["class=" ++ CellClass] ++
                                                  if IsActive -> ["id=" ++ Crd];
@@ -815,36 +861,7 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
           tr(
             td("") ++
                 tag("td", ["colspan=8"], hist_buttons(GameID, Step, IsLast)) ++
-                td(""))) ++
-        if IsActive ->
-                ExtraCode =
-                    case LastPly of
-                        [A, B, C, D | _] ->
-                            "if(cellID == '"++[A,B]++"' || cellID == '"++[C,D]++"')"
-                                "{elem.className = 'lastply';} else ";
-                        _ -> ""
-                    end,
-                tag("script",
-                    "function clr() {"
-                    "document.getElementById('edmv').value = '';"
-                    "var cols = 'abcdefgh';"
-                    "for(c = 1; c < 9; c++)"
-                    "for(r = 1; r < 9; r++){"
-                    "var empty = '';"
-                    "var cellID = empty.concat(cols.charAt(c - 1), r);"
-                    "var elem = document.getElementById(cellID);"
-                    ++ ExtraCode ++
-                    "elem.className = 'cell';"
-                    "}"
-                    "}"
-                    "function mv(crd) {"
-                    "var mvField = document.getElementById('edmv');"
-                    "if(mvField.value.length >= 4) clr();"
-                    "mvField.value += crd;"
-                    "document.getElementById(crd).className = 'ply';"
-                    "}");
-           true -> ""
-        end.
+                td(""))).
 
 hist_buttons(_GameID, 0, true) -> "";
 hist_buttons(GameID, Step, IsLast) ->
