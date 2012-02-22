@@ -79,6 +79,8 @@ register() ->
                       LangName ++ "</option>"
           end, echessd_lib:languages()) ++
         "</select><br>"
+        ++ gettext(txt_jid) ++ ": <input name=regjid type=text value=''> (" ++
+        gettext(txt_rnu_optional) ++ ")<br>" ++
         "<label for=sil>"
         "<input type=checkbox id=sil name=regshowinlist checked>&nbsp;"
         ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"

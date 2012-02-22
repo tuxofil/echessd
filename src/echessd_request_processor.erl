@@ -140,9 +140,11 @@ process_post(?SECTION_REG, Query, false) ->
        true ->
             case echessd_lib:list_to_time_offset(StrTimezone) of
                 {ok, Timezone} ->
+                    JID = proplists:get_value("regjid", Query),
                     case echessd_user:add(
                            Username,
                            [{password, Password1},
+                            {jid, JID},
                             {fullname, Fullname},
                             {timezone, Timezone},
                             {language, StrLanguage},
