@@ -26,7 +26,9 @@ function mv(crd){
                 document.getElementById(I2s[i1index - 1][i]).className = 'hint';
         }
     }else{
-        i1index = indexOf(mvField.value, I1s);
+        var ply = mvField.value;
+        if(ply.length >= 4 && ply.substr(2, 2) == crd) return 1;
+        i1index = indexOf(ply, I1s);
         if(i1index > 0){
             if(indexOf(crd, I2s[i1index - 1])){
                 mvField.value += crd;
