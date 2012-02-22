@@ -273,10 +273,12 @@ possible_(B, I, C, ?pawn, History) ->
         _ -> []
     end ++
         case cell(B, FL) of
+            {C, _} -> [];
             {_, _} -> [FL];
             _ -> []
         end ++
         case cell(B, FR) of
+            {C, _} -> [];
             {_, _} -> [FR];
             _ -> []
         end ++
