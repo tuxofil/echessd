@@ -7,6 +7,7 @@
 
 -export([new/0,
          is_valid_ply/4,
+         possibles/1,
          move_chessman/2,
          can_move/3,
          gameover_status/3,
@@ -52,6 +53,52 @@ is_valid_ply(Board, TurnColor, Ply, History) ->
         Type:Reason ->
             {error, {Type, Reason, erlang:get_stacktrace()}}
     end.
+
+%% @doc Return list of all possible valid moves.
+%% @spec possibles(History) -> Plies
+%%     History = echessd_game:echessd_history(),
+%%     Plies = [Ply],
+%%     Ply = echessd_game:echessd_ply(),
+possibles(History) ->
+    Color = echessd_game:turn_color_by_history(History),
+    Board =
+        lists:foldl(
+          fun(Ply, Acc) ->
+                  element(1, move_chessman(Acc, Ply))
+          end, new(), History),
+    lists:flatmap(
+      fun(Col) ->
+              lists:flatmap(
+                fun(Row) ->
+                        possibles_from(
+                          Board, Color, {Col, Row},
+                          History)
+                end, lists:seq(1, 8))
+      end, lists:seq(1, 8)).
+possibles_from(Board, Color, I1, History) ->
+    case cell(Board, I1) of
+        {Color, ChessmanType} ->
+            Possibles =
+                possible(
+                  Board, I1, Color, ChessmanType, History),
+            lists:flatmap(
+              fun(I2) ->
+                      IsValid =
+                          possibles_(
+                            Board, Color, ChessmanType,
+                            I1, I2, History),
+                      if IsValid -> [ind_enc(I1) ++ ind_enc(I2)];
+                         true -> []
+                      end
+              end, Possibles);
+        _ -> []
+    end.
+possibles_(Board, Color, ChessmanType, I1, I2, History) ->
+    try try_possible(
+          Board, Color, ChessmanType, I1, I2, [], History) of
+        {ok, _} -> true;
+        _ -> false
+    catch _:_ -> false end.
 
 %% @doc Make chessman move.
 %% @spec move_chessman(Board, Ply) -> {NewBoard, Capture}

@@ -9,6 +9,7 @@
          ack/2,
          deny/2,
          is_valid_ply/5,
+         possibles/2,
          ply/3,
          give_up/2,
          request_draw/2,
@@ -176,6 +177,17 @@ is_valid_ply(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
       Board, TurnColor, Ply, History);
 is_valid_ply(GameType, _, _, _, _) ->
     soft_unsupported(GameType).
+
+%% @doc Return list of all possible valid moves.
+%% @spec possibles(GameType, History) -> Plies
+%%     GameType = echessd_game_type(),
+%%     History = echessd_history(),
+%%     Plies = [Ply],
+%%     Ply = echessd_ply(),
+possibles(?GAME_CLASSIC, History) ->
+    echessd_rules_classic:possibles(History);
+possibles(GameType, _) ->
+    unsupported(GameType).
 
 %% @doc Tries to save user turn to database.
 %%      Turn supplied will be checked for validity.
