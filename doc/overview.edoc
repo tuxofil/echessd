@@ -178,23 +178,23 @@ Erlang modules interaction:
                   |
       echessd_request_processor
         |         |           \
-        |         |            \---------------------
-        |         |                     \            \
-        |    echessd_html ----------\   |            |
-        |                           |   |            |
-        |                         echessd_game  echessd_user
- echessd_session                    |       |      |
-        |                           |       |      |
-        |            echessd_rules_classic  |      |
- Non-persistent                             |      |
-  storage (ETS)                            echessd_db
-                                               |
-                                               |
-                                             mnesia
-                                               |
-                                               |
-                                           Persistent
-                                            storage
+        |         |            \------------------------
+        |         |                        \            \
+        |    echessd_html -------------\   |            |
+        |                              |   |            |
+        |                            echessd_game  echessd_user
+ echessd_session                      |   |    |      |
+        |                             |   |    |      |
+        |          echessd_rules_classic  |    |      |
+ Non-persistent                           |    |      |
+  storage (ETS)               echessd_notify  echessd_db
+                                     |            |
+                                     |            |
+                                XMPP, SMTP     mnesia
+                                    etc.          |
+                                                  |
+                                              Persistent
+                                               storage
 </tt></pre><hr/>
 
 echessd application supervision tree:
