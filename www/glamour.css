@@ -50,7 +50,7 @@ td.wc {
     background-color: transparent;
 }
 
-div.cell, div.lastply, div.ply {
+div.cell, div.lastply, div.ply, div.hint {
     background-color: transparent;
     height: 38;
     width: 38;
@@ -73,6 +73,12 @@ div.ply {
     border-color: yellow;
     border-width: 2;
     border-style: solid;
+}
+
+div.hint {
+    border-color: magenta;
+    border-width: 2;
+    border-style: dotted;
 }
 
 td.crd_t, td.crd_b {

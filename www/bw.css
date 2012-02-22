@@ -49,7 +49,7 @@ td.wc {
     background-color: white;
 }
 
-div.cell, div.lastply, div.ply {
+div.cell, div.lastply, div.ply, div.hint {
     background-color: transparent;
     height: 38;
     width: 38;
@@ -70,8 +70,14 @@ div.lastply {
 
 div.ply {
     border-color: black;
-    border-width: 1;
+    border-width: 2;
     border-style: solid;
+}
+
+div.hint {
+    border-color: black;
+    border-width: 2;
+    border-style: dotted;
 }
 
 td.crd_t, td.crd_b {

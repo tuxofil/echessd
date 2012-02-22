@@ -56,7 +56,7 @@ td.wc {
     background-color: #aaaaaa;
 }
 
-div.cell, div.lastply, div.ply {
+div.cell, div.lastply, div.ply, div.hint {
     background-color: transparent;
     height: 38;
     width: 38;
@@ -77,6 +77,12 @@ div.lastply {
 
 div.ply {
     border-color: yellow;
+    border-width: 1;
+    border-style: solid;
+}
+
+div.hint {
+    border-color: magenta;
     border-width: 1;
     border-style: solid;
 }
