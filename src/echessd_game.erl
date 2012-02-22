@@ -183,7 +183,7 @@ is_valid_ply(GameType, _, _, _, _) ->
 %%     GameType = echessd_game_type(),
 %%     History = echessd_history(),
 %%     Plies = [Ply],
-%%     Ply = echessd_ply(),
+%%     Ply = echessd_ply()
 possibles(?GAME_CLASSIC, History) ->
     echessd_rules_classic:possibles(History);
 possibles(GameType, _) ->

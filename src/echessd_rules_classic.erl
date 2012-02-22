@@ -58,7 +58,7 @@ is_valid_ply(Board, TurnColor, Ply, History) ->
 %% @spec possibles(History) -> Plies
 %%     History = echessd_game:echessd_history(),
 %%     Plies = [Ply],
-%%     Ply = echessd_game:echessd_ply(),
+%%     Ply = echessd_game:echessd_ply()
 possibles(History) ->
     Color = echessd_game:turn_color_by_history(History),
     Board =
