@@ -18,9 +18,13 @@ function mv(crd){
         clr();
         mvField.value += crd;
         document.getElementById(crd).className = 'ply';
-        var i;
-        for(i = 0; i < I2s[i1index - 1].length; i++)
-            document.getElementById(I2s[i1index - 1][i]).className = 'hint';
+        if(I2s[i1index - 1].length == 1){
+            mv(I2s[i1index - 1][0]);
+        }else{
+            var i;
+            for(i = 0; i < I2s[i1index - 1].length; i++)
+                document.getElementById(I2s[i1index - 1][i]).className = 'hint';
+        }
     }else{
         i1index = indexOf(mvField.value, I1s);
         if(i1index > 0){
