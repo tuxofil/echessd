@@ -512,7 +512,7 @@ js_init(Grouped, ActiveCells, LastPly) ->
         case LastPly of
             [A, B, C, D] ->
                 "'" ++ [A, B] ++ "','" ++ [C, D] ++ "'";
-            true -> ""
+            _ -> ""
         end ++ "];\n".
 
 group_possibles([], Result) -> Result;
