@@ -431,15 +431,15 @@
   {ru, "Чёрно-белый"},
   {ua, "Чорно-білий"}]}.
 
-{text, txt_style_glam,
- [{en, "Glamour"},
-  {ru, "Гламурненький"},
-  {ua, "Гламурний"}]}.
+{text, txt_style_term,
+ [{en, "Terminal"},
+  {ru, "Терминал"},
+  {ua, "Термінал"}]}.
 
-{text, txt_style_linux,
- [{en, "Linux"},
-  {ru, "Linux"},
-  {ua, "Linux"}]}.
+{text, txt_style_oldterm,
+ [{en, "Old Terminal"},
+  {ru, "Старый терминал"},
+  {ua, "Старий термінал"}]}.
 
 %% ----------------------------------------------------------------------
 %% Change password page

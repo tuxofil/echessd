@@ -1,8 +1,8 @@
 /*
 ###-------------------------------------------------------------------
-### File    : styles.css
+### File    : oldterm.css
 ### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
-### Created : 21 Jan 2012
+### Created : 22 Feb 2012
 ### License : FreeBSD
 ### Description : web pages style definitions
 ###
@@ -18,16 +18,21 @@ body, td, p, div, span, form, input, textarea, select, button, h1, h2 {
 body {
     margin-top: 10;
     margin-bottom: 10;
-    background-color: #abcdef
+    background-color: black;
+    color: yellow;
+}
+
+input, select {
+    background-color: black;
+    color: yellow;
+}
+
+input.btn, input.hb, select {
+    background-color: #202000;
 }
 
 a {
-    color: navy;
-    text-decoration: none;
-}
-
-a:hover {
-    color: blue;
+    color: yellow;
     text-decoration: underline;
 }
 
@@ -40,20 +45,18 @@ td.wc, td.bc, td.crd_t, td.crd_b, td.crd_l, td.crd_r {
 td.wc, td.bc {
     height: 40;
     width: 40;
-    border-width: 0;
 }
 
 td.captures {
-    background-color: #808080;
     font-size: 30px;
 }
 
 td.bc {
-    background-color: #505050;
+    background-color: black;
 }
 
 td.wc {
-    background-color: #aaaaaa;
+    background-color: #505000;
 }
 
 div.cell, div.lastply, div.ply, div.hint {
@@ -70,21 +73,21 @@ div.cell {
 }
 
 div.lastply {
-    border-color: red;
+    border-color: yellow;
     border-width: 1;
     border-style: solid;
 }
 
 div.ply {
     border-color: yellow;
-    border-width: 1;
+    border-width: 2;
     border-style: solid;
 }
 
 div.hint {
-    border-color: magenta;
-    border-width: 1;
-    border-style: solid;
+    border-color: yellow;
+    border-width: 2;
+    border-style: dotted;
 }
 
 td.crd_t, td.crd_b {
@@ -97,12 +100,12 @@ td.crd_l, td.crd_r {
 
 .error {
     font-weight: bold;
-    color: red;
+    color: yellow;
 }
 
 .warning {
     font-weight: bold;
-    color: orange;
+    color: yellow;
 }
 
 td.hbc {

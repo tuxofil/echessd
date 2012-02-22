@@ -122,15 +122,15 @@
 
 -define(STYLE_DEFAULT, default).
 -define(STYLE_BW, bw).
--define(STYLE_LINUX, linux).
--define(STYLE_GLAM, glam).
+-define(STYLE_TERM, term).
+-define(STYLE_OLDTERM, oldterm).
 
 -define(
    STYLES,
-   [{?STYLE_DEFAULT, txt_style_default, "styles.css"},
+   [{?STYLE_DEFAULT, txt_style_default, "default.css"},
     {?STYLE_BW, txt_style_bw, "bw.css"},
-    {?STYLE_GLAM, txt_style_glam, "glamour.css"},
-    {?STYLE_LINUX, txt_style_linux, "linux.css"}
+    {?STYLE_TERM, txt_style_term, "term.css"},
+    {?STYLE_OLDTERM, txt_style_oldterm, "oldterm.css"}
    ]).
 
 %% ----------------------------------------------------------------------
