@@ -14,11 +14,13 @@
 %% ----------------------------------------------------------------------
 
 %% @doc Handles HTTP GET request and return HTML page contents.
-%% @spec process_get(Query) -> HtmlPageContent
+%% @spec process_get(Query) -> HtmlPageContent | Redirection
 %%     Query = [{Key, Value}],
 %%     Key = string(),
 %%     Value = string(),
-%%     HtmlPageContent = io_list()
+%%     HtmlPageContent = io_list(),
+%%     Redirection = {redirect, URL},
+%%     URL = string()
 process_get(Query) ->
     put(query_proplist, Query),
     echessd_log:debug("GET query=~9999p", [Query]),
@@ -26,11 +28,13 @@ process_get(Query) ->
     process_get(Action, Query, get(logged_in)).
 
 %% @doc Handles HTTP POST request and return HTML page contents.
-%% @spec process_post(Query) -> HtmlPageContent
+%% @spec process_post(Query) -> HtmlPageContent | Redirection
 %%     Query = [{Key, Value}],
 %%     Key = string(),
 %%     Value = string(),
-%%     HtmlPageContent = io_list()
+%%     HtmlPageContent = io_list(),
+%%     Redirection = {redirect, URL},
+%%     URL = string()
 process_post(Query) ->
     put(query_proplist, Query),
     echessd_log:debug("POST query=~9999p", [Query]),
@@ -48,10 +52,9 @@ process_get(?SECTION_ACKGAME, _Query, true) ->
     GameID = list_to_integer(get_query_item("game")),
     case echessd_game:ack(GameID, get(username)) of
         ok ->
-            process_get(
-              ?SECTION_GAME,
-              [{"goto", ?SECTION_GAME},
-               {"game", integer_to_list(GameID)}], true);
+            {redirect,
+             "/?goto=" ++ ?SECTION_GAME ++
+                 "&game=" ++ integer_to_list(GameID)};
         {error, Reason} ->
             echessd_html:error(
               gettext(txt_err_game_confirm) ++ ":~n~9999p",
@@ -60,10 +63,7 @@ process_get(?SECTION_ACKGAME, _Query, true) ->
 process_get(?SECTION_DENYGAME, _Query, true) ->
     GameID = list_to_integer(get_query_item("game")),
     case echessd_game:deny(GameID, get(username)) of
-        ok ->
-            process_get(
-              ?SECTION_HOME,
-              [{"goto", ?SECTION_HOME}], true);
+        ok -> {redirect, "/"};
         {error, Reason} ->
             echessd_html:error(
               gettext(txt_err_game_deny) ++ ":~n~9999p",
@@ -118,7 +118,7 @@ process_post(?SECTION_LOGIN, Query, LoggedIn) ->
                       [{"Set-Cookie", "sid=" ++ SID},
                        {"Set-Cookie",
                         "lang=" ++ atom_to_list(get(language))}]),
-                    process_show();
+                    {redirect, "/"};
                 _ ->
                     echessd_html:eaccess()
             end
@@ -179,10 +179,7 @@ process_post(?SECTION_PASSWD, Query, true) ->
                     NewUserInfo = [{password, Password1}],
                     case echessd_user:setprops(
                            Username, NewUserInfo) of
-                        ok ->
-                            process_get(
-                              ?SECTION_HOME,
-                              [{"goto", ?SECTION_HOME}], true);
+                        ok -> {redirect, "/"};
                         {error, Reason} ->
                             echessd_html:error(
                               gettext(txt_err_passwd) ++ ":~n~9999p",
@@ -222,9 +219,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                     {ok, FinalUserInfo} =
                         echessd_user:getprops(Username),
                     echessd_session:set_val(userinfo, FinalUserInfo),
-                    process_get(
-                      ?SECTION_HOME,
-                      [{"goto", ?SECTION_HOME}], true);
+                    {redirect, "/"};
                 {error, Reason} ->
                     echessd_html:error(
                       gettext(txt_err_save_user) ++ ":~n~9999p",
@@ -261,13 +256,11 @@ process_post(?SECTION_NEWGAME, Query, true) ->
            GameType, Iam, Color, Opponent,
            [{private, Private}]) of
         {ok, GameID} when Iam == Opponent ->
-            process_get(
-              ?SECTION_GAME,
-              [{"goto", ?SECTION_GAME},
-               {"game", integer_to_list(GameID)}], true);
+            {redirect,
+             "/?goto=" ++ ?SECTION_GAME ++
+                 "&game=" ++ integer_to_list(GameID)};
         {ok, _GameID} ->
-            process_get(
-              ?SECTION_HOME, [{"goto", ?SECTION_HOME}], true);
+            {redirect, "/"};
         {error, Reason} ->
             echessd_html:error(
               gettext(txt_err_new_game) ++ ":~n~9999p", [Reason])
@@ -292,7 +285,9 @@ process_post(?SECTION_MOVE, Query, true) ->
             end;
         _ -> nop
     end,
-    process_show(?SECTION_GAME);
+    {redirect,
+     "/?goto=" ++ ?SECTION_GAME ++
+         "&game=" ++ integer_to_list(GameID)};
 process_post(?SECTION_DRAW, _Query, true) ->
     Username = get(username),
     GameID = list_to_integer(get_query_item("game")),
@@ -300,7 +295,9 @@ process_post(?SECTION_DRAW, _Query, true) ->
         ok -> nop;
         Error -> put(error, Error)
     end,
-    process_show(?SECTION_GAME);
+    {redirect,
+     "/?goto=" ++ ?SECTION_GAME ++
+         "&game=" ++ integer_to_list(GameID)};
 process_post(?SECTION_GIVEUP, _Query, true) ->
     Username = get(username),
     GameID = list_to_integer(get_query_item("game")),
@@ -308,7 +305,9 @@ process_post(?SECTION_GIVEUP, _Query, true) ->
         ok -> nop;
         Error -> put(error, Error)
     end,
-    process_show(?SECTION_GAME);
+    {redirect,
+     "/?goto=" ++ ?SECTION_GAME ++
+         "&game=" ++ integer_to_list(GameID)};
 process_post(_, _, _) ->
     echessd_html:eaccess().
 

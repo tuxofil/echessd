@@ -101,7 +101,17 @@ process(Req) ->
                   [{Type, Reason, erlang:get_stacktrace()}])
         end,
     Headers = echessd_httpd_lib:get_extra_headers(),
-    try Req:ok({?mime_text_html, Headers, Content})
+    try
+        case Content of
+            {redirect, URL} ->
+                echessd_log:debug("redirecting to ~9999p...", [URL]),
+                Req:respond(
+                  {303,
+                   [{location, URL} | Headers],
+                   echessd_html:redirection(URL)});
+            _IoList ->
+                Req:ok({?mime_text_html, Headers, Content})
+        end
     catch
         Type2:Reason2 ->
             Req:ok(

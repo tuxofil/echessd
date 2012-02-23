@@ -18,6 +18,7 @@
          user/1,
          newgame/0,
          error/1, error/2,
+         redirection/1,
          notyet/0
         ]).
 
@@ -493,6 +494,16 @@ error(Format, Args) ->
 %% @spec eaccess() -> io_list()
 eaccess() ->
     ?MODULE:error(gettext(txt_access_denied)).
+
+%% @doc Makes 303-redirection page content.
+%% @spec redirection(URL) -> io_list()
+%%     URL = string()
+redirection(URL) ->
+    html_page_header("echessd - " ++ gettext(txt_redirection),
+                     [{h1, gettext(txt_redirection)}]) ++
+        tag(p, gettext(txt_redirection_description)) ++
+        a(URL, URL) ++
+        html_page_footer([]).
 
 %% ----------------------------------------------------------------------
 %% Internal functions

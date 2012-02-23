@@ -134,19 +134,39 @@ process(ModData, Query) ->
         end,
     try
         MimeType = ?mime_text_html,
-        Binary = list_to_binary(Content),
-        Headers =
-            [{content_type, MimeType},
-             {content_length, integer_to_list(size(Binary))}] ++
-            echessd_httpd_lib:get_extra_headers(),
-        httpd_response:send_header(ModData, 200, Headers),
-        httpd_socket:deliver(
-          ModData#mod.socket_type,
-          ModData#mod.socket, Binary),
-        {proceed,
-         [{response, {already_sent, 200, size(Binary)}},
-          {mime_type, MimeType} |
-          ModData#mod.data]}
+        case Content of
+            {redirect, URL} ->
+                echessd_log:debug("redirecting to ~9999p...", [URL]),
+                Body = echessd_html:redirection(URL),
+                Binary = list_to_binary(Body),
+                Headers =
+                    [{location, URL},
+                     {content_type, MimeType},
+                     {content_length, integer_to_list(size(Binary))}] ++
+                    echessd_httpd_lib:get_extra_headers(),
+                httpd_response:send_header(ModData, 303, Headers),
+                httpd_socket:deliver(
+                  ModData#mod.socket_type,
+                  ModData#mod.socket, Binary),
+                {proceed,
+                 [{response, {already_sent, 303, size(Binary)}},
+                  {mime_type, MimeType} |
+                  ModData#mod.data]};
+            _IoList ->
+                Binary = list_to_binary(Content),
+                Headers =
+                    [{content_type, MimeType},
+                     {content_length, integer_to_list(size(Binary))}] ++
+                    echessd_httpd_lib:get_extra_headers(),
+                httpd_response:send_header(ModData, 200, Headers),
+                httpd_socket:deliver(
+                  ModData#mod.socket_type,
+                  ModData#mod.socket, Binary),
+                {proceed,
+                 [{response, {already_sent, 200, size(Binary)}},
+                  {mime_type, MimeType} |
+                  ModData#mod.data]}
+        end
     catch
         Type2:Reason2 ->
             {break,

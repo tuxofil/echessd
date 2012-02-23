@@ -610,3 +610,16 @@
   {ru, "Партия #~w: ~s походил ~s"},
   {ua, "Партія #~w: ~s походив ~s"}]}.
 
+{text, txt_redirection,
+ [{en, "Redirection"},
+  {ru, "Перенаправление"},
+  {ua, "Переспрямування"}]}.
+
+{text, txt_redirection_description,
+ [{en, "If you are not have been redirected automatically, please "
+   "use the link below: "},
+  {ru, "Если Вы небыли перенаправлены автоматически, перейдите, "
+   "пожалуйста, по следующей ссылке: "},
+  {ua, "Якщо Вас не було автоматично переспрямовано, будь-ласка, "
+   "перейдіть за наступним посиланням: "}]}.
+
