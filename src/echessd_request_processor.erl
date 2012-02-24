@@ -47,7 +47,7 @@ process_post(Query) ->
 
 process_get(?SECTION_EXIT, _Query, true) ->
     echessd_session:del(get(sid)),
-    echessd_html:login();
+    {redirect, "/"};
 process_get(?SECTION_ACKGAME, _Query, true) ->
     GameID = list_to_integer(get_query_item("game")),
     case echessd_game:ack(GameID, get(username)) of
