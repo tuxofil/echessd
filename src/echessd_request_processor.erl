@@ -69,10 +69,7 @@ process_get(?SECTION_DENYGAME, _Query, true) ->
               gettext(txt_err_game_deny) ++ ":~n~9999p",
               [GameID, Reason])
     end;
-process_get(_, Query, true) ->
-    process_goto(Query),
-    put(query_proplist, Query),
-    process_show();
+process_get(_, _Query, true) -> process_show();
 process_get(_, Query, _) ->
     case proplists:get_value("lang", Query) of
         [_ | _] = Lang0 ->
@@ -106,11 +103,9 @@ process_post(?SECTION_LOGIN, Query, LoggedIn) ->
         _ ->
             ok = echessd_session:del(get(sid)),
             case echessd_user:auth(Username, Password) of
-                {ok, UserInfo} ->
+                {ok, _UserInfo} ->
                     SID = echessd_session:mk(Username),
                     echessd_session:read([{"sid", SID}]),
-                    echessd_session:set_val(section, ?SECTION_HOME),
-                    echessd_session:set_val(userinfo, UserInfo),
                     echessd_log:debug(
                       "session ~9999p created for user ~9999p",
                       [SID, Username]),
@@ -216,9 +211,6 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                    Username, NewUserInfo) of
                 ok ->
                     echessd_session:read([{"sid", get(sid)}]),
-                    {ok, FinalUserInfo} =
-                        echessd_user:getprops(Username),
-                    echessd_session:set_val(userinfo, FinalUserInfo),
                     {redirect, "/"};
                 {error, Reason} ->
                     echessd_html:error(
@@ -231,8 +223,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                   gettext(txt_err_bad_timezone), [])
     end;
 process_post(?SECTION_NEWGAME, Query, true) ->
-    {Opponent, _UserInfo} =
-        echessd_session:get_val(opponent),
+    Opponent = proplists:get_value("opponent", Query),
     Color =
         case proplists:get_value("color", Query) of
             "white" -> ?white;
@@ -311,9 +302,7 @@ process_post(?SECTION_GIVEUP, _Query, true) ->
 process_post(_, _, _) ->
     echessd_html:eaccess().
 
-process_show() ->
-    process_show(
-      echessd_session:get_val(section)).
+process_show() -> process_show(get_query_item("goto")).
 process_show(?SECTION_GAME) ->
     Step =
         try list_to_integer(get_query_item("step")) of
@@ -347,15 +336,6 @@ process_show(?SECTION_GIVEUP_CONFIRM) ->
       list_to_integer(get_query_item("game")));
 process_show(_Default) ->
     echessd_html:home().
-
-process_goto(Query) ->
-    String = proplists:get_value("goto", Query),
-    Section =
-        case lists:member(String, ?SECTIONS) of
-            true -> String;
-            _ -> ?SECTION_HOME
-        end,
-    echessd_session:set_val(section, Section).
 
 get_query_item(Key) ->
     proplists:get_value(Key, get(query_proplist), "").

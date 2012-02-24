@@ -9,9 +9,7 @@
          mk/1,
          get/1,
          del/1,
-         read/1,
-         get_val/1,
-         set_val/2
+         read/1
         ]).
 
 -include("echessd.hrl").
@@ -104,29 +102,6 @@ read(Cookie) ->
                 _ -> nop
             end
     end, ok.
-
-%% @doc Get session variable value.
-%% @spec get_val(Key) -> Value
-%%     Key = term(),
-%%     Value = term()
-get_val(Key) ->
-    erlang:get({session_var, Key}).
-
-%% @doc Set session variable value.
-%% @spec set_val(Key, Value) -> ok
-%%     Key = term(),
-%%     Value = term()
-set_val(Key, Val) ->
-    SID = erlang:get(sid),
-    case ?MODULE:get(SID) of
-        {ok, User, Vars} ->
-            put({session_var, Key}, Val),
-            NewVars = [{Key, Val} | [I || {K, _} = I <- Vars, K /= Key]],
-            ets:insert(?dbt_session, {SID, User, NewVars}),
-            ok;
-        _ ->
-            throw(no_session)
-    end.
 
 %% ----------------------------------------------------------------------
 %% Internal functions

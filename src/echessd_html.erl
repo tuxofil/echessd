@@ -255,17 +255,6 @@ user(Username, UserInfo) ->
 %% @spec newgame() -> io_list()
 newgame() ->
     Opponent = proplists:get_value("user", get(query_proplist)),
-    case echessd_user:getprops(Opponent) of
-        {ok, OpponentProperties} ->
-            newgame(Opponent, OpponentProperties);
-        {error, Reason} ->
-            ?MODULE:error(
-               gettext(txt_user_fetch_error) ++ ":~n~p",
-               [Opponent, Reason])
-    end.
-newgame(Opponent, OpponentProperties) ->
-    echessd_session:set_val(
-      opponent, {Opponent, OpponentProperties}),
     Iam = get(username),
     H2Title =
         if Iam == Opponent ->
@@ -289,6 +278,7 @@ newgame(Opponent, OpponentProperties) ->
         h2(H2Title) ++
         "<form method=post>"
         "<input name=action type=hidden value=" ++ ?SECTION_NEWGAME ++ ">"
+        "<input name=opponent type=hidden value='" ++ Opponent ++ "'>"
         "<input name=gametype type=hidden value=classic>"
         ++ ColorSelector ++
         "<label for=prv><input name=private type=checkbox id=prv>&nbsp;" ++
@@ -760,7 +750,7 @@ user_unconfirmed_game_(Owner, GameID, GameInfo) ->
 
 html_page_header(Title, Options) ->
     UserStyle =
-        case echessd_session:get_val(userinfo) of
+        case get(userinfo) of
             UserInfo when is_list(UserInfo) ->
                 proplists:get_value(style, UserInfo);
             _ -> undefined
