@@ -866,7 +866,6 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
                 tag("td", ["colspan=8"], hist_buttons(GameID, Step, IsLast)) ++
                 td(""))).
 
-hist_buttons(_GameID, 0, true) -> "";
 hist_buttons(GameID, Step, IsLast) ->
     Hiddens =
         ["<input type=hidden name=goto value=" ++ ?SECTION_GAME ++ ">"
@@ -889,11 +888,15 @@ hist_buttons(GameID, Step, IsLast) ->
         [tag(td, ["class=hbc"],
              tag(form, ["method=get", "action='/'"],
                  Hiddens ++
-                     "<input type=submit class=hb value='&#8635;'>")),
-         tag(td, ["class=hbc"], HistBtn("&lt;&lt;", 0, Step > 0)),
-         tag(td, ["class=hbc"], HistBtn("&lt;", Step - 1, Step > 0)),
-         tag(td, ["class=hbc"], HistBtn("&gt;", Step + 1, not IsLast)),
-         tag(td, ["class=hbc"], HistBtn("&gt;&gt;", last, not IsLast))])).
+                     "<input type=submit class=hb value='&#8635;'>")) |
+         case {Step, IsLast} of
+             {0, true} -> [];
+             _ ->
+                 [tag(td, ["class=hbc"], HistBtn("&lt;&lt;", 0, Step > 0)),
+                  tag(td, ["class=hbc"], HistBtn("&lt;", Step - 1, Step > 0)),
+                  tag(td, ["class=hbc"], HistBtn("&gt;", Step + 1, not IsLast)),
+                  tag(td, ["class=hbc"], HistBtn("&gt;&gt;", last, not IsLast))]
+         end])).
 
 cell(Board, C, R) -> element(C, element(8 - R + 1, Board)).
 
