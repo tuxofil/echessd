@@ -960,17 +960,13 @@ navig_links(List, Options) ->
                 _ -> ""
             end).
 
-section_caption(?SECTION_HOME) -> gettext(txt_home);
-section_caption(?SECTION_USERS) -> gettext(txt_users);
-section_caption(Other) -> Other.
-
 navigation() ->
     case get(username) of
         [_ | _] ->
             navig_links(
-              [{"/?goto=" ++ S, section_caption(S)} ||
-                  S <- [?SECTION_HOME, ?SECTION_USERS]] ++
-                  [{"?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}]);
+              [{"/", gettext(txt_home)},
+               {"/?goto=" ++ ?SECTION_USERS, gettext(txt_users)},
+               {"/?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}]);
         _ -> ""
     end.
 
@@ -984,8 +980,7 @@ game_navigation(GameID, ShowEndGameLinks) ->
     navig_links(
       case get(username) of
           [_ | _] ->
-              [{"/?goto=" ++ ?SECTION_HOME,
-                section_caption(?SECTION_HOME)}] ++
+              [{"/", gettext(txt_home)}] ++
                   if ShowEndGameLinks -> Links;
                      true -> ""
                   end ++
