@@ -301,6 +301,11 @@
   {ru, "Отмена"},
   {ua, "Відміна"}]}.
 
+{text, txt_move_comment_caption,
+ [{en, "Comment"},
+  {ru, "Комментарий"},
+  {ua, "Комментар"}]}.
+
 {text, txt_gt_over_checkmate,
  [{en, "Game over: checkmate, winner: ~s"},
   {ru, "Партия окончена: мат, победитель: ~s"},

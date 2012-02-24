@@ -259,13 +259,23 @@ process_post(?SECTION_NEWGAME, Query, true) ->
 process_post(?SECTION_MOVE, Query, true) ->
     User = get(username),
     GameID = list_to_integer(get_query_item("game")),
-    Ply =
+    Coords =
         string:to_lower(
           echessd_lib:strip(
             proplists:get_value("move", Query),
             " \t\r\n")),
-    case Ply of
+    Comment =
+        echessd_lib:strip(
+          proplists:get_value("comment", Query),
+          " \t\r\n"),
+    case Coords of
         [_ | _] ->
+            Ply =
+                {Coords,
+                 case Comment of
+                     [_ | _] -> [{comment, Comment}];
+                     _ -> []
+                 end ++ []},
             case echessd_game:ply(GameID, User, Ply) of
                 ok -> nop;
                 {error, not_your_turn} ->

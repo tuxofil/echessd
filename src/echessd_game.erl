@@ -202,29 +202,29 @@ possibles(GameType, _) ->
 %%     User = echessd_user:echessd_username(),
 %%     Ply = echessd_ply(),
 %%     Reason = term()
-ply(GameID, User, Ply0) ->
+ply(GameID, User, Ply) ->
     Seconds =
         calendar:datetime_to_gregorian_seconds(
           calendar:universal_time()),
-    Ply =
-        case Ply0 of
-            {Coords, Meta} ->
-                {Coords,
+    {Coords, _} = Ply1 =
+        case Ply of
+            {Coords0, Meta0} ->
+                {Coords0,
                  [{time, Seconds} |
-                  [I || {K, _} = I <- Meta, K /= time]]};
-            _ -> {Ply0, [{time, Seconds}]}
+                  [I || {K, _} = I <- Meta0, K /= time]]};
+            _ -> {Ply, [{time, Seconds}]}
         end,
-    case echessd_db:gameply(GameID, User, Ply) of
+    case echessd_db:gameply(GameID, User, Ply1) of
         ok ->
             echessd_log:info(
               "game ~9999p: user ~9999p moved ~9999p",
-              [GameID, User, Ply]),
-            echessd_notify:ply(GameID, User, Ply),
+              [GameID, User, Coords]),
+            echessd_notify:ply(GameID, User, Ply1),
             ok;
         {error, Reason} = Error ->
             echessd_log:err(
               "game ~9999p: user ~9999p failed to move ~9999p: ~99999p",
-              [GameID, User, Ply, Reason]),
+              [GameID, User, Coords, Reason]),
             Error
     end.
 

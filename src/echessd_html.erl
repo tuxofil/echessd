@@ -403,7 +403,9 @@ game(GameID, GameInfo, Step) ->
                     gettext(txt_move_ok_button) ++ "'>"
                     "<input type=reset class=btn value='" ++
                     gettext(txt_move_reset_button) ++ "' "
-                    "onclick='clr();'>"
+                    "onclick='clr();'><br>" ++
+                    gettext(txt_move_comment_caption) ++ ":&nbsp;"
+                    "<input type=text name=comment>"
                     "</form><br>";
             true -> ""
         end ++
