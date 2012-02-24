@@ -306,14 +306,7 @@ process_show() -> process_show(get_query_item("goto")).
 process_show(?SECTION_GAME) ->
     Step =
         try list_to_integer(get_query_item("step")) of
-            Int when Int >= 0 ->
-                case get_query_item("hgo") of
-                    "<<" -> 0;
-                    "<" -> Int - 1;
-                    ">" -> Int + 1;
-                    ">>" -> last;
-                    _ -> Int
-                end;
+            Int when Int >= 0 -> Int;
             _ -> last
         catch _:_ -> last end,
     echessd_html:game(
