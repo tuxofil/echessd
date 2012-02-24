@@ -55,6 +55,8 @@ is_valid_ply(Board, TurnColor, Ply, History) ->
     end.
 
 %% @doc Return list of all possible valid moves.
+%%      This function used only for current move highlighting
+%%      in user interface.
 %% @spec possibles(History) -> Plies
 %%     History = echessd_game:echessd_history(),
 %%     Plies = [Ply],

@@ -179,6 +179,8 @@ is_valid_ply(GameType, _, _, _, _) ->
     soft_unsupported(GameType).
 
 %% @doc Return list of all possible valid moves.
+%%      This function used only for current move highlighting
+%%      in user interface.
 %% @spec possibles(GameType, History) -> Plies
 %%     GameType = echessd_game_type(),
 %%     History = echessd_history(),
