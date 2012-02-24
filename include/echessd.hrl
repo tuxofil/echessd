@@ -19,6 +19,7 @@
 -define(CFG_LANG_INFO, lang_info).
 -define(CFG_STYLES_INFO, styles_info).
 -define(CFG_DEF_LANG, default_language).
+-define(CFG_DEF_STYLE, default_style).
 -define(CFG_HTTPD_MOD, httpd_engine).
 -define(CFG_XMPP_ENABLED, xmpp_enabled).
 -define(CFG_XMPP_USER, xmpp_user).
@@ -30,7 +31,7 @@
                ?CFG_DOC_ROOT, ?CFG_DEF_LANG,
                ?CFG_HTTPD_MOD, ?CFG_XMPP_USER,
                ?CFG_XMPP_SERVER, ?CFG_XMPP_PASSWORD,
-               ?CFG_XMPP_ENABLED]).
+               ?CFG_XMPP_ENABLED, ?CFG_DEF_STYLE]).
 
 %% available HTTPD implementations
 -define(HTTPD_MODULES,

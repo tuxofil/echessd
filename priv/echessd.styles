@@ -4,9 +4,6 @@
 %% License : FreeBSD
 %% Description : web page styles definitions
 
-%% define which style will be used as default
-{default_style, default}.
-
 %% 'default' style definition
 {style,
  [{id, default},

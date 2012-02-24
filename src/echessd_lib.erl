@@ -143,8 +143,7 @@ gettext(TextID, LangID) ->
 %%     StyleNameTextID = atom(),
 %%     StyleFilename = string()
 styles() ->
-    {_DefStyle, StylesInfo} = echessd_cfg:get(?CFG_STYLES_INFO),
-    StylesInfo.
+    echessd_cfg:get(?CFG_STYLES_INFO).
 
 %% @doc Parses style name.
 %% @spec parse_style(String) -> {StyleName, StyleNameTextID, StyleFilename}
@@ -153,7 +152,7 @@ styles() ->
 %%     StyleNameTextID = atom(),
 %%     StyleFilename = string()
 parse_style(String) ->
-    {_DefStyle, StylesInfo} = echessd_cfg:get(?CFG_STYLES_INFO),
+    StylesInfo = echessd_cfg:get(?CFG_STYLES_INFO),
     case [I || {N, _T, _F} = I <- StylesInfo,
                atom_to_list(N) == String] of
         [Style | _] -> Style;
@@ -166,7 +165,8 @@ parse_style(String) ->
 %%     StyleNameTextID = atom(),
 %%     StyleFilename = string()
 default_style() ->
-    {DefStyle, StylesInfo} = echessd_cfg:get(?CFG_STYLES_INFO),
+    StylesInfo = echessd_cfg:get(?CFG_STYLES_INFO),
+    DefStyle = echessd_cfg:get(?CFG_DEF_STYLE),
     case [I || {N, _T, _F} = I <- StylesInfo,
                N == DefStyle] of
         [Style | _] -> Style;

@@ -110,6 +110,8 @@ default(?CFG_LOGFILE) ->
     {ok, "echessd.log"};
 default(?CFG_DEF_LANG) ->
     {ok, en};
+default(?CFG_DEF_STYLE) ->
+    {ok, default};
 default(?CFG_HTTPD_MOD) ->
     {ok, echessd_httpd_inets};
 default(?CFG_XMPP_ENABLED) ->
@@ -222,6 +224,9 @@ parse_val_(?CFG_BIND_PORT, String) ->
 parse_val_(?CFG_DEF_LANG, String) ->
     {LangAbbr, _LangName} = echessd_lib:parse_language(String),
     LangAbbr;
+parse_val_(?CFG_DEF_STYLE, String) ->
+    {Name, _TextID, _Filename} = echessd_lib:parse_style(String),
+    Name;
 parse_val_(?CFG_HTTPD_MOD, String0) ->
     String = string:to_lower(String0),
     List = [{atom_to_list(A), A} || A <- ?HTTPD_MODULES],
@@ -287,17 +292,14 @@ read_styles_file() ->
     Filename = filename:join("priv", "echessd.styles"),
     case file:consult(Filename) of
         {ok, Terms} ->
-            DefaultStyle =
-                proplists:get_value(default_style, Terms),
-            Styles =
-                lists:flatmap(
-                  fun({style, [_ | _] = PL}) ->
-                          [{proplists:get_value(id, PL),
-                            proplists:get_value(text_id, PL),
-                            proplists:get_value(filename, PL, "")}];
-                     (_) -> []
-                  end, Terms),
-            {ok, {DefaultStyle, Styles}};
+            {ok,
+             lists:flatmap(
+               fun({style, [_ | _] = PL}) ->
+                       [{proplists:get_value(id, PL),
+                         proplists:get_value(text_id, PL),
+                         proplists:get_value(filename, PL, "")}];
+                  (_) -> []
+               end, Terms)};
         Error -> Error
     end.
 
