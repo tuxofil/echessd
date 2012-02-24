@@ -331,6 +331,7 @@ game(GameID, GameInfo, Step) ->
         end,
     LastPly =
         case lists:reverse(History) of
+            [{LastPly0, _Meta} | _] -> LastPly0;
             [LastPly0 | _] -> LastPly0;
             _ -> undefined
         end,

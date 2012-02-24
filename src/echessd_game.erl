@@ -70,9 +70,13 @@
 -type echessd_color() :: atom().
 %% Color of player side.
 
--type echessd_ply() :: string().
+-type echessd_ply() :: {Coords::string(), [echessd_ply_meta()]}.
 %% String describing half-move (ply).
 %%      Examples: "e2e4", "b7c6".
+
+-type echessd_ply_meta() ::
+        {time, GregorianSeconds::integer()} |
+        {comment, Comment::string()}.
 
 -type echessd_history() :: [echessd_ply()].
 %% Sequence of plies from first to last.
@@ -198,7 +202,18 @@ possibles(GameType, _) ->
 %%     User = echessd_user:echessd_username(),
 %%     Ply = echessd_ply(),
 %%     Reason = term()
-ply(GameID, User, Ply) ->
+ply(GameID, User, Ply0) ->
+    Seconds =
+        calendar:datetime_to_gregorian_seconds(
+          calendar:universal_time()),
+    Ply =
+        case Ply0 of
+            {Coords, Meta} ->
+                {Coords,
+                 [{time, Seconds} |
+                  [I || {K, _} = I <- Meta, K /= time]]};
+            _ -> {Ply0, [{time, Seconds}]}
+        end,
     case echessd_db:gameply(GameID, User, Ply) of
         ok ->
             echessd_log:info(
@@ -316,9 +331,8 @@ can_move(GameType, _, _, _) ->
 %%     GameType = echessd_game_type(),
 %%     History = echessd_history()
 gameover_status(GameType, History) ->
-    {Board, _Captures} =
-        echessd_game:from_scratch(GameType, History),
-    Color = echessd_game:turn_color_by_history(History),
+    {Board, _Captures} = from_scratch(GameType, History),
+    Color = turn_color_by_history(History),
     gameover_status(GameType, Board, Color, History).
 
 %% @doc Return game over status.

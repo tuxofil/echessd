@@ -616,6 +616,11 @@
   {ru, "Партия #~w: ~s походил ~s"},
   {ua, "Партія #~w: ~s походив ~s"}]}.
 
+{text, txt_ply_notification_comment,
+ [{en, "Ply comment: '~s'"},
+  {ru, "Комментарий к ходу: '~s'"},
+  {ua, "Комментар до ходу: '~s'"}]}.
+
 {text, txt_redirection,
  [{en, "Redirection"},
   {ru, "Перенаправление"},

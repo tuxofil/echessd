@@ -399,7 +399,7 @@ search_rook(Board, I, Step, Color) ->
 %% ----------------------------------------------------------------------
 
 is_en_passant([_ | _] = History, {C2, R2} = OppPawnCoord) ->
-    [A, B, C, D | _] = lists:last(History),
+    [A, B, C, D | _] = strip_ply_meta(lists:last(History)),
     case ind_dec(C, D) of
         OppPawnCoord ->
             case ind_dec(A, B) of
@@ -529,17 +529,28 @@ find_enemy(Board, I, Step, EnemyColor, Distance) ->
     end.
 
 is_king_have_been_moved(History, ?white) ->
-    lists:any(fun(Ply) -> lists:prefix("e1", Ply) end, History);
+    lists:any(
+      fun(Ply) ->
+              lists:prefix("e1", strip_ply_meta(Ply))
+      end, History);
 is_king_have_been_moved(History, ?black) ->
-    lists:any(fun(Ply) -> lists:prefix("e8", Ply) end, History).
+    lists:any(
+      fun(Ply) ->
+              lists:prefix("e8", strip_ply_meta(Ply))
+      end, History).
 
 is_rook_have_been_moved(History, C) ->
-    lists:any(fun(Ply) -> lists:prefix(ind_enc(C), Ply) end, History).
+    lists:any(
+      fun(Ply) ->
+              lists:prefix(ind_enc(C), strip_ply_meta(Ply))
+      end, History).
 
 whereis_my_king(History, ?white) ->
     whereis_my_king(History, "e1");
 whereis_my_king(History, ?black) ->
     whereis_my_king(History, "e8");
+whereis_my_king([{Ply, _Meta} | Tail], Start) ->
+    whereis_my_king([Ply | Tail], Start);
 whereis_my_king([[A, B, C, D | _] | Tail], [A, B]) ->
     whereis_my_king(Tail, [C, D]);
 whereis_my_king([_ | Tail], Pos) ->
@@ -558,6 +569,7 @@ setcell(Board, {C, R}, Chessman) ->
     NewRow = setelement(C, Row, Chessman),
     setelement(9 - R, Board, NewRow).
 
+ply_dec({Ply, _Meta}) -> ply_dec(Ply);
 ply_dec([A, B, C, D | Tail])
   when is_integer(A), is_integer(B),
        is_integer(C), is_integer(D) ->
@@ -611,4 +623,7 @@ promotion_dec([_ | _] = Str) ->
     throw({error, {bad_promotion_type, Str}});
 promotion_dec(_) ->
     throw({error, no_promotion_type_specified}).
+
+strip_ply_meta({Ply, _Meta}) -> Ply;
+strip_ply_meta(Other) -> Other.
 
