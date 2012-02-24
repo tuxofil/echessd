@@ -17,6 +17,7 @@
 -define(CFG_BIND_PORT, bind_port).
 -define(CFG_DOC_ROOT, doc_root).
 -define(CFG_LANG_INFO, lang_info).
+-define(CFG_STYLES_INFO, styles_info).
 -define(CFG_DEF_LANG, default_language).
 -define(CFG_HTTPD_MOD, httpd_engine).
 -define(CFG_XMPP_ENABLED, xmpp_enabled).
@@ -116,22 +117,6 @@
 -define(bking, {?black, ?king}).
 
 -define(empty, z).
-
-%% ----------------------------------------------------------------------
-%% styles
-
--define(STYLE_DEFAULT, default).
--define(STYLE_BW, bw).
--define(STYLE_TERM, term).
--define(STYLE_OLDTERM, oldterm).
-
--define(
-   STYLES,
-   [{?STYLE_DEFAULT, txt_style_default, "default.css"},
-    {?STYLE_BW, txt_style_bw, "bw.css"},
-    {?STYLE_TERM, txt_style_term, "term.css"},
-    {?STYLE_OLDTERM, txt_style_oldterm, "oldterm.css"}
-   ]).
 
 %% ----------------------------------------------------------------------
 

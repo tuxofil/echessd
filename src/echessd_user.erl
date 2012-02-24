@@ -264,10 +264,12 @@ check_property({show_in_list, B} = I) ->
             throw({error, {bad_show_in_list, B}})
     end;
 check_property({style, S} = I) ->
-    RegisteredStyles = [N || {N, _T, _F} <- ?STYLES],
+    RegisteredStyles = [N || {N, _T, _F} <- echessd_lib:styles()],
     case lists:member(S, RegisteredStyles) of
         true -> I;
-        _ -> throw({error, {bad_style, S}})
+        _ ->
+            {ID, _TextID, _Filename} = echessd_lib:default_style(),
+            {style, ID}
     end;
 check_property({jid, _S} = I) -> I;
 check_property({K, _V}) ->

@@ -12,7 +12,9 @@
          random_elem/1,
          escape_html_entities/1,
          gettext/2,
+         styles/0,
          parse_style/1,
+         default_style/0,
          languages/0,
          parse_language/1,
          administrative_offsets/0,
@@ -134,6 +136,16 @@ gettext(TextID, LangID) ->
             end
     end.
 
+%% @doc Return all styles defined.
+%% @spec styles() -> List
+%%     List = [{StyleName, StyleNameTextID, StyleFilename}],
+%%     StyleName = atom(),
+%%     StyleNameTextID = atom(),
+%%     StyleFilename = string()
+styles() ->
+    {_DefStyle, StylesInfo} = echessd_cfg:get(?CFG_STYLES_INFO),
+    StylesInfo.
+
 %% @doc Parses style name.
 %% @spec parse_style(String) -> {StyleName, StyleNameTextID, StyleFilename}
 %%     String = string(),
@@ -141,9 +153,24 @@ gettext(TextID, LangID) ->
 %%     StyleNameTextID = atom(),
 %%     StyleFilename = string()
 parse_style(String) ->
-    case [I || {N, _T, _F} = I <- ?STYLES, atom_to_list(N) == String] of
+    {_DefStyle, StylesInfo} = echessd_cfg:get(?CFG_STYLES_INFO),
+    case [I || {N, _T, _F} = I <- StylesInfo,
+               atom_to_list(N) == String] of
         [Style | _] -> Style;
-        _ -> hd(?STYLES)
+        _ -> default_style()
+    end.
+
+%% @doc Return default style.
+%% @spec default_style() -> {StyleName, StyleNameTextID, StyleFilename}
+%%     StyleName = atom(),
+%%     StyleNameTextID = atom(),
+%%     StyleFilename = string()
+default_style() ->
+    {DefStyle, StylesInfo} = echessd_cfg:get(?CFG_STYLES_INFO),
+    case [I || {N, _T, _F} = I <- StylesInfo,
+               N == DefStyle] of
+        [Style | _] -> Style;
+        _ -> {undefined, undefined, ""}
     end.
 
 %% @doc Return list of supported languages.

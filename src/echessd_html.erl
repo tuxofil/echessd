@@ -150,7 +150,7 @@ edituser() ->
                       if N == OldStyle -> " selected";
                          true -> ""
                       end ++ ">" ++ gettext(TxtID) ++ "</option>"
-          end, ?STYLES) ++
+          end, echessd_lib:styles()) ++
         "</select><br>"
         ++ gettext(txt_jid) ++ ": <input name=editjid type=text "
         "value='" ++ JID ++ "'> (" ++
@@ -766,10 +766,10 @@ html_page_header(Title, Options) ->
             _ -> undefined
         end,
     StylesFilename =
-        case [F || {N, _T, F} <- ?STYLES, N == UserStyle] of
+        case [F || {N, _T, F} <- echessd_lib:styles(), N == UserStyle] of
             [Filename0 | _] -> Filename0;
             _ ->
-                {_N, _T, Filename0} = hd(?STYLES),
+                {_N, _T, Filename0} = echessd_lib:default_style(),
                 Filename0
         end,
     "<html>\n\n"

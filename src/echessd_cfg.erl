@@ -30,6 +30,17 @@ read() ->
                 throw({lang_read_error, Reason0})
         end,
     ets:insert(?echessd_cfg, {?CFG_LANG_INFO, LangInfo}),
+    echessd_log:info("Reading styles definitions..."),
+    StylesInfo =
+        case read_styles_file() of
+            {ok, StylesInfo0} -> StylesInfo0;
+            {error, Reason1} ->
+                echessd_log:err(
+                  "Styles file parse error: ~99999p",
+                  [Reason1]),
+                throw({styles_read_error, Reason1})
+        end,
+    ets:insert(?echessd_cfg, {?CFG_STYLES_INFO, StylesInfo}),
     lists:foreach(
       fun(CfgItem) ->
               catch ets:delete(?echessd_cfg, CfgItem)
@@ -269,6 +280,24 @@ read_lang_file() ->
                       {Abbr, [_ | _]} = I <- L,
                       is_atom(Abbr)]),
               dict:from_list(Strings)}};
+        Error -> Error
+    end.
+
+read_styles_file() ->
+    Filename = filename:join("priv", "echessd.styles"),
+    case file:consult(Filename) of
+        {ok, Terms} ->
+            DefaultStyle =
+                proplists:get_value(default_style, Terms),
+            Styles =
+                lists:flatmap(
+                  fun({style, [_ | _] = PL}) ->
+                          [{proplists:get_value(id, PL),
+                            proplists:get_value(text_id, PL),
+                            proplists:get_value(filename, PL, "")}];
+                     (_) -> []
+                  end, Terms),
+            {ok, {DefaultStyle, Styles}};
         Error -> Error
     end.
 

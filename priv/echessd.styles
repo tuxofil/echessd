@@ -1,0 +1,33 @@
+%% File    : echessd.styles
+%% Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+%% Created : 23 Feb 2012
+%% License : FreeBSD
+%% Description : web page styles definitions
+
+%% define which style will be used as default
+{default_style, default}.
+
+%% 'default' style definition
+{style,
+ [{id, default},
+  {text_id, txt_style_default},
+  {filename, "default.css"}]}.
+
+%% 'black&white' style definition
+{style,
+ [{id, bw},
+  {text_id, txt_style_bw},
+  {filename, "bw.css"}]}.
+
+%% 'terminal' style (green on black) definition
+{style,
+ [{id, term},
+  {text_id, txt_style_term},
+  {filename, "term.css"}]}.
+
+%% 'old terminal' style (yellow on black) definition
+{style,
+ [{id, oldterm},
+  {text_id, txt_style_oldterm},
+  {filename, "oldterm.css"}]}.
+
