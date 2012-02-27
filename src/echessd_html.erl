@@ -965,7 +965,11 @@ game_history_itemlink(GameID, Step, Ply) ->
       ["title='" ++ Comment ++ "'",
        "href='/?goto=" ++ ?SECTION_GAME ++
            "&game=" ++ GameID ++ StrStep ++ "'"],
-      tt(Coords)).
+      tt(Coords)) ++
+        case Comment of
+            [_ | _] -> tag(sup, "*");
+            _ -> ""
+        end.
 
 cseq(1) -> lists:seq(1, 8);
 cseq(-1) -> lists:seq(8, 1, -1).
