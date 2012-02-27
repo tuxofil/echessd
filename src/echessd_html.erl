@@ -162,6 +162,13 @@ edituser() ->
             _ -> " checked"
         end ++ ">&nbsp;"
         ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
+        "<label for=sh>"
+        "<input type=checkbox id=sh name=editshowhistory" ++
+        case proplists:get_value(show_history, UserInfo) of
+            false -> "";
+            _ -> " checked"
+        end ++ ">&nbsp;"
+        ++ gettext(txt_rnu_show_history) ++ "</label><br>"
         "<input type=submit class=btn value='" ++
         gettext(txt_predit_save_button) ++ "'>"
         "</form>"
@@ -361,32 +368,13 @@ game(GameID, GameInfo, Step) ->
                      [[I1 | L] || {I1, L} <- GroupedPossibles0]))};
            true -> {[], []}
         end,
-    html_page_header(Title, []) ++
-        game_navigation(GameID, IsMyGame andalso GameStatus == none) ++
-        case GameStatus of
-            checkmate ->
-                h2(gettext(txt_gt_over_checkmate, [userlink(Winner)]));
-            give_up ->
-                h2(gettext(txt_gt_over_giveup, [userlink(Winner)]));
-            {draw, stalemate} ->
-                h2(gettext(txt_gt_over_stalemate));
-            {draw, agreement} ->
-                h2(gettext(txt_gt_over_agreement));
-            {draw, DrawType} ->
-                h2(gettext(txt_gt_over_draw, [DrawType]));
-            _ ->
-                case proplists:get_value(
-                       draw_request_from, GameInfo) of
-                    Iam when IsMyGame ->
-                        tag("div", ["class=warning"],
-                            gettext(txt_gt_youre_drawing));
-                    Opponent when IsMyGame ->
-                        tag("div", ["class=warning"],
-                            gettext(txt_gt_opponent_drawing,
-                                    [userlink(Opponent)]));
-                    _ -> ""
-                end
-        end ++
+    ShowHistory =
+        case get(userinfo) of
+            UserInfo when is_list(UserInfo) ->
+                proplists:get_value(show_history, UserInfo, true);
+            _ -> true
+        end,
+    ChessTable =
         chess_table(
           GameID, HistoryLen, IsLast, GameType, Board,
           IsRotated, ActiveCells, LastPly) ++
@@ -414,7 +402,41 @@ game(GameID, GameInfo, Step) ->
                     "</form><br>";
             true -> ""
         end ++
-        captures(Captures) ++
+        captures(Captures),
+    html_page_header(Title, []) ++
+        game_navigation(GameID, IsMyGame andalso GameStatus == none) ++
+        case GameStatus of
+            checkmate ->
+                h2(gettext(txt_gt_over_checkmate, [userlink(Winner)]));
+            give_up ->
+                h2(gettext(txt_gt_over_giveup, [userlink(Winner)]));
+            {draw, stalemate} ->
+                h2(gettext(txt_gt_over_stalemate));
+            {draw, agreement} ->
+                h2(gettext(txt_gt_over_agreement));
+            {draw, DrawType} ->
+                h2(gettext(txt_gt_over_draw, [DrawType]));
+            _ ->
+                case proplists:get_value(
+                       draw_request_from, GameInfo) of
+                    Iam when IsMyGame ->
+                        tag("div", ["class=warning"],
+                            gettext(txt_gt_youre_drawing));
+                    Opponent when IsMyGame ->
+                        tag("div", ["class=warning"],
+                            gettext(txt_gt_opponent_drawing,
+                                    [userlink(Opponent)]));
+                    _ -> ""
+                end
+        end ++
+        if ShowHistory ->
+                tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
+                    tr(
+                      [tag(td, ["valign=top"], ChessTable),
+                       tag(td, ["valign=top"],
+                           game_history(GameID, FullHistory))]));
+           true -> ChessTable
+        end ++
         html_page_footer([]).
 
 %% @doc Makes 'draw confirmation' page content.
@@ -907,6 +929,43 @@ hist_buttons(GameID, Step, IsLast) ->
          end])).
 
 cell(Board, C, R) -> element(C, element(8 - R + 1, Board)).
+
+game_history(GameID, History) ->
+    tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
+        game_history(1, integer_to_list(GameID), History)).
+game_history(N, GameID, [PlyW, PlyB | Tail]) ->
+    ghc(
+      N, game_history_itemlink(GameID, (N - 1) * 2 + 1, PlyW) ++
+          "..." ++
+          game_history_itemlink(GameID, (N - 1) * 2 + 2, PlyB)) ++
+        game_history(N + 1, GameID, Tail);
+game_history(N, GameID, [PlyW]) ->
+    ghc(N, game_history_itemlink(GameID, (N - 1) * 2 + 1, PlyW));
+game_history(_, _, _) -> "".
+ghc(N, String) ->
+    tr(
+      [td(tt(integer_to_list(N) ++ ".&nbsp;")),
+       td(tag(nobr, String))]).
+game_history_itemlink(GameID, Step, Ply) ->
+    StrStep =
+        if is_integer(Step) ->
+                "&step=" ++ integer_to_list(Step);
+           true -> ""
+        end,
+    {Coords, Comment} =
+        case Ply of
+            {Coords0, Meta} ->
+                {Coords0,
+                 echessd_lib:escape_html_entities(
+                   proplists:get_value(comment, Meta, ""))};
+            _ -> {Ply, ""}
+        end,
+    tag(
+      a,
+      ["title='" ++ Comment ++ "'",
+       "href='/?goto=" ++ ?SECTION_GAME ++
+           "&game=" ++ GameID ++ StrStep ++ "'"],
+      tt(Coords)).
 
 cseq(1) -> lists:seq(1, 8);
 cseq(-1) -> lists:seq(8, 1, -1).
