@@ -315,15 +315,20 @@ game(GameID, GameInfo, Step) ->
         [I || {users, L} <- GameInfo, {_, C} = I <- L,
               lists:member(C, [?black, ?white])],
     Users = lists:usort([N || {N, _} <- Players]),
+    Opponent =
+        case Users -- [Iam] of
+            [Opponent0 | _] -> Opponent0;
+            _ -> hd(Users)
+        end,
     IsMyGame = lists:member(Iam, Users),
     MyColors = [C || {N, C} <- Players, N == Iam],
     TurnColor = echessd_game:turn_color(GameInfo),
     TurnUser = hd([N || {N, C} <- Players, C == TurnColor]),
-    OppColor = hd([?black, ?white] -- [TurnColor]),
-    OppUser = hd([N || {N, C} <- Players, C == OppColor]),
+    WaitColor = hd([?black, ?white] -- [TurnColor]),
+    WaitUser = hd([N || {N, C} <- Players, C == WaitColor]),
     IsRotated =
-        if TurnUser == OppUser andalso
-           OppUser == Iam ->
+        if TurnUser == WaitUser andalso
+           WaitUser == Iam ->
                 TurnColor == ?black;
            true ->
                 IsMyGame andalso
@@ -375,10 +380,10 @@ game(GameID, GameInfo, Step) ->
                     Iam when IsMyGame ->
                         tag("div", ["class=warning"],
                             gettext(txt_gt_youre_drawing));
-                    OppUser when IsMyGame ->
+                    Opponent when IsMyGame ->
                         tag("div", ["class=warning"],
                             gettext(txt_gt_opponent_drawing,
-                                    [userlink(OppUser)]));
+                                    [userlink(Opponent)]));
                     _ -> ""
                 end
         end ++
