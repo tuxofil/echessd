@@ -126,7 +126,7 @@ move_chessman(Board, I1, I2, Tail) ->
                     {Color, _} = F1,
                     move_chessman_normal(
                       Board, I1, I2,
-                      {Color, ChessmanType}, ?empty);
+                      {Color, ChessmanType}, F2);
                 _ ->
                     case is_castling(I1, I2, F1, F2) of
                         {ok, RookPly} ->
