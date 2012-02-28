@@ -10,6 +10,7 @@
          timestamp/1,
          timestamp/2,
          random_elem/1,
+         unconsult/3,
          escape_html_entities/1,
          gettext/2,
          styles/0,
@@ -97,6 +98,30 @@ timestamp(Timestamp, {OffsetSign, OffsetHours, OffsetMinutes}) ->
 random_elem([Item]) -> Item;
 random_elem(List) when is_list(List) ->
     lists:nth(random:uniform(length(List)), List).
+
+%% @doc Writes Erlang terms to file as text.
+%%      Result file can be read by file:consult/1,
+%%      resulting the same terms.
+%% @spec unconsult(Filename, Comment, Terms) -> ok | {error, Reason}
+%%     Filename = string(),
+%%     Comment = string(),
+%%     Terms = list(),
+%%     Reason = term()
+unconsult(Filename, Comment, Terms) ->
+    CommentBlock =
+        case Comment of
+            [_ | _] ->
+                ["%% ",
+                 re:replace(
+                   strip(lists:flatten(Comment), "\n\r \t"),
+                   "\n", "\n%% ", [global, {return, list}]),
+                 "\n\n"];
+            _ -> ""
+        end,
+    file:write_file(
+      Filename,
+      [CommentBlock,
+       [io_lib:format("~80p.~n~n", [T]) || T <- Terms]]).
 
 %% @doc Converts all chars with special meaning in HTML to
 %%      HTML entities.

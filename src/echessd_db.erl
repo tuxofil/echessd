@@ -21,7 +21,11 @@
          game_give_up/2,
          game_request_draw/2,
          gamerewind/1,
-         gamereset/1
+         gamereset/1,
+         dump_users/0,
+         dump_games/0,
+         import_users/1,
+         import_games/1
         ]).
 
 -include("echessd.hrl").
@@ -501,6 +505,70 @@ gamereset(GameID) ->
                 [{moves, []}, {status, none},
                  {winner, undefined},
                  {winner_color, undefined}])
+      end).
+
+%% @doc Return all users data from database.
+%% @spec dump_users() -> {ok, List} | {error, Reason}
+%%     List = [{Username, UserInfo}],
+%%     Username = echessd_user:echessd_user(),
+%%     UserInfo = echessd_user:echessd_user_info(),
+%%     Reason = term()
+dump_users() ->
+    transaction(
+      fun() ->
+              mnesia:foldl(
+                fun(HRec, Acc) ->
+                        [{HRec#hrec.key, HRec#hrec.val} | Acc]
+                end, [], ?dbt_users)
+      end).
+
+%% @doc Return all games data from database.
+%% @spec dump_games() -> {ok, List} | {error, Reason}
+%%     List = [{GameID, GameInfo}],
+%%     GameID = echessd_game:echessd_game_id(),
+%%     GameInfo = echessd_game:echessd_game_info(),
+%%     Reason = term()
+dump_games() ->
+    transaction(
+      fun() ->
+              mnesia:foldl(
+                fun(HRec, Acc) ->
+                        [{HRec#hrec.key, HRec#hrec.val} | Acc]
+                end, [], ?dbt_games)
+      end).
+
+%% @doc Inserts user records directly to database.
+%%      This low level utility function intended only for
+%%      import operations.
+%% @spec import_users(Users) -> ok | {error, Reason}
+%%     Users = [{Username, UserInfo}],
+%%     Username = echessd_user:echessd_user(),
+%%     UserInfo = echessd_user:echessd_user_info(),
+%%     Reason = term()
+import_users(Users) ->
+    transaction_ok(
+      fun() ->
+              lists:foreach(
+                fun({Username, UserInfo}) ->
+                        ll_set_props(?dbt_users, Username, UserInfo)
+                end, Users)
+      end).
+
+%% @doc Inserts game records directly to database.
+%%      This low level utility function intended only for
+%%      import operations.
+%% @spec import_games(Games) -> ok | {error, Reason}
+%%     Games = [{GameID, GameInfo}],
+%%     GameID = echessd_game:echessd_game_id(),
+%%     GameInfo = echessd_game:echessd_game_info(),
+%%     Reason = term()
+import_games(Games) ->
+    transaction_ok(
+      fun() ->
+              lists:foreach(
+                fun({GameID, GameInfo}) ->
+                        ll_set_props(?dbt_games, GameID, GameInfo)
+                end, Games)
       end).
 
 %% ----------------------------------------------------------------------
