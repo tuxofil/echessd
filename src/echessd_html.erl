@@ -434,7 +434,7 @@ game(GameID, GameInfo, Step) ->
                     tr(
                       [tag(td, ["valign=top"], ChessTable),
                        tag(td, ["valign=top"],
-                           game_history(GameID, FullHistory))]));
+                           game_history(Step, GameID, FullHistory))]));
            true -> ChessTable
         end ++
         html_page_footer([]).
@@ -930,28 +930,25 @@ hist_buttons(GameID, Step, IsLast) ->
 
 cell(Board, C, R) -> element(C, element(8 - R + 1, Board)).
 
-game_history(GameID, History) ->
+game_history(last, GameID, History) ->
+    game_history(length(History), GameID, History);
+game_history(CurStep, GameID, History) ->
     tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
-        game_history(1, integer_to_list(GameID), History)).
-game_history(N, GameID, [PlyW, PlyB | Tail]) ->
+        game_history(CurStep, 1, integer_to_list(GameID), History)).
+game_history(CurStep, N, GameID, [PlyW, PlyB | Tail]) ->
     ghc(
-      N, game_history_itemlink(GameID, (N - 1) * 2 + 1, PlyW) ++
+      N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW) ++
           "..." ++
-          game_history_itemlink(GameID, (N - 1) * 2 + 2, PlyB)) ++
-        game_history(N + 1, GameID, Tail);
-game_history(N, GameID, [PlyW]) ->
-    ghc(N, game_history_itemlink(GameID, (N - 1) * 2 + 1, PlyW));
-game_history(_, _, _) -> "".
+          game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 2, PlyB)) ++
+        game_history(CurStep, N + 1, GameID, Tail);
+game_history(CurStep, N, GameID, [PlyW]) ->
+    ghc(N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW));
+game_history(_, _, _, _) -> "".
 ghc(N, String) ->
     tr(
       [td(tt(integer_to_list(N) ++ ".&nbsp;")),
        td(tag(nobr, String))]).
-game_history_itemlink(GameID, Step, Ply) ->
-    StrStep =
-        if is_integer(Step) ->
-                "&step=" ++ integer_to_list(Step);
-           true -> ""
-        end,
+game_history_itemlink(GameID, CurStep, Step, Ply) ->
     {Coords, Comment} =
         case Ply of
             {Coords0, Meta} ->
@@ -964,8 +961,11 @@ game_history_itemlink(GameID, Step, Ply) ->
       a,
       ["title='" ++ Comment ++ "'",
        "href='/?goto=" ++ ?SECTION_GAME ++
-           "&game=" ++ GameID ++ StrStep ++ "'"],
-      tt(Coords)) ++
+           "&game=" ++ GameID ++
+           "&step=" ++ integer_to_list(Step) ++ "'"],
+      tt(if CurStep == Step -> b(Coords);
+            true -> Coords
+         end)) ++
         case Comment of
             [_ | _] -> tag(sup, "*");
             _ -> ""
