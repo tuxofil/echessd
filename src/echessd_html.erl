@@ -341,11 +341,12 @@ game(GameID, GameInfo, Step) ->
                 IsMyGame andalso
                     lists:member(?black, MyColors)
         end,
-    LastPly =
+    {LastPly, Comment} =
         case lists:reverse(History) of
-            [{LastPly0, _Meta} | _] -> LastPly0;
-            [LastPly0 | _] -> LastPly0;
-            _ -> undefined
+            [{LastPly0, Meta} | _] ->
+                {LastPly0, proplists:get_value(comment, Meta, "")};
+            [LastPly0 | _] -> {LastPly0, ""};
+            _ -> {undefined, ""}
         end,
     GameStatus = proplists:get_value(status, GameInfo, none),
     Winner = proplists:get_value(winner, GameInfo),
@@ -375,6 +376,11 @@ game(GameID, GameInfo, Step) ->
             _ -> true
         end,
     ChessTable =
+        case Comment of
+            [_ | _] ->
+                tag(center, gettext(txt_comment) ++ ": " ++ Comment);
+            _ -> ""
+        end ++
         chess_table(
           GameID, HistoryLen, IsLast, GameType, Board,
           IsRotated, ActiveCells, LastPly) ++

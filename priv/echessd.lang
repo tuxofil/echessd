@@ -281,6 +281,11 @@
   {ru, "Сдаться"},
   {ua, "Здатися"}]}.
 
+{text, txt_comment,
+ [{en, "Comment"},
+  {ru, "Комментарий"},
+  {ua, "Комментар"}]}.
+
 {text, txt_badmove,
  [{en, "You can not move such way. "},
   {ru, "Вы не можете так походить. "},
