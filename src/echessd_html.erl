@@ -376,14 +376,14 @@ game(GameID, GameInfo, Step) ->
             _ -> true
         end,
     ChessTable =
+        chess_table(
+          GameID, HistoryLen, IsLast, GameType, Board,
+          IsRotated, ActiveCells, LastPly) ++
         case Comment of
             [_ | _] ->
                 tag(center, gettext(txt_comment) ++ ": " ++ Comment);
             _ -> ""
         end ++
-        chess_table(
-          GameID, HistoryLen, IsLast, GameType, Board,
-          IsRotated, ActiveCells, LastPly) ++
         if IsMyTurn andalso IsLast ->
                 Possibles =
                     echessd_game:possibles(GameType, History),
