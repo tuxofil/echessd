@@ -11,8 +11,12 @@
          move_chessman/2,
          can_move/3,
          gameover_status/3,
-         transpose/1
+         transpose/1,
+         add_notation/3
         ]).
+
+%% only for debug purposes
+-export([add_notations/1]).
 
 -include("echessd.hrl").
 
@@ -204,9 +208,90 @@ transpose(Board) ->
              tuple_to_list(R))) ||
             R <- tuple_to_list(Board)])).
 
+%% @doc Adds chess notation info to ply.
+%% @spec add_notation(Board, History, Ply) -> NewPly
+%%     Board = echessd_game:echessd_board(),
+%%     History = echessd_game:echessd_history(),
+%%     Ply = echessd_game:echessd_ply(),
+%%     NewPly = echessd_game:echessd_ply()
+add_notation(Board, History, {Coords, Meta} = Ply) ->
+    {NextBoard, Capture} = move_chessman(Board, Ply),
+    {I1, I2, _Tail} = ply_dec(Ply),
+    {Color, ChessmanType1} = Chessman1 = cell(Board, I1),
+    StrNotation =
+        case {Chessman1, Coords} of
+            {?wking, "e1g1" ++ _} -> "0-0";
+            {?wking, "e1c1" ++ _} -> "0-0-0";
+            {?bking, "e8g8" ++ _} -> "0-0";
+            {?bking, "e8c8" ++ _} -> "0-0-0";
+            {{_, ChessmanType1}, _} ->
+                StrPlyType =
+                    case Capture of
+                        ?empty -> "-";
+                        _ -> "x"
+                    end,
+                ChessmanType2 = element(2, cell(NextBoard, I2)),
+                StrPromotion =
+                    if ChessmanType1 == ?pawn andalso
+                       ChessmanType2 /= ?pawn ->
+                            chessman_type_to_notation(
+                              ChessmanType2);
+                       true -> ""
+                    end,
+                chessman_type_to_notation(ChessmanType1) ++
+                    ind_enc(I1) ++ StrPlyType ++
+                    ind_enc(I2) ++ StrPromotion
+        end,
+    NextColor = not_color(Color),
+    NextHistory = History ++ [Ply],
+    NextKingIndex =
+        whereis_my_king(NextHistory, NextColor),
+    StrExtra =
+        case gameover_status(
+               NextBoard, NextColor, NextHistory) of
+            none ->
+                AttackersCount =
+                    cell_attackers_count(
+                      NextBoard, NextKingIndex,
+                      NextColor),
+                if AttackersCount == 1 -> "+";
+                   AttackersCount == 2 -> "++";
+                   true -> ""
+                end;
+            checkmate -> "#";
+            {draw, stalemate} -> "="
+        end,
+    {Coords,
+     [{notation, StrNotation ++ StrExtra} |
+      [I || {K, _} = I <- Meta, K /= notation]]};
+add_notation(Board, History, Coords) ->
+    add_notation(Board, History, {Coords, []}).
+
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+%% @doc Adds chess notation info to all history.
+%% @hidden
+%% @spec add_notations(History) -> NewHistory
+%%     History = echessd_game:echessd_history(),
+%%     NewHistory = echessd_game:echessd_history()
+add_notations(History) ->
+    {_FinalBoard, NewHistory} =
+        lists:foldl(
+          fun(Ply, {Board, Plies}) ->
+                  NewPly = add_notation(Board, Plies, Ply),
+                  {NewBoard, _Capture} = move_chessman(Board, NewPly),
+                  {NewBoard, Plies ++ [NewPly]}
+          end, {new(), []}, History),
+    NewHistory.
+
+chessman_type_to_notation(?king) -> "K";
+chessman_type_to_notation(?queen) -> "Q";
+chessman_type_to_notation(?rook) -> "R";
+chessman_type_to_notation(?knight) -> "N";
+chessman_type_to_notation(?bishop) -> "B";
+chessman_type_to_notation(_) -> "".
 
 -define(null, '*null').
 
@@ -510,6 +595,40 @@ is_cell_under_attack(Board, I, Color) ->
           end,
           [{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
            {0, 1}, {1, -1}, {1, 0}, {1, 1}]).
+
+cell_attackers_count(Board, I, Color) ->
+    EnemyColor = not_color(Color),
+    lists:sum(
+      lists:map(
+        fun(Step) ->
+                case cell(Board, ind_inc(I, Step)) of
+                    {EnemyColor, ?knight} -> 1;
+                    _ -> 0
+                end
+        end, knight_steps()) ++
+          lists:map(
+            fun({DC, DR} = Step) ->
+                    case find_enemy(
+                           Board, I, Step, EnemyColor) of
+                        {?pawn, 1}
+                          when EnemyColor == ?black
+                               andalso abs(DC) == 1
+                               andalso DR == 1 -> 1;
+                        {?pawn, 1}
+                          when EnemyColor == ?white
+                               andalso abs(DC) == 1
+                               andalso DR == -1 -> 1;
+                        {?king, 1} -> 1;
+                        {?queen, _} -> 1;
+                        {?bishop, _}
+                          when abs(DC) == abs(DR) -> 1;
+                        {?rook, _}
+                          when abs(DC) /= abs(DR) -> 1;
+                        _ -> 0
+                    end
+            end,
+            [{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
+             {0, 1}, {1, -1}, {1, 0}, {1, 1}])).
 
 find_enemy(Board, I, Step, EnemyColor) ->
     find_enemy(Board, I, Step, EnemyColor, 1).

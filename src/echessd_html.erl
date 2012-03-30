@@ -943,22 +943,26 @@ game_history(CurStep, GameID, History) ->
         game_history(CurStep, 1, integer_to_list(GameID), History)).
 game_history(CurStep, N, GameID, [PlyW, PlyB | Tail]) ->
     ghc(
-      N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW) ++
-          "..." ++
-          game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 2, PlyB)) ++
+      N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW),
+      game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 2, PlyB)) ++
         game_history(CurStep, N + 1, GameID, Tail);
 game_history(CurStep, N, GameID, [PlyW]) ->
-    ghc(N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW));
+    ghc(N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW), "");
 game_history(_, _, _, _) -> "".
-ghc(N, String) ->
+ghc(N, StrW, StrB) ->
     tr(
-      [td(tt(integer_to_list(N) ++ ".&nbsp;")),
-       td(tag(nobr, String))]).
+      [tag(td, ["valign=bottom"], tt(integer_to_list(N) ++ ".&nbsp;")),
+       tag(td, ["valign=bottom"], StrW), td("&nbsp;"),
+       tag(td, ["valign=bottom"], StrB)]).
 game_history_itemlink(GameID, CurStep, Step, Ply) ->
     {Coords, Comment} =
         case Ply of
             {Coords0, Meta} ->
-                {Coords0,
+                {echessd_lib:escape_html_entities(
+                   case proplists:get_value(notation, Meta) of
+                       [_ | _] = Notation -> Notation;
+                       _ -> Coords0
+                   end),
                  echessd_lib:escape_html_entities(
                    proplists:get_value(comment, Meta, ""))};
             _ -> {Ply, ""}

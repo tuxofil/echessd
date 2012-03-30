@@ -75,6 +75,11 @@ do_ply(GameID, Username, Ply, XmppUser, XmppServer) ->
                       {_, _} -> Ply;
                       _ -> {Ply, []}
                   end,
+              FinalCoords =
+                  case proplists:get_value(notation, Meta) of
+                      [_ | _] = Notation -> Notation;
+                      _ -> Coords
+                  end,
               Message =
                   case proplists:get_value(comment, Meta) of
                       [_ | _] = Comment ->
@@ -82,10 +87,10 @@ do_ply(GameID, Username, Ply, XmppUser, XmppServer) ->
                             Format ++ "~n" ++
                                 echessd_lib:gettext(
                                   txt_ply_notification_comment, Lang),
-                            [GameID, Username, Coords, Comment]);
+                            [GameID, Username, FinalCoords, Comment]);
                       _ ->
                           io_lib:format(
-                            Format, [GameID, Username, Coords])
+                            Format, [GameID, Username, FinalCoords])
                   end,
               Cmd =
                   lists:flatten(

@@ -25,7 +25,8 @@
          dump_users/0,
          dump_games/0,
          import_users/1,
-         import_games/1
+         import_games/1,
+         add_notations/0
         ]).
 
 -include("echessd.hrl").
@@ -294,13 +295,14 @@ delgame_(GameID, GameInfo) ->
     mnesia:delete({?dbt_games, GameID}).
 
 %% @doc Makes turn for user.
-%% @spec gameply(GameID, Username, Ply) -> ok | {error, Reason}
+%% @spec gameply(GameID, Username, Ply) -> {ok, FinalPly} | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
 %%     Username = echessd_user:echessd_user(),
 %%     Ply = echessd_game:echessd_ply(),
+%%     FinalPly = echessd_game:echessd_ply(),
 %%     Reason = term()
 gameply(GameID, Username, Ply) ->
-    transaction_ok(
+    transaction(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
               case proplists:get_value(acknowledged, GameInfo) of
@@ -325,7 +327,11 @@ gameply(GameID, Username, Ply) ->
                       case echessd_game:is_valid_ply(
                              GameType, Board, TurnColor, Ply, History) of
                           {ok, NewBoard} ->
-                              NewHistory = History ++ [Ply],
+                              %% add chess notation
+                              FinalPly =
+                                  echessd_game:add_notation(
+                                    GameType, Board, History, Ply),
+                              NewHistory = History ++ [FinalPly],
                               NextColor = hd([?white, ?black] -- [TurnColor]),
                               GameStatus =
                                   echessd_game:gameover_status(
@@ -340,7 +346,8 @@ gameply(GameID, Username, Ply) ->
                                 [{moves, NewHistory},
                                  {status, GameStatus},
                                  {winner, Winner},
-                                 {winner_color, WinnerColor}]);
+                                 {winner_color, WinnerColor}]),
+                              FinalPly;
                           {error, Reason} ->
                               mnesia:abort({wrong_move, Reason})
                       end;
@@ -570,6 +577,19 @@ import_games(Games) ->
                         ll_set_props(?dbt_games, GameID, GameInfo)
                 end, Games)
       end).
+
+%% @doc Refresh all chess notations.
+%% @hidden
+%% @spec add_notations() -> ok
+add_notations() ->
+    {ok, List} = dump_games(),
+    lists:foreach(
+      fun({counter, _}) -> nop;
+         ({GameID, GameInfo}) ->
+              History = proplists:get_value(moves, GameInfo, []),
+              NewHistory = echessd_rules_classic:add_notations(History),
+              ok = set_game_props(GameID, [{moves, NewHistory}])
+      end, List).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
