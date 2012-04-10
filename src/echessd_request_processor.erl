@@ -199,6 +199,11 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
             [_ | _] -> true;
             _ -> false
         end,
+    ShowComment =
+        case proplists:get_value("editshowcomment", Query) of
+            [_ | _] -> true;
+            _ -> false
+        end,
     {StyleName, _TxtID, _Filename} =
         echessd_lib:parse_style(
           proplists:get_value("editstyle", Query)),
@@ -212,6 +217,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                  {style, StyleName},
                  {jid, JID},
                  {show_history, ShowHistory},
+                 {show_comment, ShowComment},
                  {show_in_list, ShowInList}],
             case echessd_user:setprops(
                    Username, NewUserInfo) of

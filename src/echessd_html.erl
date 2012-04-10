@@ -169,6 +169,13 @@ edituser() ->
             _ -> " checked"
         end ++ ">&nbsp;"
         ++ gettext(txt_rnu_show_history) ++ "</label><br>"
+        "<label for=sc>"
+        "<input type=checkbox id=sc name=editshowcomment" ++
+        case proplists:get_value(show_comment, UserInfo) of
+            false -> "";
+            _ -> " checked"
+        end ++ ">&nbsp;"
+        ++ gettext(txt_rnu_show_comment) ++ "</label><br>"
         "<input type=submit class=btn value='" ++
         gettext(txt_predit_save_button) ++ "'>"
         "</form>"
@@ -369,18 +376,19 @@ game(GameID, GameInfo, Step) ->
                      [[I1 | L] || {I1, L} <- GroupedPossibles0]))};
            true -> {[], []}
         end,
-    ShowHistory =
+    {ShowHistory, ShowComment} =
         case get(userinfo) of
             UserInfo when is_list(UserInfo) ->
-                proplists:get_value(show_history, UserInfo, true);
-            _ -> true
+                {proplists:get_value(show_history, UserInfo, true),
+                 proplists:get_value(show_comment, UserInfo, true)};
+            _ -> {true, true}
         end,
     ChessTable =
         chess_table(
           GameID, HistoryLen, IsLast, GameType, Board,
           IsRotated, ActiveCells, LastPly) ++
         case Comment of
-            [_ | _] ->
+            [_ | _] when ShowComment ->
                 tag(center, gettext(txt_comment) ++ ": " ++ Comment);
             _ -> ""
         end ++

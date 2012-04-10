@@ -33,6 +33,7 @@
         {language, atom()} |
         {show_in_list, boolean()} |
         {show_history, boolean()} |
+        {show_comment, boolean()} |
         {style, atom()} |
         {jid, string()} |
         {games, [echessd_game:echessd_game_id()]}.
@@ -268,6 +269,11 @@ check_property({show_history, B} = I) ->
     if is_boolean(B) -> I;
        true ->
             throw({error, {bad_show_history, B}})
+    end;
+check_property({show_comment, B} = I) ->
+    if is_boolean(B) -> I;
+       true ->
+            throw({error, {bad_show_comment, B}})
     end;
 check_property({style, S} = I) ->
     RegisteredStyles = [N || {N, _T, _F} <- echessd_lib:styles()],
