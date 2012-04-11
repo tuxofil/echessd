@@ -78,7 +78,7 @@ game_ack(GameID) ->
     Creator = echessd_game:get_creator(GameInfo),
     CreatorColor = echessd_game:get_player_color(GameInfo, Creator),
     Opponent = echessd_game:get_opponent(GameInfo, Creator),
-    OpponentColor = echessd_game:get_player_color(GameInfo, Creator),
+    OpponentColor = echessd_game:get_player_color(GameInfo, Opponent),
     Watchers =
         lists:usort(
           echessd_game:get_watchers(GameInfo)),
