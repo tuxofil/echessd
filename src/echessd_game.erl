@@ -129,6 +129,7 @@ add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
             echessd_log:info(
               "game ~9999p created: ~9999p",
               [GameID, Props]),
+            ok = echessd_notify:game_add(GameID),
             Ok;
         {error, Reason} = Error ->
             echessd_log:err(
@@ -148,6 +149,7 @@ ack(GameID, Username) ->
             echessd_log:info(
               "game ~9999p confirmed by ~9999p",
               [GameID, Username]),
+            ok = echessd_notify:game_ack(GameID),
             ok;
         {error, Reason} = Error ->
             echessd_log:err(
@@ -247,6 +249,7 @@ give_up(GameID, Username) ->
             echessd_log:info(
               "game ~9999p gived up by ~9999p",
               [GameID, Username]),
+            ok = echessd_notify:game_end(GameID),
             ok;
         {error, Reason} = Error ->
             echessd_log:err(
