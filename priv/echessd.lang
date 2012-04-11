@@ -524,6 +524,39 @@
   {ua, "Увійти"}]}.
 
 %% ----------------------------------------------------------------------
+%% XMPP notification messages
+
+{text, txt_game_add_notification,
+ [{en, "User ~s (~s) wants to play chess with you."},
+  {ru, "Пользователь ~s (~s) хочет раскатать с Вами партейку в шахматы."},
+  {ua, "Користувач ~s (~s) хоче зіграти з Вами партію у шахи."}]}.
+
+{text, txt_game_ack_notification,
+ [{en, "Game ~s vs ~s acknowledged."},
+  {ru, "Партия ~s (~s) против ~s (~s) подтверждена."},
+  {ua, "Партію ~s (~s) проти ~s (~s) підтверждено."}]}.
+
+{text, txt_ply_notification,
+ [{en, "Game #~w: user '~s' moves '~s'"},
+  {ru, "Партия #~w: ~s походил ~s"},
+  {ua, "Партія #~w: ~s походив ~s"}]}.
+
+{text, txt_ply_notification_comment,
+ [{en, "Ply comment: '~s'"},
+  {ru, "Комментарий к ходу: '~s'"},
+  {ua, "Комментар до ходу: '~s'"}]}.
+
+{text, txt_notif_color_white,
+ [{en, "white"},
+  {ru, "белые"},
+  {ua, "білі"}]}.
+
+{text, txt_notif_color_black,
+ [{en, "black"},
+  {ru, "чёрные"},
+  {ua, "чорні"}]}.
+
+%% ----------------------------------------------------------------------
 %% Common messages (error reports etc)
 
 {text, txt_error,
@@ -630,16 +663,6 @@
  [{en, "404: Object not found"},
   {ru, "404: Объект не найден"},
   {ua, "404: Об’єкт не знайдено"}]}.
-
-{text, txt_ply_notification,
- [{en, "Game #~w: user '~s' moves '~s'"},
-  {ru, "Партия #~w: ~s походил ~s"},
-  {ua, "Партія #~w: ~s походив ~s"}]}.
-
-{text, txt_ply_notification_comment,
- [{en, "Ply comment: '~s'"},
-  {ru, "Комментарий к ходу: '~s'"},
-  {ua, "Комментар до ходу: '~s'"}]}.
 
 {text, txt_redirection,
  [{en, "Redirection"},
