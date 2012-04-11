@@ -22,7 +22,12 @@
          can_move/4,
          gameover_status/2,
          gameover_status/4,
-         transpose/2
+         transpose/2,
+         get_creator/1,
+         get_watchers/1,
+         get_players/1,
+         get_opponent/2,
+         get_player_color/2
         ]).
 
 -include("echessd.hrl").
@@ -371,6 +376,63 @@ transpose(?GAME_CLASSIC, Board) ->
     echessd_rules_classic:transpose(Board);
 transpose(GameType, _Board) ->
     unsupported(GameType).
+
+%% @doc Fetch creator name from game info.
+%% @spec get_creator(Game) -> Username
+%%     Game = echessd_game_id() | echessd_game_info(),
+%%     Username = echessd_user:echessd_username()
+get_creator(GameID) when is_integer(GameID) ->
+    {ok, GameInfo} = getprops(GameID),
+    get_creator(GameInfo);
+get_creator(GameInfo) when is_list(GameInfo) ->
+    proplists:get_value(creator, GameInfo).
+
+%% @doc Fetch watcher names from game info.
+%% @spec get_watchers(Game) -> [Username]
+%%     Game = echessd_game_id() | echessd_game_info(),
+%%     Username = echessd_user:echessd_username()
+get_watchers(GameID) when is_integer(GameID) ->
+    {ok, GameInfo} = getprops(GameID),
+    get_watchers(GameInfo);
+get_watchers(GameInfo) when is_list(GameInfo) ->
+    Users = proplists:get_value(users, GameInfo),
+    [N || {N, _Role} <- Users].
+
+%% @doc Fetch player names from game info.
+%% @spec get_players(Game) -> [Username]
+%%     Game = echessd_game_id() | echessd_game_info(),
+%%     Username = echessd_user:echessd_username()
+get_players(GameID) when is_integer(GameID) ->
+    {ok, GameInfo} = getprops(GameID),
+    get_players(GameInfo);
+get_players(GameInfo) when is_list(GameInfo) ->
+    Users = proplists:get_value(users, GameInfo),
+    [N || {N, Role} <- Users, lists:member(Role, [?black, ?white])].
+
+%% @doc Fetch opponent name for specified user from game info.
+%% @spec get_opponent(Game, Username) -> Opponent
+%%     Game = echessd_game_id() | echessd_game_info(),
+%%     Username = echessd_user:echessd_username(),
+%%     Opponent = echessd_user:echessd_username()
+get_opponent(GameID, Username) when is_integer(GameID) ->
+    {ok, GameInfo} = getprops(GameID),
+    get_opponent(GameInfo, Username);
+get_opponent(GameInfo, Username) when is_list(GameInfo) ->
+    [Opponent | _] = get_players(GameInfo) -- [Username],
+    Opponent.
+
+%% @doc Fetch player names from game info.
+%% @spec get_player_color(Game, Username) -> Color
+%%     Game = echessd_game_id() | echessd_game_info(),
+%%     Username = echessd_user:echessd_username(),
+%%     Color = echessd_color()
+get_player_color(GameID, Username) when is_integer(GameID) ->
+    {ok, GameInfo} = getprops(GameID),
+    get_player_color(GameInfo, Username);
+get_player_color(GameInfo, Username) when is_list(GameInfo) ->
+    Users = proplists:get_value(users, GameInfo),
+    [Color | _] = [C || {N, C} <- Users, N == Username],
+    Color.
 
 %% ----------------------------------------------------------------------
 %% Internal functions
