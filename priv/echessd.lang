@@ -286,6 +286,11 @@
   {ru, "Сдаться"},
   {ua, "Здатися"}]}.
 
+{text, txt_authenticate,
+ [{en, "Log In"},
+  {ru, "Войти"},
+  {ua, "Увійти"}]}.
+
 {text, txt_comment,
  [{en, "Comment"},
   {ru, "Комментарий"},
