@@ -528,6 +528,19 @@
   {ru, "Войти"},
   {ua, "Увійти"}]}.
 
+{text, txt_about,
+ [{en,
+   "echessd - is lightweight, minimalistic and free Internet chess "
+   "server implementation written on "
+   "<a href='http://www.erlang.org/'>Erlang</a> "
+   "programming language."},
+  {ru,
+   "echessd - это легковесный, минималистичный и свободный "
+   "шахматный Internet-сервер, написанный на языке программирования "
+   "<a href='http://www.erlang.org/'>Erlang</a>."},
+  {ua,
+   ""}]}.
+
 %% ----------------------------------------------------------------------
 %% XMPP notification messages
 

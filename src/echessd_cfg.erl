@@ -122,6 +122,8 @@ default(?CFG_XMPP_SERVER) ->
     {ok, ""};
 default(?CFG_XMPP_PASSWORD) ->
     {ok, ""};
+default(?CFG_SHOW_ABOUT) ->
+    {ok, true};
 default(_) ->
     undefined.
 
@@ -237,16 +239,17 @@ parse_val_(?CFG_HTTPD_MOD, String0) ->
         _ ->
             throw({error, {unsupported_httpd_module, String0}})
     end;
-parse_val_(?CFG_XMPP_ENABLED, String0) ->
-    String = string:to_lower(String0),
-    case lists:member(String, ["yes", "true", "1"]) of
-        true -> true;
+parse_val_(?CFG_XMPP_ENABLED, String) ->
+    case parse_boolean(String) of
+        {ok, Boolean} -> Boolean;
         _ ->
-            case lists:member(String, ["no", "false", "0"]) of
-                true -> false;
-                _ ->
-                    throw({error, {bad_xmpp_enabled_value, String0}})
-            end
+            throw({error, {bad_xmpp_enabled_value, String}})
+    end;
+parse_val_(?CFG_SHOW_ABOUT, String) ->
+    case parse_boolean(String) of
+        {ok, Boolean} -> Boolean;
+        _ ->
+            throw({error, {bad_show_about_value, String}})
     end;
 parse_val_(_, Val) ->
     Val.
@@ -301,5 +304,16 @@ read_styles_file() ->
                   (_) -> []
                end, Terms)};
         Error -> Error
+    end.
+
+parse_boolean(String) ->
+    Lowered = string:to_lower(String),
+    case lists:member(Lowered, ["yes", "true", "1"]) of
+        true -> {ok, true};
+        _ ->
+            case lists:member(Lowered, ["no", "false", "0"]) of
+                true -> {ok, false};
+                _ -> error
+            end
     end.
 

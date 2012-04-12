@@ -25,13 +25,15 @@
 -define(CFG_XMPP_USER, xmpp_user).
 -define(CFG_XMPP_SERVER, xmpp_server).
 -define(CFG_XMPP_PASSWORD, xmpp_password).
+-define(CFG_SHOW_ABOUT, show_about).
 
 -define(CFGS, [?CFG_LOGLEVEL, ?CFG_LOGFILE,
                ?CFG_BIND_ADDR, ?CFG_BIND_PORT,
                ?CFG_DOC_ROOT, ?CFG_DEF_LANG,
                ?CFG_HTTPD_MOD, ?CFG_XMPP_USER,
                ?CFG_XMPP_SERVER, ?CFG_XMPP_PASSWORD,
-               ?CFG_XMPP_ENABLED, ?CFG_DEF_STYLE]).
+               ?CFG_XMPP_ENABLED, ?CFG_DEF_STYLE,
+               ?CFG_SHOW_ABOUT]).
 
 %% available HTTPD implementations
 -define(HTTPD_MODULES,

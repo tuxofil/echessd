@@ -33,6 +33,10 @@
 login() ->
     Content =
         navig_links([{"?goto=" ++ ?SECTION_REG, gettext(txt_lgn_rnu_link)}]) ++
+        case echessd_cfg:get(?CFG_SHOW_ABOUT) of
+            true -> tag(p, gettext(txt_about));
+            _ -> ""
+        end ++
         "<form method=post>"
         "<input name=action type=hidden value=login>" ++
         gettext(txt_lgn_login) ++ ": <input name=username type=text><br>" ++
