@@ -10,3 +10,5 @@ doc/edoc-info
 erl_crash.dump
 *.log
 *.log.?
+otp_release
+erlc_opts
