@@ -178,12 +178,16 @@ deny(GameID, Username) ->
 
 %% @doc Checks if half-move is valid.
 %% @spec is_valid_ply(GameType, Board, TurnColor, Ply, History) ->
-%%                 ok | {error, Reason}
+%%         {ok, NewBoard, NewHistory, GameStatus} | {error, Reason}
 %%     GameType = echessd_game_type(),
 %%     Board = echessd_board(),
 %%     TurnColor = echessd_color(),
 %%     Ply = echessd_ply(),
 %%     History = echessd_history(),
+%%     NewBoard = echessd_game:echessd_board(),
+%%     NewHistory = echessd_game:echessd_history(),
+%%     GameStatus = none | checkmate | {draw, DrawType},
+%%     DrawType = stalemate,
 %%     Reason = term()
 is_valid_ply(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
     echessd_rules_classic:is_valid_ply(
