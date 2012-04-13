@@ -124,6 +124,8 @@ default(?CFG_XMPP_PASSWORD) ->
     {ok, ""};
 default(?CFG_SHOW_ABOUT) ->
     {ok, true};
+default(?CFG_SHOW_COPYRIGHTS) ->
+    {ok, true};
 default(_) ->
     undefined.
 
@@ -250,6 +252,12 @@ parse_val_(?CFG_SHOW_ABOUT, String) ->
         {ok, Boolean} -> Boolean;
         _ ->
             throw({error, {bad_show_about_value, String}})
+    end;
+parse_val_(?CFG_SHOW_COPYRIGHTS, String) ->
+    case parse_boolean(String) of
+        {ok, Boolean} -> Boolean;
+        _ ->
+            throw({error, {bad_show_copyrights_value, String}})
     end;
 parse_val_(_, Val) ->
     Val.

@@ -34,7 +34,7 @@ login() ->
     Content =
         navig_links([{"?goto=" ++ ?SECTION_REG, gettext(txt_lgn_rnu_link)}]) ++
         case echessd_cfg:get(?CFG_SHOW_ABOUT) of
-            true -> tag(p, gettext(txt_about));
+            true -> "<br>" ++ tag(p, gettext(txt_about)) ++ "<br>";
             _ -> ""
         end ++
         "<form method=post>"
@@ -42,7 +42,11 @@ login() ->
         gettext(txt_lgn_login) ++ ": <input name=username type=text><br>" ++
         gettext(txt_lgn_passw) ++ ": <input name=password type=password><br>"
         "<input type=submit class=btn value='" ++ gettext(txt_lgn_ok_button) ++ "'>"
-        "</form>",
+        "</form>" ++
+        case echessd_cfg:get(?CFG_SHOW_COPYRIGHTS) of
+            true -> "<hr>" ++ tag(p, gettext(txt_copyrights));
+            _ -> ""
+        end,
     log_reg_page("echessd - " ++ gettext(txt_lgn_title), Content).
 
 %% @doc Makes 'register new user' page content.

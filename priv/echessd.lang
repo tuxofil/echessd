@@ -530,16 +530,44 @@
 
 {text, txt_about,
  [{en,
-   "echessd - is lightweight, minimalistic and free Internet chess "
-   "server implementation written on "
-   "<a href='http://www.erlang.org/'>Erlang</a> "
-   "programming language."},
+   "<b>echessd</b> - is lightweight, minimalistic and free Internet chess server<br>"
+   "implementation written on <a href='http://www.erlang.org/'>Erlang</a> "
+   "programming language.<br>"
+   "You must register before try yourself in chess here.<br>"
+   "We will not collect email addresses or other sensitive "
+   "information about you.<br>"
+   "After register choose a player on \"Players\" page,<br>"
+   "follow to his profile and click on \"Start new game\" link."},
   {ru,
-   "echessd - это легковесный, минималистичный и свободный "
+   "<b>echessd</b> - это легковесный, минималистичный и свободный<br>"
    "шахматный Internet-сервер, написанный на языке программирования "
-   "<a href='http://www.erlang.org/'>Erlang</a>."},
+   "<a href='http://www.erlang.org/'>Erlang</a>.<br>"
+   "Прежде, чем начать игру, необходимо зарегистрироваться.<br>"
+   "Это не потребует от Вас указания почтовых адресов или иной "
+   "чувствительной информации.<br>"
+   "После регистрации выберите себе соперника на странице \"Игроки\",<br>"
+   "зайдите в его профиль и щелкните по ссылке \"Начать новую игру\"."},
   {ua,
-   ""}]}.
+   "<b>echessd</b> - це простий, мінімалістичний та вільний<br>"
+   "шаховий Internet-сервер, створений за допомогою мови програмування "
+   "<a href='http://www.erlang.org/'>Erlang</a>.<br>"
+   "Перед тим, як почати гру, необхідно зареєструватися.<br>"
+   "Реєстрація не потребує вказання імен поштових скриньок або іншої "
+   "чутливої інформації.<br>"
+   "Після реєстрації оберіть собі суперника на сторінці \"Гравці\",<br>"
+   "зайдіть до його профілю та перейдіть за посиланням "
+   "\"Почати нову гру\"."}]}.
+
+{text, txt_copyrights,
+ [{en,
+   "Project site: <a href='https://github.com/tuxofil/echessd/'>"
+   "https://github.com/tuxofil/echessd/</a>"},
+  {ru,
+   "Сайт проекта: <a href='https://github.com/tuxofil/echessd/'>"
+   "https://github.com/tuxofil/echessd/</a>"},
+  {ua,
+   "Сайт проекту: <a href='https://github.com/tuxofil/echessd/'>"
+   "https://github.com/tuxofil/echessd/</a>"}]}.
 
 %% ----------------------------------------------------------------------
 %% XMPP notification messages
