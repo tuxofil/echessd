@@ -18,7 +18,6 @@
          turn_color/1,
          turn_color_by_history/1,
          from_scratch/2,
-         add_notation/4,
          can_move/4,
          gameover_status/2,
          gameover_status/4,
@@ -328,18 +327,6 @@ from_scratch(GameType, History) ->
                   move_chessman(GameType, Board, Ply),
               {NewGame, [Capture | Captures]}
       end, {new(GameType), []}, History).
-
-%% @doc Adds chess notation info to ply.
-%% @spec add_notation(GameType, Board, History, Ply) -> NewPly
-%%     GameType = echessd_game_type(),
-%%     Board = echessd_board(),
-%%     History = echessd_history(),
-%%     Ply = echessd_ply(),
-%%     NewPly = echessd_ply()
-add_notation(?GAME_CLASSIC, Board, History, Ply) ->
-    echessd_rules_classic:add_notation(Board, History, Ply);
-add_notation(GameType, _, _, _) ->
-    unsupported(GameType).
 
 %% @doc Checks if valid turn exists for user with specified color.
 %% @spec can_move(GameType, Board, Color, History) -> boolean()

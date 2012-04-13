@@ -25,8 +25,7 @@
          dump_users/0,
          dump_games/0,
          import_users/1,
-         import_games/1,
-         add_notations/0
+         import_games/1
         ]).
 
 -include("echessd.hrl").
@@ -570,19 +569,6 @@ import_games(Games) ->
                         ll_set_props(?dbt_games, GameID, GameInfo)
                 end, Games)
       end).
-
-%% @doc Refresh all chess notations.
-%% @hidden
-%% @spec add_notations() -> ok
-add_notations() ->
-    {ok, List} = dump_games(),
-    lists:foreach(
-      fun({counter, _}) -> nop;
-         ({GameID, GameInfo}) ->
-              History = proplists:get_value(moves, GameInfo, []),
-              NewHistory = echessd_rules_classic:add_notations(History),
-              ok = set_game_props(GameID, [{moves, NewHistory}])
-      end, List).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
