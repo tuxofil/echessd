@@ -235,6 +235,11 @@ ply(GameID, User, Ply) ->
             [LastPly | _] =
                 lists:reverse(
                   proplists:get_value(moves, GameInfo)),
+            case proplists:get_value(status, GameInfo) of
+                none -> nop;
+                _GameEndedStatus ->
+                    ok = echessd_notify:game_end(GameID)
+            end,
             echessd_notify:ply(GameID, User, LastPly),
             ok;
         {error, Reason} = Error ->
