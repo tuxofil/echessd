@@ -184,10 +184,9 @@ deny(GameID, Username) ->
 %%     TurnColor = echessd_color(),
 %%     Ply = echessd_ply(),
 %%     History = echessd_history(),
-%%     NewBoard = echessd_game:echessd_board(),
-%%     NewHistory = echessd_game:echessd_history(),
-%%     GameStatus = none | checkmate | {draw, DrawType},
-%%     DrawType = stalemate,
+%%     NewBoard = echessd_board(),
+%%     NewHistory = echessd_history(),
+%%     GameStatus = echessd_game_status(),
 %%     Reason = term()
 is_valid_ply(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
     echessd_rules_classic:is_valid_ply(

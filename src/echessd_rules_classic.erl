@@ -45,8 +45,7 @@ new() ->
 %%     History = echessd_game:echessd_history(),
 %%     NewBoard = echessd_game:echessd_board(),
 %%     NewHistory = echessd_game:echessd_history(),
-%%     GameStatus = none | checkmate | {draw, DrawType},
-%%     DrawType = stalemate,
+%%     GameStatus = echessd_game:echessd_game_status(),
 %%     Reason = term()
 is_valid_ply(Board, TurnColor, Ply, History) ->
     try is_valid_ply_(Board, TurnColor, Ply, History) of
@@ -179,12 +178,11 @@ can_move(Board, Color, History) ->
       end, [{C, R} || C <- Seq, R <- Seq]).
 
 %% @doc Return game over status.
-%% @spec gameover_status(Board, Color, History) ->
-%%         none | checkmate | {draw, DrawType}
+%% @spec gameover_status(Board, Color, History) -> GameStatus
 %%     Board = echessd_game:echessd_board(),
 %%     Color = echessd_game:echessd_color()
 %%     History = echessd_game:echessd_history(),
-%%     DrawType = stalemate
+%%     GameStatus = echessd_game:echessd_game_status()
 gameover_status(Board, Color, History) ->
     case can_move(Board, Color, History) of
         true -> none;
