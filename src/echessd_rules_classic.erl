@@ -40,16 +40,19 @@ new() ->
 
 %% @doc Checks if ply is valid.
 %% @spec is_valid_ply(Board, TurnColor, Ply, History) ->
-%%                 {ok, NewBoard} | {error, Reason}
+%%                 {ok, NewBoard, NewHistory, GameStatus} | {error, Reason}
 %%     Board = echessd_game:echessd_board(),
 %%     TurnColor = echessd_game:echessd_color(),
 %%     Ply = echessd_game:echessd_ply(),
 %%     History = echessd_game:echessd_history(),
 %%     NewBoard = echessd_game:echessd_board(),
+%%     NewHistory = echessd_game:echessd_history(),
+%%     GameStatus = none | checkmate | {draw, DrawType},
+%%     DrawType = stalemate,
 %%     Reason = term()
 is_valid_ply(Board, TurnColor, Ply, History) ->
     try is_valid_ply_(Board, TurnColor, Ply, History) of
-        {ok, _NewBoard} = Ok -> Ok;
+        {ok, _NewBoard, _NewHistory, _GameStatus} = Ok -> Ok;
         {error, _} = Error -> Error;
         Other -> {error, Other}
     catch
@@ -102,7 +105,7 @@ possibles_from(Board, Color, I1, History) ->
 possibles_(Board, Color, ChessmanType, I1, I2, History) ->
     try try_possible(
           Board, Color, ChessmanType, I1, I2, [], History) of
-        {ok, _} -> true;
+        {ok, _, _} -> true;
         _ -> false
     catch _:_ -> false end.
 
@@ -165,7 +168,7 @@ can_move(Board, Color, History) ->
                       lists:any(
                         fun(I2) ->
                                 try
-                                    {ok, _NewBoard} =
+                                    {ok, _NewBoard, _Capture} =
                                         try_possible(
                                           Board, Color, ChessmanType,
                                           I1, I2, "q", History),
@@ -189,10 +192,10 @@ gameover_status(Board, Color, History) ->
         true -> none;
         _ ->
             KingIndex = whereis_my_king(History, Color),
-            case is_cell_under_attack(
+            case cell_attackers_count(
                    Board, KingIndex, Color) of
-                true -> checkmate;
-                _ -> {draw, stalemate}
+                0 -> {draw, stalemate};
+                _ -> checkmate
             end
     end.
 
@@ -295,11 +298,11 @@ chessman_type_to_notation(_) -> "".
 
 -define(null, '*null').
 
-is_valid_ply_(Board, TurnColor, Ply, History) ->
+is_valid_ply_(Board, TurnColor, {Coords, Meta} = Ply, History) ->
     {I1, I2, Tail} = ply_dec(Ply),
-    {MyColor, ChessmanType} =
+    {_, ChessmanType} = Chessman =
         case cell(Board, I1) of
-            ?empty -> throw({error, {cell_is_empty, I1}});
+            ?empty -> throw({error, cell_is_empty});
             {TurnColor, _} = Chessman0 -> Chessman0;
             {_, _} -> throw({error, not_your_chessman})
         end,
@@ -308,26 +311,74 @@ is_valid_ply_(Board, TurnColor, Ply, History) ->
         {_, ?king} -> throw({error, cannot_take_king});
         _ -> ok
     end,
-    Possible = possible(Board, I1, MyColor, ChessmanType, History),
+    Possible = possible(Board, I1, TurnColor, ChessmanType, History),
     case lists:member(I2, Possible) of
         true ->
-            try_possible(Board, MyColor, ChessmanType,
-                         I1, I2, Tail, History);
+            {ok, NewBoard, Capture} =
+                try_possible(
+                  Board, TurnColor, ChessmanType,
+                  I1, I2, Tail, History),
+            NotationBase =
+                case {Chessman, Coords} of
+                    {?wking, "e1g1" ++ _} -> "0-0";
+                    {?wking, "e1c1" ++ _} -> "0-0-0";
+                    {?bking, "e8g8" ++ _} -> "0-0";
+                    {?bking, "e8c8" ++ _} -> "0-0-0";
+                    _ ->
+                        StrPlyType =
+                            case Capture of
+                                ?empty -> "-";
+                                _ -> "x"
+                            end,
+                        NewChessmanType = element(2, cell(NewBoard, I2)),
+                        StrPromotion =
+                            if ChessmanType == ?pawn andalso
+                               NewChessmanType /= ?pawn ->
+                                    chessman_type_to_notation(
+                                      NewChessmanType);
+                               true -> ""
+                            end,
+                        chessman_type_to_notation(ChessmanType) ++
+                            ind_enc(I1) ++ StrPlyType ++
+                            ind_enc(I2) ++ StrPromotion
+                end,
+            OppColor = not_color(TurnColor),
+            OppKingIndex =
+                whereis_my_king(History, OppColor),
+            GameStatus =
+                gameover_status(NewBoard, OppColor, History ++ [Ply]),
+            NotationExtra =
+                case GameStatus of
+                    none ->
+                        AttackersCount =
+                            cell_attackers_count(
+                              NewBoard, OppKingIndex, OppColor),
+                        if AttackersCount == 1 -> "+";
+                           AttackersCount == 2 -> "++";
+                           true -> ""
+                        end;
+                    checkmate -> "#";
+                    {draw, stalemate} -> "="
+                end,
+            FinalPly =
+                {Coords,
+                 echessd_lib:proplist_replace(
+                   Meta, [{notation, NotationBase ++ NotationExtra}])},
+            {ok, NewBoard, History ++ [FinalPly], GameStatus};
         _ ->
             throw({error, badmove})
     end.
 
 try_possible(Board, Color, ChessmanType, I1, I2, Tail, History) ->
-    {NewBoard, _Capture} = move_chessman(Board, I1, I2, Tail),
+    {NewBoard, Capture} = move_chessman(Board, I1, I2, Tail),
     KingIndex =
         if ChessmanType == ?king -> I2;
            true ->
                 whereis_my_king(History, Color)
         end,
-    case is_cell_under_attack(NewBoard, KingIndex, Color) of
-        true ->
-            throw({error, check});
-        _ -> {ok, NewBoard}
+    case cell_attackers_count(NewBoard, KingIndex, Color) of
+        0 -> {ok, NewBoard, Capture};
+        _ -> throw({error, check})
     end.
 
 possible(B, I, C, ChessmanType, History) ->
@@ -432,12 +483,11 @@ possible_castlings(Board, Color, History) ->
                                History, LongRookC) of
                             true -> [];
                             _ ->
-                                case is_cell_under_attack(
+                                case cell_attackers_count(
                                        Board, ind_inc(KingStart, {-1, 0}),
                                        Color) of
-                                    true -> [];
-                                    _ ->
-                                        [ind_inc(KingStart, {-2, 0})]
+                                    0 -> [ind_inc(KingStart, {-2, 0})];
+                                    _ -> []
                                 end
                         end;
                     _ -> []
@@ -449,12 +499,11 @@ possible_castlings(Board, Color, History) ->
                                History, ShortRookC) of
                             true -> [];
                             _ ->
-                                case is_cell_under_attack(
+                                case cell_attackers_count(
                                        Board, ind_inc(KingStart, {1, 0}),
                                        Color) of
-                                    true -> [];
-                                    _ ->
-                                        [ind_inc(KingStart, {2, 0})]
+                                    0 -> [ind_inc(KingStart, {2, 0})];
+                                    _ -> []
                                 end
                         end;
                     _ -> []
@@ -462,10 +511,10 @@ possible_castlings(Board, Color, History) ->
             case PossibleCastlings of
                 [_ | _] ->
                     %% is there is check?
-                    case is_cell_under_attack(
+                    case cell_attackers_count(
                            Board, KingStart, Color) of
-                        true -> [];
-                        _ -> PossibleCastlings
+                        0 -> PossibleCastlings;
+                        _ -> []
                     end;
                 _ -> []
             end
@@ -555,46 +604,6 @@ free_cells_until_enemy(Board, MyColor, Start, Step) ->
 knight_steps() ->
     [{1, 2}, {-1, 2}, {1, -2}, {-1, -2},
      {2, 1}, {-2, 1}, {2, -1}, {-2, -1}].
-
-is_cell_under_attack(Board, I, Color) ->
-    EnemyColor = not_color(Color),
-    lists:any(
-      fun(Step) ->
-              case cell(Board, ind_inc(I, Step)) of
-                  {EnemyColor, ?knight} -> true;
-                  _ -> false
-              end
-      end, knight_steps())
-        orelse
-        lists:any(
-          fun({DC, DR} = Step) ->
-                  case find_enemy(
-                         Board, I, Step, EnemyColor) of
-                      {?pawn, 1}
-                        when EnemyColor == ?black
-                             andalso abs(DC) == 1
-                             andalso DR == 1 ->
-                          true;
-                      {?pawn, 1}
-                        when EnemyColor == ?white
-                             andalso abs(DC) == 1
-                             andalso DR == -1 ->
-                          true;
-                      {?king, 1} ->
-                          true;
-                      {?queen, _} ->
-                          true;
-                      {?bishop, _}
-                        when abs(DC) == abs(DR) ->
-                          true;
-                      {?rook, _}
-                        when abs(DC) /= abs(DR) ->
-                          true;
-                      _ -> false
-                  end
-          end,
-          [{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
-           {0, 1}, {1, -1}, {1, 0}, {1, 1}]).
 
 cell_attackers_count(Board, I, Color) ->
     EnemyColor = not_color(Color),

@@ -295,11 +295,11 @@ delgame_(GameID, GameInfo) ->
     mnesia:delete({?dbt_games, GameID}).
 
 %% @doc Makes turn for user.
-%% @spec gameply(GameID, Username, Ply) -> {ok, FinalPly} | {error, Reason}
+%% @spec gameply(GameID, Username, Ply) -> {ok, GameInfo} | {error, Reason}
 %%     GameID = echessd_game:echessd_game_id(),
 %%     Username = echessd_user:echessd_user(),
 %%     Ply = echessd_game:echessd_ply(),
-%%     FinalPly = echessd_game:echessd_ply(),
+%%     GameInfo = echessd_game:echessd_game_info(),
 %%     Reason = term()
 gameply(GameID, Username, Ply) ->
     transaction(
@@ -326,28 +326,21 @@ gameply(GameID, Username, Ply) ->
                           echessd_game:from_scratch(GameType, History),
                       case echessd_game:is_valid_ply(
                              GameType, Board, TurnColor, Ply, History) of
-                          {ok, NewBoard} ->
-                              %% add chess notation
-                              FinalPly =
-                                  echessd_game:add_notation(
-                                    GameType, Board, History, Ply),
-                              NewHistory = History ++ [FinalPly],
-                              NextColor = hd([?white, ?black] -- [TurnColor]),
-                              GameStatus =
-                                  echessd_game:gameover_status(
-                                    GameType, NewBoard, NextColor, NewHistory),
+                          {ok, _NewBoard, NewHistory, GameStatus} ->
                               {Winner, WinnerColor} =
                                   case GameStatus of
                                       checkmate -> {Username, TurnColor};
                                       _ -> {undefined, undefined}
                                   end,
-                              ll_replace_props(
-                                ?dbt_games, GameID, GameInfo,
-                                [{moves, NewHistory},
-                                 {status, GameStatus},
-                                 {winner, Winner},
-                                 {winner_color, WinnerColor}]),
-                              FinalPly;
+                              NewGameInfo =
+                                  echessd_lib:proplist_replace(
+                                    GameInfo,
+                                    [{moves, NewHistory},
+                                     {status, GameStatus},
+                                     {winner, Winner},
+                                     {winner_color, WinnerColor}]),
+                              ll_set_props(?dbt_games, GameID, NewGameInfo),
+                              NewGameInfo;
                           {error, Reason} ->
                               mnesia:abort({wrong_move, Reason})
                       end;
@@ -614,12 +607,9 @@ transaction(Fun) ->
     end.
 
 ll_replace_props(DbTable, RecID, OldProps, Props2Replace) ->
-    NewProps = echessd_lib:proplist_replace(OldProps, Props2Replace),
-    mnesia:write(
-      DbTable,
-      #hrec{key = RecID,
-            val = NewProps},
-      write).
+    ll_set_props(
+      DbTable, RecID,
+      echessd_lib:proplist_replace(OldProps, Props2Replace)).
 
 ll_get_props(DbTable, RecID) ->
     case mnesia:read({DbTable, RecID}) of

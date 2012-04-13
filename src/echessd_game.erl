@@ -225,11 +225,14 @@ ply(GameID, User, Ply) ->
             _ -> {Ply, [{time, Seconds}]}
         end,
     case echessd_db:gameply(GameID, User, Ply1) of
-        {ok, FinalPly} ->
+        {ok, GameInfo} ->
             echessd_log:info(
               "game ~9999p: user ~9999p moved ~9999p",
               [GameID, User, Coords]),
-            echessd_notify:ply(GameID, User, FinalPly),
+            [LastPly | _] =
+                lists:reverse(
+                  proplists:get_value(moves, GameInfo)),
+            echessd_notify:ply(GameID, User, LastPly),
             ok;
         {error, Reason} = Error ->
             echessd_log:err(
