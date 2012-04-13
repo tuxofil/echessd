@@ -103,7 +103,7 @@ Warning: you will lost all your games and users registered calling
 
 == Running ==
 
-You can run echessd by command "./run.sh" in echessd top level
+You can run echessd by command "./start.sh" in echessd top level
 directory. echessd will be started as foreground process. It is
 normal to some output on stdout before log file will be opened
 and server start to write messages to that file.

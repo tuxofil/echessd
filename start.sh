@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ###-------------------------------------------------------------------
-### File    : run.sh
+### File    : start.sh
 ### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
 ### Created : 20 Jan 2012
 ### License : FreeBSD
