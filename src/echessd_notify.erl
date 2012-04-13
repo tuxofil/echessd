@@ -99,7 +99,7 @@ game_end(GameID) ->
         lists:usort(
           echessd_game:get_watchers(GameInfo)),
     case proplists:get_value(status, GameInfo) of
-        none -> nop;
+        none -> ok;
         give_up ->
             Winner =
                 proplists:get_value(winner, GameInfo),
