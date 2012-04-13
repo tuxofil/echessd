@@ -23,15 +23,17 @@
 %% @doc Creates chess board with all chessmans at start point.
 %% @spec new() -> echessd_game:echessd_board()
 new() ->
-    {{?brook,?bknight,?bbishop,?bqueen,?bking,?bbishop,?bknight,?brook}, %% 8
-     {?bpawn,?bpawn,?bpawn,?bpawn,?bpawn,?bpawn,?bpawn,?bpawn}, %% 7
-     {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 6
-     {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 5
-     {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 4
-     {?empty,?empty,?empty,?empty,?empty,?empty,?empty,?empty}, %% 3
-     {?wpawn,?wpawn,?wpawn,?wpawn,?wpawn,?wpawn,?wpawn,?wpawn}, %% 2
-     {?wrook,?wknight,?wbishop,?wqueen,?wking,?wbishop,?wknight,?wrook}  %% 1
-     %% a,b,c,d,e,f,g,h
+    {
+     %%  a       b        c       d       e       f        g       h
+     {?brook,?bknight,?bbishop,?bqueen,?bking,?bbishop,?bknight,?brook}, % 8
+     {?bpawn,?bpawn,  ?bpawn,  ?bpawn, ?bpawn,?bpawn,  ?bpawn,  ?bpawn}, % 7
+     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 6
+     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 5
+     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 4
+     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 3
+     {?wpawn,?wpawn,  ?wpawn,  ?wpawn, ?wpawn,?wpawn,  ?wpawn,  ?wpawn}, % 2
+     {?wrook,?wknight,?wbishop,?wqueen,?wking,?wbishop,?wknight,?wrook}  % 1
+     %%  a       b        c       d       e       f        g       h
     }.
 
 %% @doc Checks if ply is valid.
