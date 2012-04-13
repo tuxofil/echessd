@@ -582,6 +582,21 @@
   {ru, "Партия ~s (~s) против ~s (~s) подтверждена."},
   {ua, "Партію ~s (~s) проти ~s (~s) підтверждено."}]}.
 
+{text, txt_give_up_notification,
+ [{en, "Game #~w ended. ~s (~s) wins ~s (~s)."},
+  {ru, "Партия #~w окончена. ~s (~s) выиграл у ~s (~s)."},
+  {ua, "Партію #~w завершено. ~s (~s) виграв у ~s (~s)."}]}.
+
+{text, txt_checkmate_notification,
+ [{en, "Game #~w ended: ~s (~s) mates ~s (~s)."},
+  {ru, "Партия #~w окончена: мат. ~s (~s) выиграл у ~s (~s)."},
+  {ua, "Партію #~w завершено: мат. ~s (~s) виграв у ~s (~s)."}]}.
+
+{text, txt_draw_notification,
+ [{en, "Game #~w: ~s (~s) vs ~s (~s) - draw."},
+  {ru, "Партия #~w: ~s (~s) против ~s (~s) - ничья."},
+  {ua, "Партія #~w: ~s (~s) проти ~s (~s) - нічия."}]}.
+
 {text, txt_ply_notification,
  [{en, "Game #~w: user '~s' moves '~s'"},
   {ru, "Партия #~w: ~s походил ~s"},

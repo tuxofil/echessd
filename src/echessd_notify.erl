@@ -94,8 +94,64 @@ game_ack(GameID) ->
 %% @spec game_end(GameID) -> ok
 %%     GameID = echessd_game:echessd_game_id()
 game_end(GameID) ->
-    %% todo: implement
-    ok.
+    {ok, GameInfo} = echessd_game:getprops(GameID),
+    Watchers =
+        lists:usort(
+          echessd_game:get_watchers(GameInfo)),
+    case proplists:get_value(status, GameInfo) of
+        none -> nop;
+        give_up ->
+            Winner =
+                proplists:get_value(winner, GameInfo),
+            WinnerColor =
+                proplists:get_value(winner_color, GameInfo),
+            Looser =
+                echessd_game:get_opponent(GameInfo, Winner),
+            LooserColor =
+                echessd_game:get_player_color(GameInfo, Looser),
+            do_notifies(
+              fun(Lang) ->
+                      io_lib:format(
+                        gettext(txt_give_up_notification, Lang),
+                        [GameID,
+                         Winner, localize_color(WinnerColor, Lang),
+                         Looser, localize_color(LooserColor, Lang)])
+              end, Watchers -- [Looser]);
+        checkmate ->
+            Winner =
+                proplists:get_value(winner, GameInfo),
+            WinnerColor =
+                proplists:get_value(winner_color, GameInfo),
+            Looser =
+                echessd_game:get_opponent(GameInfo, Winner),
+            LooserColor =
+                echessd_game:get_player_color(GameInfo, Looser),
+            do_notifies(
+              fun(Lang) ->
+                      io_lib:format(
+                        gettext(txt_checkmate_notification, Lang),
+                        [GameID,
+                         Winner, localize_color(WinnerColor, Lang),
+                         Looser, localize_color(LooserColor, Lang)])
+              end, Watchers -- [Winner]);
+        {draw, _} ->
+            Creator =
+                echessd_game:get_creator(GameInfo),
+            CreatorColor =
+                echessd_game:get_player_color(GameInfo, Creator),
+            Opponent =
+                echessd_game:get_opponent(GameInfo, Creator),
+            OpponentColor =
+                echessd_game:get_player_color(GameInfo, Opponent),
+            do_notifies(
+              fun(Lang) ->
+                      io_lib:format(
+                        gettext(txt_draw_notification, Lang),
+                        [GameID,
+                         Creator, localize_color(CreatorColor, Lang),
+                         Opponent, localize_color(OpponentColor, Lang)])
+              end, Watchers)
+    end.
 
 %% ----------------------------------------------------------------------
 %% Internal functions
@@ -121,6 +177,7 @@ do_notify_(MessageGenerator, Username) ->
                         [_ | _] = JabberID ->
                             Lang = proplists:get_value(language, UserInfo),
                             try MessageGenerator(Lang) of
+                                [] -> nop;
                                 [_ | _] = Message ->
                                     do_notify(
                                       JabberID, Message,
