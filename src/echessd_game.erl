@@ -8,9 +8,9 @@
 -export([add/5,
          ack/2,
          deny/2,
-         is_valid_ply/5,
-         possibles/2,
          ply/3,
+         make_ply/5,
+         possibles/2,
          give_up/2,
          request_draw/2,
          getprops/1,
@@ -174,37 +174,6 @@ deny(GameID, Username) ->
             Error
     end.
 
-%% @doc Checks if half-move is valid.
-%% @spec is_valid_ply(GameType, Board, TurnColor, Ply, History) ->
-%%         {ok, NewBoard, NewHistory, GameStatus} | {error, Reason}
-%%     GameType = echessd_game_type(),
-%%     Board = echessd_board(),
-%%     TurnColor = echessd_color(),
-%%     Ply = echessd_ply(),
-%%     History = echessd_history(),
-%%     NewBoard = echessd_board(),
-%%     NewHistory = echessd_history(),
-%%     GameStatus = echessd_game_status(),
-%%     Reason = term()
-is_valid_ply(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
-    echessd_rules_classic:is_valid_ply(
-      Board, TurnColor, Ply, History);
-is_valid_ply(GameType, _, _, _, _) ->
-    soft_unsupported(GameType).
-
-%% @doc Return list of all possible valid moves.
-%%      This function used only for current move highlighting
-%%      in user interface.
-%% @spec possibles(GameType, History) -> Plies
-%%     GameType = echessd_game_type(),
-%%     History = echessd_history(),
-%%     Plies = [Ply],
-%%     Ply = echessd_ply()
-possibles(?GAME_CLASSIC, History) ->
-    echessd_rules_classic:possibles(History);
-possibles(GameType, _) ->
-    unsupported(GameType).
-
 %% @doc Tries to save user turn to database.
 %%      Turn supplied will be checked for validity.
 %% @spec ply(GameID, User, Ply) -> ok | {error, Reason}
@@ -245,6 +214,39 @@ ply(GameID, User, Ply) ->
               [GameID, User, Coords, Reason]),
             Error
     end.
+
+%% @doc Applies users move. This function called only
+%%      from '_db:gameply/3' fun.
+%% @hidden
+%% @spec make_ply(GameType, Board, TurnColor, Ply, History) ->
+%%         {ok, NewBoard, NewHistory, GameStatus} | {error, Reason}
+%%     GameType = echessd_game_type(),
+%%     Board = echessd_board(),
+%%     TurnColor = echessd_color(),
+%%     Ply = echessd_ply(),
+%%     History = echessd_history(),
+%%     NewBoard = echessd_board(),
+%%     NewHistory = echessd_history(),
+%%     GameStatus = echessd_game_status(),
+%%     Reason = term()
+make_ply(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
+    echessd_rules_classic:make_ply(
+      Board, TurnColor, Ply, History);
+make_ply(GameType, _, _, _, _) ->
+    soft_unsupported(GameType).
+
+%% @doc Return list of all possible valid moves.
+%%      This function used only for current move highlighting
+%%      in user interface.
+%% @spec possibles(GameType, History) -> Plies
+%%     GameType = echessd_game_type(),
+%%     History = echessd_history(),
+%%     Plies = [Ply],
+%%     Ply = echessd_ply()
+possibles(?GAME_CLASSIC, History) ->
+    echessd_rules_classic:possibles(History);
+possibles(GameType, _) ->
+    unsupported(GameType).
 
 %% @doc Make user fail the game by giving up.
 %% @spec give_up(GameID, Username) -> ok | {error, Reason}

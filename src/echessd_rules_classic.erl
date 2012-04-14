@@ -6,7 +6,7 @@
 -module(echessd_rules_classic).
 
 -export([new/0,
-         is_valid_ply/4,
+         make_ply/4,
          possibles/1,
          move_chessman/2,
          can_move/3,
@@ -35,9 +35,9 @@ new() ->
      %%  a       b        c       d       e       f        g       h
     }.
 
-%% @doc Checks if ply is valid.
-%% @spec is_valid_ply(Board, TurnColor, Ply, History) ->
-%%                 {ok, NewBoard, NewHistory, GameStatus} | {error, Reason}
+%% @doc Applies users move.
+%% @spec make_ply(Board, TurnColor, Ply, History) ->
+%%         {ok, NewBoard, NewHistory, GameStatus} | {error, Reason}
 %%     Board = echessd_game:echessd_board(),
 %%     TurnColor = echessd_game:echessd_color(),
 %%     Ply = echessd_game:echessd_ply(),
@@ -46,8 +46,8 @@ new() ->
 %%     NewHistory = echessd_game:echessd_history(),
 %%     GameStatus = echessd_game:echessd_game_status(),
 %%     Reason = term()
-is_valid_ply(Board, TurnColor, Ply, History) ->
-    try is_valid_ply_(Board, TurnColor, Ply, History) of
+make_ply(Board, TurnColor, Ply, History) ->
+    try make_ply_(Board, TurnColor, Ply, History) of
         {ok, _NewBoard, _NewHistory, _GameStatus} = Ok -> Ok;
         {error, _} = Error -> Error;
         Other -> {error, Other}
@@ -220,7 +220,7 @@ chessman_type_to_notation(_) -> "".
 
 -define(null, '*null').
 
-is_valid_ply_(Board, TurnColor, {Coords, Meta} = Ply, History) ->
+make_ply_(Board, TurnColor, {Coords, Meta} = Ply, History) ->
     {I1, I2, Tail} = ply_dec(Ply),
     {_, ChessmanType} = Chessman =
         case cell(Board, I1) of

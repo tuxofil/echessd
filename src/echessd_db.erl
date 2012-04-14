@@ -323,7 +323,7 @@ gameply(GameID, Username, Ply) ->
                       History = proplists:get_value(moves, GameInfo, []),
                       {Board, _Captures} =
                           echessd_game:from_scratch(GameType, History),
-                      case echessd_game:is_valid_ply(
+                      case echessd_game:make_ply(
                              GameType, Board, TurnColor, Ply, History) of
                           {ok, _NewBoard, NewHistory, GameStatus} ->
                               {Winner, WinnerColor} =
