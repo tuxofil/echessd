@@ -19,8 +19,6 @@
          turn_color_by_history/1,
          from_scratch/2,
          can_move/4,
-         gameover_status/2,
-         gameover_status/4,
          transpose/2,
          get_creator/1,
          get_watchers/1,
@@ -345,27 +343,6 @@ from_scratch(GameType, History) ->
 can_move(?GAME_CLASSIC, Board, Color, History) ->
     echessd_rules_classic:can_move(Board, Color, History);
 can_move(GameType, _, _, _) ->
-    unsupported(GameType).
-
-%% @doc Return game over status.
-%% @spec gameover_status(GameType, History) -> echessd_game_status()
-%%     GameType = echessd_game_type(),
-%%     History = echessd_history()
-gameover_status(GameType, History) ->
-    {Board, _Captures} = from_scratch(GameType, History),
-    Color = turn_color_by_history(History),
-    gameover_status(GameType, Board, Color, History).
-
-%% @doc Return game over status.
-%% @spec gameover_status(GameType, Board, Color, History) ->
-%%         echessd_game_status()
-%%     GameType = echessd_game_type(),
-%%     Board = echessd_board(),
-%%     Color = echessd_color()
-%%     History = echessd_history()
-gameover_status(?GAME_CLASSIC, Board, Color, History) ->
-    echessd_rules_classic:gameover_status(Board, Color, History);
-gameover_status(GameType, _, _, _) ->
     unsupported(GameType).
 
 %% @doc Turns internal board representation at 180 degrees.

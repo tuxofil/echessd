@@ -10,7 +10,6 @@
          possibles/1,
          move_chessman/2,
          can_move/3,
-         gameover_status/3,
          transpose/1
         ]).
 
@@ -177,7 +176,24 @@ can_move(Board, Color, History) ->
               end
       end, [{C, R} || C <- Seq, R <- Seq]).
 
+%% @doc Turns internal board representation at 180 degrees.
+%% @spec transpose(Board) -> NewBoard
+%%     Board = echessd_game:echessd_board(),
+%%     NewBoard = echessd_game:echessd_board()
+transpose(Board) ->
+    list_to_tuple(
+      lists:reverse(
+        [list_to_tuple(
+           lists:reverse(
+             tuple_to_list(R))) ||
+            R <- tuple_to_list(Board)])).
+
+%% ----------------------------------------------------------------------
+%% Internal functions
+%% ----------------------------------------------------------------------
+
 %% @doc Return game over status.
+%% @hidden
 %% @spec gameover_status(Board, Color, History) -> GameStatus
 %%     Board = echessd_game:echessd_board(),
 %%     Color = echessd_game:echessd_color()
@@ -194,22 +210,6 @@ gameover_status(Board, Color, History) ->
                 _ -> checkmate
             end
     end.
-
-%% @doc Turns internal board representation at 180 degrees.
-%% @spec transpose(Board) -> NewBoard
-%%     Board = echessd_game:echessd_board(),
-%%     NewBoard = echessd_game:echessd_board()
-transpose(Board) ->
-    list_to_tuple(
-      lists:reverse(
-        [list_to_tuple(
-           lists:reverse(
-             tuple_to_list(R))) ||
-            R <- tuple_to_list(Board)])).
-
-%% ----------------------------------------------------------------------
-%% Internal functions
-%% ----------------------------------------------------------------------
 
 chessman_type_to_notation(?king) -> "K";
 chessman_type_to_notation(?queen) -> "Q";
