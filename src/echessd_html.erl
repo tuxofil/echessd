@@ -397,7 +397,7 @@ game(GameID, GameInfo, Step) ->
           IsRotated, ActiveCells, LastPly) ++
         case Comment of
             [_ | _] when ShowComment ->
-                tag(center, gettext(txt_comment) ++ ": " ++ Comment);
+                tag(p, gettext(txt_comment) ++ ": " ++ Comment);
             _ -> ""
         end ++
         if IsMyTurn andalso IsLast ->
