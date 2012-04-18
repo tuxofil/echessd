@@ -21,12 +21,12 @@ clean:
 	rm -f -- ./doc/*.png
 	rm -f -- ./doc/edoc-info
 	rm -f -- ./ebin/*.beam
-	rm -f ./erl_crash.dump
+	rm -f -- ./erl_crash.dump
+	rm -f -- ./erlc_opts
+	rm -f -- ./otp_release
 	find ./ -type f -name '*~' -print -delete
 
 cleanall: clean
-	rm -f ./erlc_opts
-	rm -f ./otp_release
 	rm -f ./echessd.log
 	rm -rf ./db/mnesia
 
