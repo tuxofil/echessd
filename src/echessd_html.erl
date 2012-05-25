@@ -191,6 +191,13 @@ edituser() ->
             _ -> " checked"
         end ++ ">&nbsp;"
         ++ gettext(txt_rnu_show_comment) ++ "</label><br>"
+        "<label for=autoref>"
+        "<input type=checkbox id=autoref name=editautorefresh" ++
+        case proplists:get_value(auto_refresh, UserInfo) of
+            true -> " checked";
+            _ -> ""
+        end ++ ">&nbsp;"
+        ++ gettext(txt_auto_refresh) ++ "</label><br>"
         "<input type=submit class=btn value='" ++
         gettext(txt_predit_save_button) ++ "'>"
         "</form>"
