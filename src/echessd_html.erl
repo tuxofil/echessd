@@ -250,6 +250,18 @@ home() ->
         user_info(Username, UserInfo) ++
         "<br>" ++
         user_games(Username, UserInfo, true) ++
+        case proplists:get_value(auto_refresh, UserInfo) of
+            true ->
+                Period =
+                    integer_to_list(
+                      proplists:get_value(
+                        auto_refresh_period, UserInfo, 60) * 1000),
+                tag(
+                  script, [],
+                  "setTimeout(\"document.location.href='/'\"," ++
+                      Period ++ ")");
+            _ -> ""
+        end ++
         html_page_footer([]).
 
 %% @doc Makes 'registered users list' page content.
@@ -407,12 +419,14 @@ game(GameID, GameInfo, Step) ->
                      [[I1 | L] || {I1, L} <- GroupedPossibles0]))};
            true -> {[], []}
         end,
-    {ShowHistory, ShowComment} =
+    {ShowHistory, ShowComment, AutoRefresh, AutoRefreshPeriod} =
         case get(userinfo) of
             UserInfo when is_list(UserInfo) ->
                 {proplists:get_value(show_history, UserInfo, true),
-                 proplists:get_value(show_comment, UserInfo, true)};
-            _ -> {true, true}
+                 proplists:get_value(show_comment, UserInfo, true),
+                 proplists:get_value(auto_refresh, UserInfo),
+                 proplists:get_value(auto_refresh_period, UserInfo, 60)};
+            _ -> {true, true, false, 60}
         end,
     ChessTable =
         chess_table(
@@ -481,6 +495,20 @@ game(GameID, GameInfo, Step) ->
                        tag(td, ["valign=top"],
                            game_history(Step, GameID, FullHistory))]));
            true -> ChessTable
+        end ++
+        if AutoRefresh ->
+                Period =
+                    integer_to_list(AutoRefreshPeriod * 1000),
+                tag(
+                  script, [],
+                  "setTimeout(\"document.location.href='" ++
+                      "/?goto=" ++ ?SECTION_GAME ++
+                      "&game=" ++ integer_to_list(GameID) ++
+                      if is_integer(Step) ->
+                              "&step=" ++ integer_to_list(Step);
+                         true -> ""
+                      end ++ "'\"," ++ Period ++ ")");
+            true -> ""
         end ++
         html_page_footer([]).
 
