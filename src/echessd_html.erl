@@ -119,6 +119,12 @@ edituser() ->
     JID =
         echessd_lib:escape_html_entities(
           proplists:get_value(jid, UserInfo, "")),
+    AutoRefreshPeriod =
+        case proplists:get_value(auto_refresh_period, UserInfo) of
+            Int when is_integer(Int), Int > 0 ->
+                integer_to_list(Int);
+            _ -> "60"
+        end,
     html_page_header(
       "echessd - " ++ gettext(txt_edit_profile_title),
       [{h1, gettext(txt_edit_profile_title)}]) ++
@@ -197,7 +203,10 @@ edituser() ->
             true -> " checked";
             _ -> ""
         end ++ ">&nbsp;"
-        ++ gettext(txt_auto_refresh) ++ "</label><br>"
+        ++ gettext(txt_auto_refresh) ++ "</label><br>" ++
+        gettext(txt_auto_refresh_period) ++
+        ": <input name=editautoperiod type=text "
+        "value='" ++ AutoRefreshPeriod ++ "'><br>" ++
         "<input type=submit class=btn value='" ++
         gettext(txt_predit_save_button) ++ "'>"
         "</form>"

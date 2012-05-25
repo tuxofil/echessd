@@ -36,6 +36,7 @@
         {show_comment, boolean()} |
         {notify, boolean()} |
         {auto_refresh, boolean()} |
+        {auto_refresh_period, integer()} |
         {style, atom()} |
         {jid, string()} |
         {games, [echessd_game:echessd_game_id()]}.
@@ -285,7 +286,12 @@ check_property({notify, B} = I) ->
 check_property({auto_refresh, B} = I) ->
     if is_boolean(B) -> I;
        true ->
-            throw({error, {bad_notify, B}})
+            throw({error, {bad_auto_refresh, B}})
+    end;
+check_property({auto_refresh_period, Int} = I) ->
+    if is_integer(Int) andalso Int > 0 -> I;
+       true ->
+            throw({error, {bad_auto_refresh_period, Int}})
     end;
 check_property({style, S} = I) ->
     RegisteredStyles = [N || {N, _T, _F} <- echessd_lib:styles()],

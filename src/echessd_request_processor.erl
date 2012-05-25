@@ -216,6 +216,14 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
             [_ | _] -> true;
             _ -> false
         end,
+    AutoRefreshPeriod =
+        try
+            AutoRefreshPeriod0 =
+                list_to_integer(
+                  proplists:get_value("editautoperiod", Query)),
+            true = AutoRefreshPeriod0 > 0,
+            AutoRefreshPeriod0
+        catch _:_ -> 60 end,
     {StyleName, _TxtID, _Filename} =
         echessd_lib:parse_style(
           proplists:get_value("editstyle", Query)),
@@ -232,6 +240,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                  {jid, JID},
                  {notify, Notify},
                  {auto_refresh, AutoRefresh},
+                 {auto_refresh_period, AutoRefreshPeriod},
                  {show_history, ShowHistory},
                  {show_comment, ShowComment},
                  {show_in_list, ShowInList}],
