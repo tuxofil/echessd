@@ -135,7 +135,9 @@ process_post(?SECTION_REG, Query, false) ->
        true ->
             case echessd_lib:list_to_time_offset(StrTimezone) of
                 {ok, Timezone} ->
-                    JID = proplists:get_value("regjid", Query),
+                    JID =
+                        echessd_lib:strip(
+                          proplists:get_value("regjid", Query), " \t\r\n"),
                     case echessd_user:add(
                            Username,
                            [{password, Password1},
@@ -207,7 +209,9 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
     {StyleName, _TxtID, _Filename} =
         echessd_lib:parse_style(
           proplists:get_value("editstyle", Query)),
-    JID = proplists:get_value("editjid", Query),
+    JID =
+        echessd_lib:strip(
+          proplists:get_value("editjid", Query), " \t\r\n"),
     case echessd_lib:list_to_time_offset(StrTimezone) of
         {ok, Timezone} ->
             NewUserInfo =
