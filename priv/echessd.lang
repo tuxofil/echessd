@@ -447,6 +447,11 @@
   {ru, "Jabber ID для уведомлений"},
   {ua, "Jabber ID для сповіщень"}]}.
 
+{text, txt_notify,
+ [{en, "Enable notifications"},
+  {ru, "Получать уведомления"},
+  {ua, "Отримувати сповіщення"}]}.
+
 {text, txt_style,
  [{en, "Style"},
   {ru, "Оформление"},

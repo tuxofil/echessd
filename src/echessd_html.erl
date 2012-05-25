@@ -163,6 +163,13 @@ edituser() ->
         ++ gettext(txt_jid) ++ ": <input name=editjid type=text "
         "value='" ++ JID ++ "'> (" ++
         gettext(txt_rnu_optional) ++ ")<br>" ++
+        "<label for=enot>"
+        "<input type=checkbox id=enot name=editnotify" ++
+        case proplists:get_value(notify, UserInfo) of
+            false -> "";
+            _ -> " checked"
+        end ++ ">&nbsp;"
+        ++ gettext(txt_notify) ++ "</label><br>"
         "<label for=sil>"
         "<input type=checkbox id=sil name=editshowinlist" ++
         case proplists:get_value(show_in_list, UserInfo) of
