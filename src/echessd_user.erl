@@ -6,6 +6,7 @@
 -module(echessd_user).
 
 -export([list/0, add/2, del/1, auth/2, getprops/1, setprops/2,
+         get_value/2, default/1,
          lang_info/1]).
 
 -include("echessd.hrl").
@@ -160,6 +161,34 @@ setprops(Username, UserInfo0) ->
               [Username, Reason]),
             FinalError
     end.
+
+%% @doc Fetch property value from user properties proplist.
+%%      Same as proplists:get_value/2, but substitutes
+%%      reasonable default value when value for specified
+%%      Key is not set.
+%% @spec get_value(Key, UserInfo) -> Value
+%%     Key = atom(),
+%%     UserInfo = echessd_user_info(),
+%%     Value = term()
+get_value(Key, UserInfo) ->
+    proplists:get_value(Key, UserInfo, default(Key)).
+
+%% @doc Return default value for user property.
+%% @spec default(Key) -> Value | undefined
+%%     Key = atom(),
+%%     Value = term()
+default(show_in_list) -> true;
+default(show_history) -> true;
+default(show_comment) -> true;
+default(notify) -> true;
+default(auto_refresh) -> false;
+default(auto_refresh_period) -> 60;
+default(language) -> echessd_cfg:get(?CFG_DEF_LANG);
+default(style) -> echessd_cfg:get(?CFG_DEF_STYLE);
+default(timezone) -> echessd_lib:local_offset();
+default(jid) -> "";
+default(fullname) -> "";
+default(_) -> undefined.
 
 %% @doc Fetch language information from users info.
 %% @spec lang_info(UserInfo) -> {LangAbbr, LangName}
