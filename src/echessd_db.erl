@@ -84,7 +84,7 @@ list_users() ->
       fun() ->
               mnesia:foldl(
                 fun(HRec, Acc) ->
-                        case proplists:get_value(
+                        case echessd_user:get_value(
                                show_in_list, HRec#hrec.val) of
                             false -> Acc;
                             _ ->
@@ -256,8 +256,7 @@ set_game_props_(GameID, GameInfo) ->
               UserInfo = ll_get_props(?dbt_users, Username),
               UserGames =
                   lists:usort(
-                    [GameID | proplists:get_value(
-                                games, UserInfo, [])]),
+                    [GameID | echessd_user:get_value(games, UserInfo)]),
               ll_replace_props(
                 ?dbt_users, Username, UserInfo,
                 [{games, UserGames}])
@@ -285,8 +284,8 @@ delgame_(GameID, GameInfo) ->
               UserInfo = ll_get_props(?dbt_users, Username),
               UserGames =
                   lists:usort(
-                    proplists:get_value(
-                      games, UserInfo, []) -- [GameID]),
+                    echessd_user:get_value(
+                      games, UserInfo) -- [GameID]),
               ll_replace_props(
                 ?dbt_users, Username, UserInfo,
                 [{games, UserGames}])

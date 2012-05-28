@@ -108,7 +108,7 @@ auth(Username, Password) when is_list(Password) ->
 auth(Username, Password) when is_binary(Password) ->
     case getprops(Username) of
         {ok, UserInfo} = Ok ->
-            case proplists:get_value(password, UserInfo) of
+            case get_value(password, UserInfo) of
                 Password ->
                     echessd_log:info(
                       "user ~9999p authenticated",
@@ -170,8 +170,10 @@ setprops(Username, UserInfo0) ->
 %%     Key = atom(),
 %%     UserInfo = echessd_user_info(),
 %%     Value = term()
-get_value(Key, UserInfo) ->
-    proplists:get_value(Key, UserInfo, default(Key)).
+get_value(Key, UserInfo) when is_list(UserInfo) ->
+    proplists:get_value(Key, UserInfo, default(Key));
+get_value(Key, _) ->
+    default(Key).
 
 %% @doc Return default value for user property.
 %% @spec default(Key) -> Value | undefined
@@ -188,6 +190,7 @@ default(style) -> echessd_cfg:get(?CFG_DEF_STYLE);
 default(timezone) -> echessd_lib:local_offset();
 default(jid) -> "";
 default(fullname) -> "";
+default(games) -> [];
 default(_) -> undefined.
 
 %% @doc Fetch language information from users info.
@@ -196,7 +199,7 @@ default(_) -> undefined.
 %%     LangAbbr = atom(),
 %%     LangName = string()
 lang_info(UserInfo) ->
-    LangAbbr = proplists:get_value(language, UserInfo),
+    LangAbbr = get_value(language, UserInfo),
     Languages = echessd_lib:languages(),
     case proplists:get_value(LangAbbr, Languages) of
         [_ | _] = LangName ->

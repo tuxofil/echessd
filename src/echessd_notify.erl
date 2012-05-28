@@ -173,11 +173,10 @@ do_notify_(MessageGenerator, Username) ->
         {ok, XmppUser, XmppServer, XmppPassword} ->
             case echessd_user:getprops(Username) of
                 {ok, UserInfo} ->
-                    NotifyEnabled =
-                        proplists:get_value(notify, UserInfo, true),
+                    NotifyEnabled = echessd_user:get_value(notify, UserInfo),
                     case proplists:get_value(jid, UserInfo) of
                         [_ | _] = JabberID when NotifyEnabled ->
-                            Lang = proplists:get_value(language, UserInfo),
+                            Lang = echessd_user:get_value(language, UserInfo),
                             try MessageGenerator(Lang) of
                                 [] -> nop;
                                 [_ | _] = Message ->

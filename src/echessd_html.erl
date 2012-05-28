@@ -105,26 +105,21 @@ edituser() ->
     {ok, UserInfo} = echessd_user:getprops(Username),
     Fullname =
         echessd_lib:escape_html_entities(
-          proplists:get_value(fullname, UserInfo, "")),
+          echessd_user:get_value(fullname, UserInfo)),
     Timezones =
         [echessd_lib:time_offset_to_list(O) ||
             O <- echessd_lib:administrative_offsets()],
     Timezone =
         echessd_lib:time_offset_to_list(
-          proplists:get_value(
-            timezone, UserInfo,
-            echessd_lib:local_offset())),
+          echessd_user:get_value(timezone, UserInfo)),
     {OldLangAbbr, _OldLangName} = echessd_user:lang_info(UserInfo),
-    OldStyle = proplists:get_value(style, UserInfo),
+    OldStyle = echessd_user:get_value(style, UserInfo),
     JID =
         echessd_lib:escape_html_entities(
-          proplists:get_value(jid, UserInfo, "")),
+          echessd_user:get_value(jid, UserInfo)),
     AutoRefreshPeriod =
-        case proplists:get_value(auto_refresh_period, UserInfo) of
-            Int when is_integer(Int), Int > 0 ->
-                integer_to_list(Int);
-            _ -> "60"
-        end,
+        integer_to_list(
+          echessd_user:get_value(auto_refresh_period, UserInfo)),
     html_page_header(
       "echessd - " ++ gettext(txt_edit_profile_title),
       [{h1, gettext(txt_edit_profile_title)}]) ++
@@ -171,35 +166,35 @@ edituser() ->
         gettext(txt_rnu_optional) ++ ")<br>" ++
         "<label for=enot>"
         "<input type=checkbox id=enot name=editnotify" ++
-        case proplists:get_value(notify, UserInfo) of
+        case echessd_user:get_value(notify, UserInfo) of
             false -> "";
             _ -> " checked"
         end ++ ">&nbsp;"
         ++ gettext(txt_notify) ++ "</label><br>"
         "<label for=sil>"
         "<input type=checkbox id=sil name=editshowinlist" ++
-        case proplists:get_value(show_in_list, UserInfo) of
+        case echessd_user:get_value(show_in_list, UserInfo) of
             false -> "";
             _ -> " checked"
         end ++ ">&nbsp;"
         ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
         "<label for=sh>"
         "<input type=checkbox id=sh name=editshowhistory" ++
-        case proplists:get_value(show_history, UserInfo) of
+        case echessd_user:get_value(show_history, UserInfo) of
             false -> "";
             _ -> " checked"
         end ++ ">&nbsp;"
         ++ gettext(txt_rnu_show_history) ++ "</label><br>"
         "<label for=sc>"
         "<input type=checkbox id=sc name=editshowcomment" ++
-        case proplists:get_value(show_comment, UserInfo) of
+        case echessd_user:get_value(show_comment, UserInfo) of
             false -> "";
             _ -> " checked"
         end ++ ">&nbsp;"
         ++ gettext(txt_rnu_show_comment) ++ "</label><br>"
         "<label for=autoref>"
         "<input type=checkbox id=autoref name=editautorefresh" ++
-        case proplists:get_value(auto_refresh, UserInfo) of
+        case echessd_user:get_value(auto_refresh, UserInfo) of
             true -> " checked";
             _ -> ""
         end ++ ">&nbsp;"
@@ -250,12 +245,12 @@ home() ->
         user_info(Username, UserInfo) ++
         "<br>" ++
         user_games(Username, UserInfo, true) ++
-        case proplists:get_value(auto_refresh, UserInfo) of
+        case echessd_user:get_value(auto_refresh, UserInfo) of
             true ->
                 Period =
                     integer_to_list(
-                      proplists:get_value(
-                        auto_refresh_period, UserInfo, 60) * 1000),
+                      echessd_user:get_value(
+                        auto_refresh_period, UserInfo) * 1000),
                 tag(
                   script, [],
                   "setTimeout(\"document.location.href='/'\"," ++
@@ -419,15 +414,17 @@ game(GameID, GameInfo, Step) ->
                      [[I1 | L] || {I1, L} <- GroupedPossibles0]))};
            true -> {[], []}
         end,
-    {ShowHistory, ShowComment, AutoRefresh, AutoRefreshPeriod} =
+    UserInfo =
         case get(userinfo) of
-            UserInfo when is_list(UserInfo) ->
-                {proplists:get_value(show_history, UserInfo, true),
-                 proplists:get_value(show_comment, UserInfo, true),
-                 proplists:get_value(auto_refresh, UserInfo),
-                 proplists:get_value(auto_refresh_period, UserInfo, 60)};
-            _ -> {true, true, false, 60}
+            UserInfo0 when is_list(UserInfo0) -> UserInfo0;
+            _ -> []
         end,
+    ShowHistory = echessd_user:get_value(show_history, UserInfo),
+    ShowComment = echessd_user:get_value(show_comment, UserInfo),
+    AutoRefresh =
+        (not IsMyTurn) andalso
+        echessd_user:get_value(auto_refresh, UserInfo),
+    AutoRefreshPeriod = echessd_user:get_value(auto_refresh_period, UserInfo),
     ChessTable =
         chess_table(
           GameID, HistoryLen, IsLast, GameType, Board,
@@ -696,14 +693,14 @@ user_info_cells(Username, UserInfo) ->
       fun(login) -> [{gettext(txt_login), Username}];
          (fullname = Key) ->
               [{gettext(txt_fullname),
-                case proplists:get_value(Key, UserInfo) of
+                case echessd_user:get_value(Key, UserInfo) of
                     [_ | _] = Value ->
                         echessd_lib:escape_html_entities(Value);
                     _ -> gettext(txt_not_sure)
                 end}];
          (created = Key) ->
               [{gettext(txt_registered),
-                case proplists:get_value(Key, UserInfo) of
+                case echessd_user:get_value(Key, UserInfo) of
                     Value when ?is_now(Value) ->
                         echessd_lib:timestamp(
                           Value, get(timezone));
@@ -711,13 +708,8 @@ user_info_cells(Username, UserInfo) ->
                 end}];
          (timezone = Key) ->
               [{gettext(txt_timezone),
-                case proplists:get_value(Key, UserInfo) of
-                    Value when is_tuple(Value) ->
-                        echessd_lib:time_offset_to_list(Value);
-                    _ ->
-                        echessd_lib:time_offset_to_list(
-                          echessd_lib:local_offset())
-                end}];
+                echessd_lib:time_offset_to_list(
+                  echessd_user:get_value(Key, UserInfo))}];
          (language) ->
               {_LangAbbr, LangName} = LangInfo,
               [{gettext(txt_language), LangName}];
@@ -744,7 +736,7 @@ user_games(Username, UserInfo, ShowNotAcknowledged) ->
                             [GameID, Reason, Username]),
                           []
                   end
-          end, proplists:get_value(games, UserInfo, [])),
+          end, echessd_user:get_value(games, UserInfo)),
     %% split not acknowledged
     {Confirmed, NotConfirmed} =
         lists:partition(
@@ -852,12 +844,7 @@ user_unconfirmed_game_(Owner, GameID, GameInfo) ->
             gettext(txt_game_deny)).
 
 html_page_header(Title, Options) ->
-    UserStyle =
-        case get(userinfo) of
-            UserInfo when is_list(UserInfo) ->
-                proplists:get_value(style, UserInfo);
-            _ -> undefined
-        end,
+    UserStyle = echessd_user:get_value(style, get(userinfo)),
     StylesFilename =
         case [F || {N, _T, F} <- echessd_lib:styles(), N == UserStyle] of
             [Filename0 | _] -> Filename0;

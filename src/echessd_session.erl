@@ -81,9 +81,7 @@ read(Cookie) ->
                     put(username, Username),
                     put(userinfo, UserInfo),
                     put(timezone,
-                        proplists:get_value(
-                          timezone, UserInfo,
-                          echessd_lib:local_offset())),
+                        echessd_user:get_value(timezone, UserInfo)),
                     {LangAbbr, _LangName} =
                         echessd_user:lang_info(UserInfo),
                     put(language, LangAbbr),

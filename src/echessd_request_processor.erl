@@ -223,7 +223,7 @@ process_post(?SECTION_SAVEUSER, Query, true) ->
                   proplists:get_value("editautoperiod", Query)),
             true = AutoRefreshPeriod0 > 0,
             AutoRefreshPeriod0
-        catch _:_ -> 60 end,
+        catch _:_ -> echessd_user:default(auto_refresh_period) end,
     {StyleName, _TxtID, _Filename} =
         echessd_lib:parse_style(
           proplists:get_value("editstyle", Query)),
