@@ -14,10 +14,10 @@ install --directory --mode=0750 --owner=echessd --group=echessd \
     /var/log/echessd /var/lib/echessd
 
 install --mode=640 --group=echessd echessd.conf /etc/
-sed --in-place \
+sed --in-place --regexp-extended \
     's@^\s*#?logfile\s+.*$@logfile /var/log/echessd/echessd.log@' \
     /etc/echessd.conf
-sed --in-place \
+sed --in-place --regexp-extended \
     's@^\s*#?doc_root\s+.*$@doc_root /usr/share/echessd/www@' \
     /etc/echessd.conf
 install --mode=644 ebin/*.beam ebin/*.app "$APPDIR"/ebin/
