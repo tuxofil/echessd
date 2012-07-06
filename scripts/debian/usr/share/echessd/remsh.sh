@@ -10,7 +10,8 @@
 ###-------------------------------------------------------------------
 
 RANDOM=`date +%N`
+HOSTNAME=`hostname --short`
 exec su --login --command \
     'erl -sname "echessd_remsh'$RANDOM'" \
-     -remsh "echessd@nanofag"' echessd
+     -remsh "echessd@'$HOSTNAME'"' echessd
 
