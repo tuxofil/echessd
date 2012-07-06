@@ -9,7 +9,9 @@
 ###               log file (use it after logrotate)
 ###-------------------------------------------------------------------
 
-exec erl -sname "echessd_hupper" \
+RANDOM=`date +%N`
+exec su --login --command \
+    'erl -sname "echessd_hupper'$RANDOM'" \
     -noshell -noinput \
-    -s echessd hup
+    -s echessd hup' echessd
 

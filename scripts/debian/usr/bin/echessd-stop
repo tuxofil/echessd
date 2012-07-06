@@ -10,7 +10,8 @@
 ###-------------------------------------------------------------------
 
 RANDOM=`date +%N`
-exec erl -sname "echessd_stopper$RANDOM" \
+exec su --login --command \
+    'erl -sname "echessd_stopper'$RANDOM'" \
     -noshell -noinput \
-    -s echessd stop_remote
+    -s echessd stop_remote' echessd
 

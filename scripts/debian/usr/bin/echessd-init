@@ -9,9 +9,10 @@
 ###               Warning: all existing data will be lost!
 ###-------------------------------------------------------------------
 
-exec erl -sname "echessd" \
+exec su --login --command \
+    'erl -sname "echessd" \
     -noshell -noinput \
     -mnesia dir \"/var/lib/echessd\" \
     -s echessd_db init \
-    -s init stop
+    -s init stop' echessd
 

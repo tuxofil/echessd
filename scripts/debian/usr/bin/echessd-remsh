@@ -10,6 +10,7 @@
 ###-------------------------------------------------------------------
 
 RANDOM=`date +%N`
-exec erl -sname "echessd_remsh$RANDOM" \
-     -remsh "echessd"
+exec su --login --command \
+    'erl -sname "echessd_remsh'$RANDOM'" \
+     -remsh "echessd@nanofag"' echessd
 

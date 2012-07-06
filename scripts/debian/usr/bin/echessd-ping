@@ -10,7 +10,8 @@
 ###-------------------------------------------------------------------
 
 RANDOM=`date +%N`
-exec erl -sname "echessd_pinger$RANDOM" \
+exec su --login --command \
+    'erl -sname "echessd_pinger'$RANDOM'" \
     -noshell -noinput \
-    -s echessd ping
+    -s echessd ping' echessd
 

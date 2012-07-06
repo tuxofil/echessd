@@ -9,11 +9,12 @@
 ###
 ###-------------------------------------------------------------------
 
-exec erl -sname "echessd" \
+exec su --login --command \
+    'erl -sname "echessd" \
     -mnesia dir \"/var/lib/echessd\" \
     -echessd_config /etc/echessd.conf \
     -echessd_privdir /usr/share/echessd \
     -noshell -noinput \
     -s mnesia \
-    -s echessd
+    -s echessd' echessd
 
