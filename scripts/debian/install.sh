@@ -5,9 +5,9 @@ set -x
 
 APPDIR=/usr/lib/erlang/lib/echessd-0.2.0
 
-adduser --system --group --home=/var/run/echessd echessd
+adduser --system --group --home /var/run/echessd --shell /bin/sh echessd
 install --directory --mode=0755 \
-    "$APPDIR"/ "$APPDIR"/ebin "$APPDIR"/priv \
+    "$APPDIR"/ "$APPDIR"/ebin \
     /usr/share/echessd /usr/share/echessd/www \
     /usr/share/doc/echessd /usr/share/doc/echessd/html
 install --directory --mode=0750 --owner=echessd --group=echessd \
@@ -21,7 +21,7 @@ sed --in-place --regexp-extended \
     's@^\s*#?doc_root\s+.*$@doc_root /usr/share/echessd/www@' \
     /etc/echessd.conf
 install --mode=644 ebin/*.beam ebin/*.app "$APPDIR"/ebin/
-install --mode=644 priv/echessd.lang priv/echessd.styles "$APPDIR"/priv/
+install --mode=644 priv/echessd.lang priv/echessd.styles /usr/share/echessd/
 install --mode=644 www/*.css www/*.js /usr/share/echessd/www/
 
 # documentation

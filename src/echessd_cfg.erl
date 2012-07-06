@@ -19,9 +19,16 @@
 %% @spec read() -> ok
 read() ->
     catch ets:new(?echessd_cfg, [named_table, public, set]),
+    Args = init:get_arguments(),
+    PrivDir =
+        case proplists:get_value(echessd_privdir, Args) of
+            [PrivDir0 | _] -> PrivDir0;
+            _ -> "priv"
+        end,
     echessd_log:info("Reading language file..."),
+    LangFilename = filename:join(PrivDir, "echessd.lang"),
     LangInfo =
-        case read_lang_file() of
+        case read_lang_file(LangFilename) of
             {ok, LangInfo0} -> LangInfo0;
             {error, Reason0} ->
                 echessd_log:err(
@@ -31,8 +38,9 @@ read() ->
         end,
     ets:insert(?echessd_cfg, {?CFG_LANG_INFO, LangInfo}),
     echessd_log:info("Reading styles definitions..."),
+    StylesFilename = filename:join(PrivDir, "echessd.styles"),
     StylesInfo =
-        case read_styles_file() of
+        case read_styles_file(StylesFilename) of
             {ok, StylesInfo0} -> StylesInfo0;
             {error, Reason1} ->
                 echessd_log:err(
@@ -46,7 +54,6 @@ read() ->
               catch ets:delete(?echessd_cfg, CfgItem)
       end, ?CFGS),
     echessd_log:info("Reading configurations..."),
-    Args = init:get_arguments(),
     CfgFile =
         case proplists:get_value(echessd_config, Args) of
             [CfgFile0 | _] ->
@@ -281,8 +288,7 @@ split_kv([H | Tail], Key) ->
 split_kv(_, Key) ->
     {string:to_lower(lists:reverse(Key)), ""}.
 
-read_lang_file() ->
-    LangFilename = filename:join("priv", "echessd.lang"),
+read_lang_file(LangFilename) ->
     case file:consult(LangFilename) of
         {ok, Terms} ->
             Strings =
@@ -299,9 +305,8 @@ read_lang_file() ->
         Error -> Error
     end.
 
-read_styles_file() ->
-    Filename = filename:join("priv", "echessd.styles"),
-    case file:consult(Filename) of
+read_styles_file(StylesFilename) ->
+    case file:consult(StylesFilename) of
         {ok, Terms} ->
             {ok,
              lists:flatmap(
