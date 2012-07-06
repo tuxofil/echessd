@@ -184,13 +184,13 @@ do_notify_(MessageGenerator, Username) ->
                                       JabberID, Message,
                                       XmppUser, XmppServer, XmppPassword);
                                 Other ->
-                                    echessd_log:error(
+                                    echessd_log:err(
                                       "~w: failed to format notification - "
                                       "bad string: ~99999p",
                                       [?MODULE, Other])
                             catch
                                 Type:Reason ->
-                                    echessd_log:error(
+                                    echessd_log:err(
                                       "~w: failed to format notification: ~9999p",
                                       [?MODULE,
                                        {Type, Reason, erlang:get_stacktrace()}])
@@ -198,7 +198,7 @@ do_notify_(MessageGenerator, Username) ->
                         _ -> ok
                     end;
                 {error, Reason} ->
-                    echessd_log:error(
+                    echessd_log:err(
                       "~w: failed to fetch info for \"~s\": ~9999p",
                       [?MODULE, Username, Reason]),
                     ok
@@ -224,7 +224,7 @@ do_notify(JID, Message, XmppUser, XmppServer, XmppPassword) ->
         ok
     catch
         Type:Reason ->
-            echessd_log:error(
+            echessd_log:err(
               "~w: failed to format notify cmd: ~99999p",
               [?MODULE, {Type, Reason, erlang:get_stacktrace()}]),
             ok
