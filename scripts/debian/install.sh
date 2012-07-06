@@ -5,7 +5,7 @@ set -x
 
 APPDIR=/usr/lib/erlang/lib/echessd-0.2.0
 
-adduser --system --group --home /var/run/echessd --shell /bin/sh echessd
+adduser --system --group --home /var/run/echessd --shell /bin/sh echessd || :
 install --directory --mode=0755 \
     "$APPDIR"/ "$APPDIR"/ebin \
     /usr/share/echessd /usr/share/echessd/www \
@@ -30,11 +30,14 @@ install --mode=644 doc/*.html doc/*.css doc/*.png /usr/share/doc/echessd/html/
 
 # scripts
 install --mode=755 scripts/debian/etc/init.d/echessd /etc/init.d/
-install --mode=750 --group=echessd \
-    scripts/debian/usr/bin/echessd-* /usr/bin/
+install --mode=744 \
+    scripts/debian/usr/share/echessd/init.sh \
+    scripts/debian/usr/share/echessd/remsh.sh \
+    /usr/share/echessd
 
 # generate Erlang cookie
-cat /dev/urandom | tr -dc a-zA-Z0-9 | head -c 20 > /var/run/echessd/.erlang.cookie
+echo $(cat /dev/urandom | tr -dc a-zA-Z0-9 | head -c 20) > \
+    /var/run/echessd/.erlang.cookie
 chown echessd:echessd /var/run/echessd/.erlang.cookie
 chmod 400 /var/run/echessd/.erlang.cookie
 

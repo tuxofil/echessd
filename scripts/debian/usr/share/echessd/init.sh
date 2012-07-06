@@ -1,17 +1,18 @@
 #!/bin/sh
 
 ###-------------------------------------------------------------------
-### File    : echessd-hup
+### File    : init.sh
 ### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
 ### Created : 6 Jul 2012
 ### License : FreeBSD
-### Description : makes echessd re-read configuration file and re-open
-###               log file (use it after logrotate)
+### Description : initiates echessd persistent storage
+###               Warning: all existing data will be lost!
 ###-------------------------------------------------------------------
 
-RANDOM=`date +%N`
 exec su --login --command \
-    'erl -sname "echessd_hupper'$RANDOM'" \
+    'erl -sname "echessd" \
     -noshell -noinput \
-    -s echessd hup' echessd
+    -mnesia dir \"/var/lib/echessd\" \
+    -s echessd_db init \
+    -s init stop' echessd
 
