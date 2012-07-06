@@ -1,16 +1,15 @@
 #!/bin/sh
 
 ###-------------------------------------------------------------------
-### File    : echessd-stop
+### File    : echessd-remsh
 ### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
 ### Created : 6 Jul 2012
 ### License : FreeBSD
-### Description : stops echessd server
+### Description : connects to node with echessd server running
 ###
 ###-------------------------------------------------------------------
 
 RANDOM=`date +%N`
-exec erl -sname "echessd_stopper$RANDOM" \
-    -noshell -noinput \
-    -s echessd stop_remote
+exec erl -sname "echessd_remsh$RANDOM" \
+     -remsh "echessd"
 

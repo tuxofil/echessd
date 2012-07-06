@@ -10,9 +10,9 @@
 ###-------------------------------------------------------------------
 
 exec erl -sname "echessd" \
-    -setcookie echessd_secret_cookie \
     -mnesia dir \"/var/lib/echessd\" \
     -echessd_config /etc/echessd.conf \
+    -noshell -noinput \
     -s mnesia \
     -s echessd
 

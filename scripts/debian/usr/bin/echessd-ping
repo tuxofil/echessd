@@ -9,8 +9,8 @@
 ###
 ###-------------------------------------------------------------------
 
-exec erl -sname "echessd_pinger" \
-    -setcookie echessd_secret_cookie \
+RANDOM=`date +%N`
+exec erl -sname "echessd_pinger$RANDOM" \
     -noshell -noinput \
     -s echessd ping
 

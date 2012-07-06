@@ -33,3 +33,8 @@ install --mode=755 scripts/debian/etc/init.d/echessd /etc/init.d/
 install --mode=750 --group=echessd \
     scripts/debian/usr/bin/echessd-* /usr/bin/
 
+# generate Erlang cookie
+cat /dev/urandom | tr -dc a-zA-Z0-9 | head -c 20 > /var/run/echessd/.erlang.cookie
+chown echessd:echessd /var/run/echessd/.erlang.cookie
+chmod 400 /var/run/echessd/.erlang.cookie
+

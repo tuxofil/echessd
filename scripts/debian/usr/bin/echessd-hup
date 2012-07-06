@@ -10,7 +10,6 @@
 ###-------------------------------------------------------------------
 
 exec erl -sname "echessd_hupper" \
-    -setcookie echessd_secret_cookie \
     -noshell -noinput \
     -s echessd hup
 
