@@ -1,0 +1,16 @@
+#!/bin/sh
+
+###-------------------------------------------------------------------
+### File    : echessd-stop
+### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+### Created : 6 Jul 2012
+### License : FreeBSD
+### Description : stops echessd server
+###
+###-------------------------------------------------------------------
+
+exec erl -sname "echessd_stopper" \
+    -setcookie echessd_secret_cookie \
+    -noshell -noinput \
+    -s echessd stop_remote
+

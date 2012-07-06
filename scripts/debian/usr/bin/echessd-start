@@ -1,0 +1,18 @@
+#!/bin/sh
+
+###-------------------------------------------------------------------
+### File    : echessd-start
+### Author  : Aleksey Morarash <aleksey.morarash@gmail.com>
+### Created : 6 Jul 2012
+### License : FreeBSD
+### Description : starts echessd server
+###
+###-------------------------------------------------------------------
+
+exec erl -sname "echessd" \
+    -setcookie echessd_secret_cookie \
+    -mnesia dir \"/var/lib/echessd\" \
+    -echessd_config /etc/echessd.conf \
+    -s mnesia \
+    -s echessd
+
