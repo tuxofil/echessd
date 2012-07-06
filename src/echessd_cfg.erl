@@ -148,10 +148,10 @@ parse_config(String) ->
     end.
 parse_config_(String) ->
     put(line, 0),
-    Config = parse_config_(String, []),
+    {ok, ConfigDatum} = Config = parse_config_(String, []),
     lists:foreach(
       fun(Mandatory) ->
-              case [K || {K, _} <- Config, K == Mandatory] of
+              case [K || {K, _} <- ConfigDatum, K == Mandatory] of
                   [] ->
                       throw(
                         {error,
