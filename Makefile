@@ -6,10 +6,16 @@ ALLSRCS=$(wildcard src/*.erl)
 SRCS=$(COMPILE_FIRST_SOURCES) $(filter-out $(COMPILE_FIRST_SOURCES),$(ALLSRCS))
 BEAMS=$(patsubst src/%.erl, ebin/%.beam, $(SRCS))
 
+ifndef DEBUG
+COPTS=
+else
+COPTS=+debug_info
+endif
+
 all: erlc_opts $(BEAMS)
 
 ebin/%.beam: src/%.erl include/*.hrl
-	erlc -I ./include -pa ./ebin -o ./ebin `cat erlc_opts` $<
+	erlc -I ./include -pa ./ebin -o ./ebin `cat erlc_opts` $(COPTS) $<
 
 doc: ebin/echessd.beam
 	@echo Making documentation...
