@@ -41,15 +41,15 @@ do_start()
     #   0 if daemon has been started
     #   1 if daemon was already running
     #   2 if daemon could not be started
-    nohup su --login --command \
+    su --login --command \
         'erl -sname "echessd" \
         -mnesia dir \"/var/lib/echessd\" \
         -echessd_config /etc/echessd.conf \
         -echessd_privdir /usr/share/echessd \
         -noshell -noinput \
+        -detached \
         -s mnesia \
-        -s echessd' echessd > /dev/null 2>&1 &
-    return 0
+        -s echessd' echessd
 }
 
 #
