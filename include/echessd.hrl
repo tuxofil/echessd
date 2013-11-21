@@ -15,35 +15,28 @@
 -define(CFG_LOGFILE, logfile).
 -define(CFG_BIND_ADDR, bind_addr).
 -define(CFG_BIND_PORT, bind_port).
--define(CFG_DOC_ROOT, doc_root).
--define(CFG_LANG_INFO, lang_info).
--define(CFG_STYLES_INFO, styles_info).
 -define(CFG_DEF_LANG, default_language).
 -define(CFG_DEF_STYLE, default_style).
--define(CFG_HTTPD_MOD, httpd_engine).
 -define(CFG_XMPP_ENABLED, xmpp_enabled).
 -define(CFG_XMPP_USER, xmpp_user).
 -define(CFG_XMPP_SERVER, xmpp_server).
 -define(CFG_XMPP_PASSWORD, xmpp_password).
 -define(CFG_SHOW_ABOUT, show_about).
 -define(CFG_SHOW_COPYRIGHTS, show_copyrights).
+-define(CFG_MIME_TYPES, mime_types).
+-define(CFG_INSTANCE_ID, instance_id).
+-define(CFG_COOKIE, cookie).
 
 -define(CFGS, [?CFG_LOGLEVEL, ?CFG_LOGFILE,
                ?CFG_BIND_ADDR, ?CFG_BIND_PORT,
-               ?CFG_DOC_ROOT, ?CFG_DEF_LANG,
-               ?CFG_HTTPD_MOD, ?CFG_XMPP_USER,
-               ?CFG_XMPP_SERVER, ?CFG_XMPP_PASSWORD,
-               ?CFG_XMPP_ENABLED, ?CFG_DEF_STYLE,
-               ?CFG_SHOW_ABOUT, ?CFG_SHOW_COPYRIGHTS]).
+               ?CFG_DEF_LANG, ?CFG_DEF_STYLE,
+               ?CFG_XMPP_USER, ?CFG_XMPP_SERVER,
+               ?CFG_XMPP_PASSWORD, ?CFG_XMPP_ENABLED,
+               ?CFG_SHOW_ABOUT, ?CFG_SHOW_COPYRIGHTS,
+               ?CFG_MIME_TYPES, ?CFG_INSTANCE_ID,
+               ?CFG_COOKIE]).
 
-%% available HTTPD implementations
--define(HTTPD_MODULES,
-        [echessd_httpd_mochiweb, echessd_httpd_inets]).
-
--define(MANDATORY_CFGS, []).
-
-%% echessd node names
--define(NODE_ECHESSD, "echessd").
+-define(CFG_CONFIG_PATH, config_path).
 
 %% Configuration storage (ETS) name
 -define(echessd_cfg, echessd_cfg).
@@ -134,4 +127,3 @@
          andalso ?nonnegint(element(3, T)))).
 
 -endif.
-

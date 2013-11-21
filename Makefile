@@ -2,8 +2,7 @@ APP = echessd
 
 VERSION = $(shell cat version)
 
-.PHONY: all compile doc clean eunit dialyze all-tests \
-	install-doc install-html debian-install debian-uninstall
+.PHONY: all compile doc clean eunit dialyze all-tests install uninstall
 
 all: $(APP)
 
@@ -29,28 +28,26 @@ ifeq ($(shell expr $(OTPREL) '<' R14B02), 1)
 COPTS := $(COPTS), {d, 'WITHOUT_INETS_HEADER'}
 endif
 
-FIRST_MODS = "src/echessd_httpd",
-
 compile:
 	mkdir -p ebin
 	sed "s/{{VERSION}}/$(VERSION)/" src/$(APP).app.in > ebin/$(APP).app
-	echo '[$(FIRST_MODS)"src/*"].' > Emakefile
-	erl -pa ebin -noinput -eval "up_to_date=make:all([$(COPTS)]),halt()"
+	echo '["src/*"].' > Emakefile
+	erl -noinput -eval "up_to_date=make:all([$(COPTS)]),halt()"
 
 $(APP): compile
 	rm -f -- $(APP).zip
 	zip -j $(APP) ebin/*
 	zip $(APP) priv/$(APP).lang priv/$(APP).styles priv/www/*
 	echo '#!/usr/bin/env escript' > $(APP)
-	echo '%%!-smp' >> $(APP)
+	echo '%%!-smp -kernel inet_dist_use_interface {127,0,0,1}' >> $(APP)
 	cat $(APP).zip >> $(APP)
 	rm -f -- $(APP).zip
 	chmod 755 $(APP)
 
+EDOC_OPTS = {application, $(APP)}, {preprocess, true}
 html:
 	sed "s/{{VERSION}}/$(VERSION)/" doc/overview.edoc.in > doc/overview.edoc
-	erl -noinput -eval \
-		'edoc:application($(APP),".",[{application,$(APP)}]),halt()'
+	erl -noinput -eval 'edoc:application($(APP),".",[$(EDOC_OPTS)]),halt()'
 
 eunit:
 	$(MAKE) TEST=y clean compile
@@ -58,7 +55,7 @@ eunit:
 		-eval 'ok=eunit:test({application,$(APP)},[verbose]),halt()'
 
 PLT = .dialyzer_plt
-DIALYZER_OPTS = -Wunmatched_returns -Werror_handling -Wrace_conditions
+DIALYZER_OPTS = -Wunmatched_returns -Werror_handling
 
 dialyze: $(PLT)
 	dialyzer --plt $< -r . $(DIALYZER_OPTS) --src
@@ -79,3 +76,16 @@ clean:
 	    *.log *.log.* tmp_file
 	find . -type f -name '*~' -delete
 
+## ----------------------------------------------------------------------
+## installation/deinstallation section
+
+install:
+	install -m 755 -d $(DESTDIR)/etc
+	install -m 644 echessd.conf $(DESTDIR)/etc
+	install -m 755 -d $(DESTDIR)/usr/sbin
+	install -m 755 echessd $(DESTDIR)/usr/sbin
+	install -m 755 -d $(DESTDIR)/var/lib/echessd
+	install -m 755 -d $(DESTDIR)/var/log/echessd
+
+uninstall:
+	rm -rf -- $(DESTDIR)/etc/echessd.conf $(DESTDIR)/usr/sbin/echessd

@@ -1,73 +1,91 @@
+%%% @doc
+%%% Echessd Server main module.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 20 Jan 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc Application start/stop wrapper functions.
 
 -module(echessd).
 
--export([start/0, stop/0, hup/0, ping/0, stop_remote/0,
-         build_doc/0,
-         export_database/1,
-         import_database/1
-        ]).
+-export(
+   [main/1,
+    export_database/1,
+    import_database/1
+   ]).
 
 -include("echessd.hrl").
+
+%% --------------------------------------------------------------------
+%% Type definitions
+%% --------------------------------------------------------------------
+
+-type parsed_args() :: [parsed_arg()].
+
+-type parsed_arg() ::
+        sasl | hup | ping | init | stop |
+        export | import | {config, file:filename()}.
 
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Load and start echessd.
-%% @spec start() -> ok | {error, Reason}
-%%     Reason = term()
-start() ->
-    application:start(?MODULE, permanent).
+%% @doc Program entry point.
+-spec main(Args :: [string()]) -> no_return().
+main([]) ->
+    usage();
+main(Args) ->
+    case lists:member("-h", Args) orelse lists:member("--help", Args) of
+        true ->
+            usage();
+        false ->
+            nop
+    end,
+    %% bind Erlang port mapper only to loopback network interface
+    _IgnoredStdout = os:cmd("epmd -address 127.0.0.1 -daemon"),
+    %% parse and process command line arguments
+    ParsedArgs = parse_args(Args),
+    case [O || O <- [hup, ping, stop], lists:member(O, ParsedArgs)] of
+        [_, _ | _] ->
+            err("--hup, --ping, --stop options are mutually exclusive", []);
+        _ ->
+            nop
+    end,
+    case proplists:is_defined(sasl, ParsedArgs) of
+        true ->
+            ok = application:start(sasl, permanent);
+        false ->
+            nop
+    end,
+    ConfigPath = proplists:get_value(config, ParsedArgs),
+    {InstanceID, Cookie} =
+        echessd_config_parser:read_instance_cfg(ConfigPath),
+    case proplists:is_defined(hup, ParsedArgs) of
+        true ->
+            do_hup(InstanceID, Cookie);
+        false ->
+            nop
+    end,
+    case proplists:is_defined(ping, ParsedArgs) of
+        true ->
+            do_ping(InstanceID, Cookie);
+        false ->
+            nop
+    end,
+    case proplists:is_defined(stop, ParsedArgs) of
+        true ->
+            do_stop(InstanceID, Cookie);
+        false ->
+            nop
+    end,
+    ok = start_net_kernel(InstanceID, Cookie),
+    ok = application:load(?MODULE),
+    ok = application:set_env(?MODULE, ?CFG_CONFIG_PATH, ConfigPath),
+    ok = application:start(?MODULE, permanent),
+    timer:sleep(infinity).
 
-%% @doc Stop echessd.
-%% @spec stop() -> ok | {error, Reason}
-%%     Reason = term()
-stop() ->
-    case application:stop(?MODULE) of
-        {error, {not_started, ?MODULE}} ->
-            ok;
-        Other ->
-            Other
-    end.
-
-%% @doc Connects to Erlang node with echessd running and makes
-%%      him re-read its configuration file and reopen log file.
-%% @spec hup() -> no_return()
-hup() ->
-    {ok, Node} = connect_server(),
-    ok = rpc:call(Node, echessd_cfg, read, []),
-    ok = rpc:call(Node, echessd_log, reopen, []),
-    ok = rpc:call(Node, echessd_web_warden, reconfig, []),
-    halt(0).
-
-%% @doc Checks if Erlang node with running echessd exists.
-%% @spec ping() -> no_return()
-ping() ->
-    {ok, Node} = connect_server(),
-    Apps = rpc:call(Node, application, which_applications, []),
-    case [?MODULE || {?MODULE, _, _} <- Apps] of
-        [_] -> halt(0);
-        _ -> halt(1)
-    end.
-
-%% @doc Stops echessd server on remote Erlang node.
-%% @spec stop_remote() -> no_return()
-stop_remote() ->
-    {ok, Node} = connect_server(),
-    ok = rpc:call(Node, ?MODULE, stop, []),
-    catch rpc:call(Node, init, stop, []),
-    halt(0).
-
-%% @doc Builds echessd developer documentation from sources.
-%%      This function needed only on build stage.
-%% @spec build_doc() -> no_return()
-build_doc() ->
-    edoc:application(?MODULE, ".", []),
-    halt(0).
+%% ----------------------------------------------------------------------
+%% Internal functions
+%% ----------------------------------------------------------------------
 
 %% @doc Saves all database contents to a file.
 %% @spec export_database(Filename) -> ok | {error, Reason}
@@ -125,12 +143,6 @@ import_database(Filename) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-connect_server() ->
-    [_, Hostname] = string:tokens(atom_to_list(node()), "@"),
-    ServerNode = list_to_atom(?NODE_ECHESSD ++ "@" ++ Hostname),
-    pong = net_adm:ping(ServerNode),
-    {ok, ServerNode}.
-
 parse_imported(Terms) ->
     try parse_imported_(Terms)
     catch
@@ -149,3 +161,123 @@ parse_imported_(Terms) ->
               throw({error, {unknown_import_item, Other}})
       end, {ok, [], []}, Terms).
 
+%% @doc Send reconfig signal to the Echessd Server.
+-spec do_hup(InstanceID :: atom(), Cookie :: atom()) -> no_return().
+do_hup(InstanceID, Cookie) ->
+    MyID = list_to_atom(atom_to_list(InstanceID) ++ "_hupper"),
+    ok = start_net_kernel(MyID, Cookie),
+    case net_adm:ping(ServerNode = node_fullname(InstanceID)) of
+        pong ->
+            ok = rpc:call(ServerNode, echessd_cfg, read, []),
+            ok = rpc:call(ServerNode, echessd_log, reopen, []),
+            ok = rpc:call(ServerNode, echessd_web_warden, reconfig, []),
+            halt(0);
+        pang ->
+            err("Echessd is not alive", [])
+    end.
+
+%% @doc Check the Echessd Server.
+-spec do_ping(InstanceID :: atom(), Cookie :: atom()) -> no_return().
+do_ping(InstanceID, Cookie) ->
+    MyID = list_to_atom(atom_to_list(InstanceID) ++ "_pinger"),
+    ok = start_net_kernel(MyID, Cookie),
+    case net_adm:ping(node_fullname(InstanceID)) of
+        pong ->
+            ok = io:format("Running~n"),
+            halt(0);
+        pang ->
+            ok = io:format("Not running~n"),
+            halt(1)
+    end.
+
+%% @doc Tell the Echessd Server to terminate.
+-spec do_stop(InstanceID :: atom(), Cookie :: atom()) -> no_return().
+do_stop(InstanceID, Cookie) ->
+    MyID = list_to_atom(atom_to_list(InstanceID) ++ "_pinger"),
+    ok = start_net_kernel(MyID, Cookie),
+    case net_adm:ping(ServerNode = node_fullname(InstanceID)) of
+        pong ->
+            ok = rpc:call(ServerNode, erlang, halt, [0]),
+            halt(0);
+        pang ->
+            err("Echessd is not alive", [])
+    end.
+
+%% @doc
+-spec start_net_kernel(NodeShortName :: atom(), Cookie :: atom()) ->
+                              ok | no_return().
+start_net_kernel(NodeShortName, Cookie) ->
+    case net_kernel:start([node_fullname(NodeShortName)]) of
+        {ok, _Pid} ->
+            true = erlang:set_cookie(node(), Cookie),
+            ok;
+        {error, Reason} ->
+            err("Failed to start the Erlang Distribution:~n\t~p", [Reason])
+    end.
+
+%% @doc
+-spec node_fullname(NodeShortName :: atom()) -> node().
+node_fullname(NodeShortName) ->
+    list_to_atom(atom_to_list(NodeShortName) ++ "@127.0.0.1").
+
+%% @doc Parse and process command line options and arguments.
+-spec parse_args(Args :: [string()]) -> parsed_args() | no_return().
+parse_args(Args) ->
+    parse_args(Args, []).
+
+-spec parse_args(Args :: [string()], Acc :: parsed_args()) ->
+                        parsed_args() | no_return().
+parse_args(["--sasl" | Tail], Acc) ->
+    parse_args(Tail, [sasl | Acc]);
+parse_args(["--hup" | Tail], Acc) ->
+    parse_args(Tail, [hup | Acc]);
+parse_args(["--ping" | Tail], Acc) ->
+    parse_args(Tail, [ping | Acc]);
+parse_args(["--stop" | Tail], Acc) ->
+    parse_args(Tail, [stop | Acc]);
+parse_args(["--", ConfigFilePath], Acc) ->
+    [{config, ConfigFilePath} | Acc];
+parse_args(["-" ++ _ = Option | _Tail], _Acc) ->
+    err("Unrecognized option: ~p", [Option]);
+parse_args([ConfigFilePath], Acc) ->
+    [{config, ConfigFilePath} | Acc];
+parse_args(Other, _Acc) ->
+    err("Unrecognized option or arguments: ~p", [Other]).
+
+%% @doc Report something to stderr and halt.
+-spec err(Format :: string(), Args :: list()) -> no_return().
+err(Format, Args) ->
+    ok = io:format(standard_error, "Error: " ++ Format ++ "\n", Args),
+    halt(1).
+
+%% @doc
+-spec usage() -> no_return().
+usage() ->
+    N = escript:script_name(),
+    io:format(
+      "Echessd - web-based Internet Chess Server v.~s~n~n"
+      "Usage:~n"
+      "  ~s -h | --help~n"
+      "\tShow this memo;~n"
+      "  ~s /path/to/config~n"
+      "\tStart Echessd Server;~n"
+      "  ~s --hup /path/to/config~n"
+      "\tSend reconfig signal to the running Echessd Server;~n"
+      "  ~s --ping /path/to/config~n"
+      "\tCheck if the Echessd Server instance is alive or not;~n"
+      "  ~s --stop /path/to/config~n"
+      "\tTell the Echessd Server to terminate.~n",
+      [version(), N, N, N, N, N]),
+    halt().
+
+%% @doc Return Echessd version.
+-spec version() -> iolist().
+version() ->
+    case application:load(?MODULE) of
+        ok ->
+            ok;
+        {error, {already_loaded, ?MODULE}} ->
+            ok
+    end,
+    {ok, Version} = application:get_key(?MODULE, vsn),
+    Version.

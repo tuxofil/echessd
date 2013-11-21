@@ -9,7 +9,7 @@
 
 {application, echessd,
  [
-  {description,  "Online chess server"},
+  {description,  "Internet Chess Server"},
   {vsn,          "{{VERSION}}"},
   {modules,      [echessd,
                   echessd_app,
@@ -24,17 +24,19 @@
                   echessd_db,
                   echessd_session,
                   echessd_html,
+                  echessd_mime_types,
                   echessd_rules_classic,
-                  echessd_web_warden,
-                  echessd_httpd,
+                  echessd_httpd_warden,
                   echessd_httpd_lib,
-                  echessd_httpd_inets,
-                  echessd_httpd_mochiweb
+                  echessd_httpd,
+                  echessd_priv
                  ]},
-  {registered,   [echessd_sup, echessd_log,
-                  echessd_web_warden]},
+  {registered,   [echessd_sup,
+                  echessd_log,
+                  echessd_priv,
+                  echessd_mime_types,
+                  echessd_httpd_warden]},
   {applications, [mnesia]},
   {env,          []},
   {mod,          {echessd_app, []}}
  ]}.
-

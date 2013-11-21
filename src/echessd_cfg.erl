@@ -1,8 +1,9 @@
+%%% @doc
+%%% Configuration file parsing and configuration items accessing tools.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 20 Jan 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc Configuration file parsing and configuration
-%%%   items accessing tools.
 
 -module(echessd_cfg).
 
@@ -111,16 +112,12 @@ default(?CFG_BIND_ADDR) ->
     {ok, {0,0,0,0}};
 default(?CFG_BIND_PORT) ->
     {ok, 8888};
-default(?CFG_DOC_ROOT) ->
-    {ok, "www"};
 default(?CFG_LOGFILE) ->
     {ok, "echessd.log"};
 default(?CFG_DEF_LANG) ->
     {ok, en};
 default(?CFG_DEF_STYLE) ->
     {ok, default};
-default(?CFG_HTTPD_MOD) ->
-    {ok, echessd_httpd_inets};
 default(?CFG_XMPP_ENABLED) ->
     {ok, false};
 default(?CFG_XMPP_USER) ->
@@ -133,6 +130,10 @@ default(?CFG_SHOW_ABOUT) ->
     {ok, true};
 default(?CFG_SHOW_COPYRIGHTS) ->
     {ok, true};
+default(?CFG_INSTANCE_ID) ->
+    {ok, echessd};
+default(?CFG_COOKIE) ->
+    {ok, echessd};
 default(_) ->
     undefined.
 
@@ -155,18 +156,8 @@ parse_config(String) ->
     end.
 parse_config_(String) ->
     put(line, 0),
-    {ok, ConfigDatum} = Config = parse_config_(String, []),
-    lists:foreach(
-      fun(Mandatory) ->
-              case [K || {K, _} <- ConfigDatum, K == Mandatory] of
-                  [] ->
-                      throw(
-                        {error,
-                         {mandatory_param_undefined, Mandatory}});
-                  _ -> nop
-              end
-      end, ?MANDATORY_CFGS),
-    Config.
+    {ok, _ConfigDatum} = parse_config_(String, []).
+
 parse_config_(String, Result) ->
     case get_line_(String, []) of
         eof ->
@@ -238,16 +229,6 @@ parse_val_(?CFG_DEF_LANG, String) ->
 parse_val_(?CFG_DEF_STYLE, String) ->
     {Name, _TextID, _Filename} = echessd_lib:parse_style(String),
     Name;
-parse_val_(?CFG_HTTPD_MOD, String0) ->
-    String = string:to_lower(String0),
-    List = [{atom_to_list(A), A} || A <- ?HTTPD_MODULES],
-    case [M || {K, M} <- List,
-               K == String orelse
-                   K == "echessd_httpd_" ++ String] of
-        [Mod | _] -> Mod;
-        _ ->
-            throw({error, {unsupported_httpd_module, String0}})
-    end;
 parse_val_(?CFG_XMPP_ENABLED, String) ->
     case parse_boolean(String) of
         {ok, Boolean} -> Boolean;

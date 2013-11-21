@@ -1,6 +1,5 @@
 *~
 *.beam
-contrib/*
 tmp/*
 db/*
 doc/*.html
@@ -10,5 +9,6 @@ doc/edoc-info
 erl_crash.dump
 *.log
 *.log.?
-otp_release
-erlc_opts
+*.app
+echessd
+Emakefile

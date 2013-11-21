@@ -1,7 +1,9 @@
+%%% @doc
+%%% Application main supervisor.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 20 Jan 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc Application main supervisor.
 
 -module(echessd_sup).
 
@@ -16,16 +18,19 @@
 %% ----------------------------------------------------------------------
 
 %% @doc Starts supervisor as part of a supervision tree.
-%% @spec start_link() -> {ok, pid()}
+-spec start_link() -> {ok, Pid :: pid()} | ignore | {error, Reason :: any()}.
 start_link() ->
     supervisor:start_link(?MODULE, no_args).
 
 %% @doc Calls initialisation procedures and return child workers spec.
 %% @hidden
-%% @spec init(StartArgs) -> {ok, WorkersSpec}
-%%     StartArgs = term(),
-%%     WorkersSpec = tuple()
-init(_StartArgs) ->
+-spec init(Args :: any()) ->
+                  {ok,
+                   {{RestartStrategy :: supervisor:strategy(),
+                     MaxR :: non_neg_integer(),
+                     MaxT :: non_neg_integer()},
+                    [ChildSpec :: supervisor:child_spec()]}}.
+init(_Args) ->
     true = register(?MODULE, self()),
     ok = echessd_cfg:read(),
     ok = echessd_db:wait(),
@@ -34,17 +39,15 @@ init(_StartArgs) ->
        {one_for_one, 5, 1},
        [
         %% logger
-        {echessd_log,
-         {echessd_log, start_link, []},
+        {echessd_log, {echessd_log, start_link, []},
          permanent, 100, worker, [echessd_log]},
-
+        %% priv filesystem
+        {echessd_priv, {echessd_priv, start_link, []},
+         permanent, 100, worker, [echessd_priv]},
+        %% mime types reference keeper
+        {echessd_mime_types, {echessd_mime_types, start_link, []},
+         permanent, 100, worker, [echessd_mime_types]},
         %% HTTPD warden process
-        {echessd_web_warden,
-         {echessd_web_warden, start_link, []},
-         permanent, 100, worker, dynamic}
+        {echessd_httpd_warden, {echessd_httpd_warden, start_link, []},
+         permanent, 100, worker, [echessd_httpd_warden]}
        ]}}.
-
-%% ----------------------------------------------------------------------
-%% Internal functions
-%% ----------------------------------------------------------------------
-
