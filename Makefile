@@ -1,46 +1,81 @@
-.PHONY: all doc clean cleanall erlc_opts
+APP = echessd
 
-COMPILE_FIRST_SOURCES=src/echessd_httpd.erl
+VERSION = $(shell cat version)
 
-ALLSRCS=$(wildcard src/*.erl)
-SRCS=$(COMPILE_FIRST_SOURCES) $(filter-out $(COMPILE_FIRST_SOURCES),$(ALLSRCS))
-BEAMS=$(patsubst src/%.erl, ebin/%.beam, $(SRCS))
+.PHONY: all compile doc clean eunit dialyze all-tests \
+	install-doc install-html debian-install debian-uninstall
 
-ifndef DEBUG
-COPTS=
-else
-COPTS=+debug_info
+all: $(APP)
+
+COPTS = {outdir, ebin}, {i, \"include\"}, warn_unused_function, \
+ warn_bif_clash, warn_deprecated_function, warn_obsolete_guard, verbose, \
+ warn_shadow_vars, warn_export_vars, warn_unused_records, \
+ warn_unused_import, warn_export_all, warnings_as_errors
+
+ifdef DEBUG
+COPTS := $(COPTS), debug_info
 endif
 
-all: erlc_opts $(BEAMS)
+ifdef TEST
+COPTS := $(COPTS), {d, 'TEST'}
+endif
 
-ebin/%.beam: src/%.erl include/*.hrl
-	erlc -I ./include -pa ./ebin -o ./ebin `cat erlc_opts` $(COPTS) $<
+ifdef TRACE
+COPTS := $(COPTS), {d, 'TRACE'}
+endif
 
-doc: ebin/echessd.beam
-	@echo Making documentation...
-	erl -noshell -noinput -pa ./ebin -s echessd build_doc
+OTPREL = $(shell erl -noshell -eval 'io:format(erlang:system_info(otp_release)),halt()')
+ifeq ($(shell expr $(OTPREL) '<' R14B02), 1)
+COPTS := $(COPTS), {d, 'WITHOUT_INETS_HEADER'}
+endif
+
+FIRST_MODS = "src/echessd_httpd",
+
+compile:
+	mkdir -p ebin
+	sed "s/{{VERSION}}/$(VERSION)/" src/$(APP).app.in > ebin/$(APP).app
+	echo '[$(FIRST_MODS)"src/*"].' > Emakefile
+	erl -pa ebin -noinput -eval "up_to_date=make:all([$(COPTS)]),halt()"
+
+$(APP): compile
+	rm -f -- $(APP).zip
+	zip -j $(APP) ebin/*
+	zip $(APP) priv/$(APP).lang priv/$(APP).styles priv/www/*
+	echo '#!/usr/bin/env escript' > $(APP)
+	echo '%%!-smp' >> $(APP)
+	cat $(APP).zip >> $(APP)
+	rm -f -- $(APP).zip
+	chmod 755 $(APP)
+
+html:
+	sed "s/{{VERSION}}/$(VERSION)/" doc/overview.edoc.in > doc/overview.edoc
+	erl -noinput -eval \
+		'edoc:application($(APP),".",[{application,$(APP)}]),halt()'
+
+eunit:
+	$(MAKE) TEST=y clean compile
+	erl -noinput -pa ebin \
+		-eval 'ok=eunit:test({application,$(APP)},[verbose]),halt()'
+
+PLT = .dialyzer_plt
+DIALYZER_OPTS = -Wunmatched_returns -Werror_handling -Wrace_conditions
+
+dialyze: $(PLT)
+	dialyzer --plt $< -r . $(DIALYZER_OPTS) --src
+	$(MAKE) DEBUG=y clean compile
+	dialyzer --plt $< -r . $(DIALYZER_OPTS)
+
+$(PLT):
+	dialyzer --build_plt --output_plt $@ \
+		--apps erts inets kernel stdlib crypto compiler
+
+all-tests:
+	$(MAKE) eunit
+	$(MAKE) dialyze
 
 clean:
-	rm -f -- ./doc/*.html
-	rm -f -- ./doc/*.css
-	rm -f -- ./doc/*.png
-	rm -f -- ./doc/edoc-info
-	rm -f -- ./ebin/*.beam
-	rm -f -- ./erl_crash.dump
-	rm -f -- ./erlc_opts
-	rm -f -- ./otp_release
-	find ./ -type f -name '*~' -print -delete
-
-cleanall: clean
-	rm -f ./echessd.log
-	rm -rf ./db/mnesia
-
-.ONESHELL:
-erlc_opts:
-	erl -noshell -noinput \
-		-eval 'io:format("~s~n", [erlang:system_info(otp_release)])' \
-		-s init stop > otp_release
-	expr `cat otp_release` '<' R14B02 > /dev/null && \
-		echo "-DWITHOUT_INETS_HEADER" > erlc_opts || :
+	rm -rf -- ebin doc/*.html doc/*.css doc/*.png doc/edoc-info \
+	    $(APP).zip $(APP) erl_crash.dump Emakefile doc/overview.edoc \
+	    *.log *.log.* tmp_file
+	find . -type f -name '*~' -delete
 

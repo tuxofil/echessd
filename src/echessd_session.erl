@@ -26,15 +26,13 @@
 %% ----------------------------------------------------------------------
 
 %% @doc Creates non-persistent storage of user current sessions.
-%% @spec init() -> ok
+-spec init() -> ok.
 init() ->
-    ?dbt_session =
-        ets:new(?dbt_session, [named_table, public, set]),
+    ?dbt_session = ets:new(?dbt_session, [named_table, public, set]),
     ok.
 
 %% @doc Creates new session for user.
-%% @spec mk(Username) -> echessd_session_id()
-%%     Username = echessd_user:echessd_user()
+-spec mk(Username :: echessd_user:echessd_user()) -> echessd_session_id().
 mk(User) ->
     ets:insert(?dbt_session, [{SID = sid(), User, ""}]),
     SID.

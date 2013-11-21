@@ -10,7 +10,7 @@
 {application, echessd,
  [
   {description,  "Online chess server"},
-  {vsn,          "0.2.0"},
+  {vsn,          "{{VERSION}}"},
   {modules,      [echessd,
                   echessd_app,
                   echessd_sup,
