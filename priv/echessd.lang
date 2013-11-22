@@ -701,24 +701,19 @@
   {ua, "Внутрішня помилка при надсиланні сторінки"}]}.
 
 {text, txt_err_game_confirm,
- [{en, "Failed to confirm game ~9999p"},
-  {ru, "Не удалось подтвердить партию ~9999p"},
-  {ua, "Не вдалося підтвердити партію ~9999p"}]}.
+ [{en, "Failed to confirm game"},
+  {ru, "Не удалось подтвердить партию"},
+  {ua, "Не вдалося підтвердити партію"}]}.
 
 {text, txt_err_game_deny,
- [{en, "Failed to deny game ~9999p"},
-  {ru, "Не удалось отменить партию ~9999p"},
-  {ua, "Не вдалося відмінити партію ~9999p"}]}.
+ [{en, "Failed to deny game"},
+  {ru, "Не удалось отменить партию"},
+  {ua, "Не вдалося відмінити партію"}]}.
 
 {text, txt_err_new_user,
  [{en, "Failed to create new user"},
   {ru, "Не удалось зарегистрировать игрока"},
   {ua, "Не вдалося зареєструвати гравця"}]}.
-
-{text, txt_err_bad_timezone,
- [{en, "bad timezone"},
-  {ru, "часовой пояс указан неверно"},
-  {ua, "часовий пояс вказано невірно"}]}.
 
 {text, txt_err_save_user,
  [{en, "Failed to save user properties"},

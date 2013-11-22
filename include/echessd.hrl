@@ -50,29 +50,38 @@
 -define(dbt_games, echessd_dbt_games).
 
 %% game types
--define(GAME_CLASSIC, "classic").
+-define(GAME_CLASSIC, classic).
 -define(GAME_TYPES, [?GAME_CLASSIC]).
 
 %% site sections
--define(SECTION_HOME, "home").
--define(SECTION_GAME, "game").
--define(SECTION_USERS, "users").
--define(SECTION_USER, "user").
--define(SECTION_NEWGAME, "newgame").
--define(SECTION_REG, "register").
--define(SECTION_LOGIN, "login").
--define(SECTION_EXIT, "exit").
--define(SECTION_MOVE, "move").
--define(SECTION_ACKGAME, "ackgame").
--define(SECTION_DENYGAME, "denygame").
--define(SECTION_EDITUSER, "edituser").
--define(SECTION_SAVEUSER, "saveuser").
--define(SECTION_PASSWD_FORM, "passwdform").
--define(SECTION_PASSWD, "passwd").
--define(SECTION_DRAW_CONFIRM, "drawconfirm").
--define(SECTION_DRAW, "draw").
--define(SECTION_GIVEUP_CONFIRM, "giveupconfirm").
--define(SECTION_GIVEUP, "giveup").
+-define(SECTION_HOME, home).
+-define(SECTION_GAME, game).
+-define(SECTION_USERS, users).
+-define(SECTION_USER, user).
+-define(SECTION_NEWGAME, newgame).
+-define(SECTION_REG, register).
+-define(SECTION_LOGIN, login).
+-define(SECTION_EXIT, exit).
+-define(SECTION_MOVE, move).
+-define(SECTION_ACKGAME, ackgame).
+-define(SECTION_DENYGAME, denygame).
+-define(SECTION_EDITUSER, edituser).
+-define(SECTION_SAVEUSER, saveuser).
+-define(SECTION_PASSWD_FORM, passwdform).
+-define(SECTION_PASSWD, passwd).
+-define(SECTION_DRAW_CONFIRM, drawconfirm).
+-define(SECTION_DRAW, draw).
+-define(SECTION_GIVEUP_CONFIRM, giveupconfirm).
+-define(SECTION_GIVEUP, giveup).
+
+-define(ALL_SECTIONS,
+        [?SECTION_HOME, ?SECTION_GAME, ?SECTION_USERS,
+         ?SECTION_USER, ?SECTION_NEWGAME, ?SECTION_REG,
+         ?SECTION_LOGIN, ?SECTION_EXIT, ?SECTION_MOVE,
+         ?SECTION_ACKGAME, ?SECTION_DENYGAME, ?SECTION_EDITUSER,
+         ?SECTION_SAVEUSER, ?SECTION_PASSWD_FORM, ?SECTION_PASSWD,
+         ?SECTION_DRAW_CONFIRM, ?SECTION_DRAW, ?SECTION_GIVEUP_CONFIRM,
+         ?SECTION_GIVEUP]).
 
 -define(SECTIONS,
         [?SECTION_HOME, ?SECTION_GAME,
@@ -80,6 +89,45 @@
          ?SECTION_NEWGAME,
          ?SECTION_EDITUSER, ?SECTION_DRAW_CONFIRM,
          ?SECTION_GIVEUP_CONFIRM, ?SECTION_PASSWD_FORM
+        ]).
+
+%% http query keys
+-define(Q_GOTO, goto).
+-define(Q_STEP, step).
+-define(Q_GAME, game).
+-define(Q_NAME, name).
+-define(Q_MOVE, move).
+-define(Q_COMMENT, comment).
+-define(Q_PRIVATE, private).
+-define(Q_GAMETYPE, gametype).
+-define(Q_COLOR, color).
+-define(Q_OPPONENT, opponent).
+-define(Q_EDIT_JID, editjid).
+-define(Q_EDIT_STYLE, editstyle).
+-define(Q_EDIT_AUTO_PERIOD, editautoperiod).
+-define(Q_EDIT_AUTO_REFRESH, editautorefresh).
+-define(Q_EDIT_NOTIFY, editnotify).
+-define(Q_EDIT_SHOW_COMMENT, editshowcomment).
+-define(Q_EDIT_SHOW_HISTORY, editshowhistory).
+-define(Q_EDIT_SHOW_IN_LIST, editshowinlist).
+-define(Q_EDIT_LANGUAGE, editlanguage).
+-define(Q_EDIT_TIMEZONE, edittimezone).
+-define(Q_EDIT_FULLNAME, editfullname).
+-define(Q_EDIT_PASSWORD0, editpassword0).
+-define(Q_EDIT_PASSWORD1, editpassword1).
+-define(Q_EDIT_PASSWORD2, editpassword2).
+-define(Q_EDIT_USERNAME, editusername).
+-define(Q_USERNAME, username).
+-define(Q_PASSWORD, password).
+
+-define(ALL_Q_KEYS,
+        [?Q_GOTO, ?Q_STEP, ?Q_GAME, ?Q_NAME, ?Q_MOVE, ?Q_COMMENT,
+         ?Q_PRIVATE, ?Q_GAMETYPE, ?Q_COLOR, ?Q_OPPONENT, ?Q_EDIT_JID,
+         ?Q_EDIT_STYLE, ?Q_EDIT_AUTO_PERIOD, ?Q_EDIT_AUTO_REFRESH,
+         ?Q_EDIT_NOTIFY, ?Q_EDIT_SHOW_COMMENT, ?Q_EDIT_SHOW_HISTORY,
+         ?Q_EDIT_SHOW_IN_LIST, ?Q_EDIT_LANGUAGE, ?Q_EDIT_TIMEZONE,
+         ?Q_EDIT_FULLNAME, ?Q_EDIT_PASSWORD0, ?Q_EDIT_PASSWORD1,
+         ?Q_EDIT_PASSWORD2, ?Q_EDIT_USERNAME, ?Q_USERNAME, ?Q_PASSWORD
         ]).
 
 %% colors
@@ -112,7 +160,7 @@
 
 %% user session record
 -record(session,
-        {id :: echessd_session_id(),
+        {id :: echessd_session:echessd_session_id(),
          created :: erlang:timestamp(),
          username :: echessd_user:echessd_user() | undefined,
          timezone :: echessd_lib:administrative_offset() | undefined,
@@ -132,5 +180,30 @@
          andalso ?nonnegint(element(1, T))
          andalso ?nonnegint(element(2, T))
          andalso ?nonnegint(element(3, T)))).
+
+%% ----------------------------------------------------------------------
+
+-ifndef(WITHOUT_INETS_HEADER).
+-include_lib("inets/include/httpd.hrl").
+-else.
+%% early versions of Erlang on Debian didn't provide inets/include/httpd.hrl
+-record(mod,
+        {init_data,
+         data=[],
+         socket_type=ip_comm,
+         socket,
+         config_db,
+         method,
+         absolute_uri=[],
+         request_uri,
+         http_version,
+         request_line,
+         parsed_header=[],
+         entity_body,
+         connection}).
+-endif.
+
+-define(HTTP_GET, "GET").
+-define(HTTP_POST, "POST").
 
 -endif.

@@ -21,7 +21,8 @@
     local_offset/0,
     strip/2,
     string_to_terms/1,
-    list_to_atom/2
+    list_to_atom/2,
+    split4pathNquery/1
    ]).
 
 %% ----------------------------------------------------------------------
@@ -224,6 +225,13 @@ list_to_atom(String, [Atom | Tail]) ->
             list_to_atom(String, Tail)
     end.
 
+%% @doc Split the request URI to a Path and a Query strings
+%% (delimited by '?').
+-spec split4pathNquery(RequestURI :: string()) ->
+                              {Path :: string(), Query :: string()}.
+split4pathNquery(RequestURI) ->
+    split4pathNquery(RequestURI, []).
+
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
@@ -278,3 +286,14 @@ split_tokens([{dot, _} = Dot | Tail], Acc) ->
     {lists:reverse([Dot | Acc]), Tail};
 split_tokens([Token | Tail], Acc) ->
     split_tokens(Tail, [Token | Acc]).
+
+%% @doc
+-spec split4pathNquery(RequestURI :: string(), Acc :: string()) ->
+                              {Path :: string(), Query :: string()}.
+split4pathNquery([$? | Tail], Path) ->
+    {lists:reverse(Path), Tail};
+split4pathNquery([H | Tail], Path) ->
+    split4pathNquery(Tail, [H | Path]);
+split4pathNquery(_, Path) ->
+    {lists:reverse(Path), []}.
+

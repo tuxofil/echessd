@@ -30,6 +30,7 @@
                   echessd_httpd_warden,
                   echessd_httpd_lib,
                   echessd_httpd,
+                  echessd_query_parser,
                   echessd_priv,
                   echessd_lang
                  ]},

@@ -1,26 +1,29 @@
+%%% @doc
+%%% HTML page generation functions.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 21 Jan 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc HTML page generation functions.
 
 -module(echessd_html).
 
--export([login/0,
-         register/0,
-         edituser/0,
-         passwd/0,
-         eaccess/0,
-         home/0,
-         game/2,
-         draw_confirm/1,
-         giveup_confirm/1,
-         users/0,
-         user/1,
-         newgame/0,
-         error/1, error/2,
-         redirection/1,
-         notyet/0
-        ]).
+-export(
+   [login/0,
+    register/0,
+    edituser/0,
+    passwd/0,
+    eaccess/0,
+    home/0,
+    game/2,
+    draw_confirm/1,
+    giveup_confirm/1,
+    users/0,
+    user/1,
+    newgame/0,
+    error/1, error/2,
+    redirection/1,
+    notyet/0
+   ]).
 
 -include("echessd.hrl").
 
@@ -28,8 +31,8 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Makes 'login' page content.
-%% @spec login() -> io_list()
+%% @doc Make 'login' page.
+-spec login() -> iolist().
 login() ->
     Content =
         navig_links([{"?goto=" ++ ?SECTION_REG, gettext(txt_lgn_rnu_link)}]) ++

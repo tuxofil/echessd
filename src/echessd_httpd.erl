@@ -16,24 +16,26 @@
 -include("echessd.hrl").
 -include_lib("kernel/include/file.hrl").
 
--ifndef(WITHOUT_INETS_HEADER).
--include_lib("inets/include/httpd.hrl").
--else.
-%% early versions of Erlang on Debian didn't provide inets/include/httpd.hrl
--record(mod,{init_data,
-             data=[],
-             socket_type=ip_comm,
-             socket,
-             config_db,
-             method,
-             absolute_uri=[],
-             request_uri,
-             http_version,
-             request_line,
-             parsed_header=[],
-             entity_body,
-             connection}).
--endif.
+%% ----------------------------------------------------------------------
+%% Type definitions
+%% ----------------------------------------------------------------------
+
+-export_type(
+   [cookies/0,
+    cookie/0,
+    method/0,
+    result/0
+   ]).
+
+-type cookies() :: [cookie()].
+
+-type cookie() :: {Key :: nonempty_string(), Value :: string()}.
+
+-type method() :: nonempty_string(). %% ?HTTP_GET | ?HTTP_POST
+
+-type result() ::
+        {redirect, URL :: string()} |
+        (HtmlPageContent :: iolist()).
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -46,169 +48,155 @@
 start_link(BindAddr, BindPort) ->
     inets:start(
       httpd,
-      [{port, BindPort},
-       {bind_address,
+      [{bind_address,
         if BindAddr == {0,0,0,0} -> any;
-           BindAddr == "0.0.0.0" -> any;
            true -> BindAddr
         end},
+       {port, BindPort},
        {server_name, "echessd"},
        {server_root, "."},
        {document_root, "."},
        {ipfamily, inet},
-       {modules, [echessd_httpd]}
+       {modules, [?MODULE]}
       ], stand_alone).
 
 %% ----------------------------------------------------------------------
 %% httpd callback functions
 %% ----------------------------------------------------------------------
 
--define(HTTP_GET, "GET").
--define(HTTP_POST, "POST").
-
--define(mime_text_plain, "text/plain").
 -define(mime_text_html, "text/html").
 
 %% @hidden
+-spec do(ModData :: #mod{}) ->
+                {proceed, list()} |
+                {break, list()}.
 do(ModData) ->
     case ModData#mod.request_uri of
         "/res/" ++ ResFile0 when ModData#mod.method == ?HTTP_GET ->
-            {ResFile, _} = split4pathNquery(ResFile0),
+            {ResFile, _} = echessd_lib:split4pathNquery(ResFile0),
             serve_internal_file(ModData, ResFile);
         "/favicon.ico" ++ _ when ModData#mod.method == ?HTTP_GET ->
             serve_internal_file(ModData, "favicon.ico");
         _ ->
-            {Path, GetQueryString} =
-                split4pathNquery(ModData#mod.request_uri),
-            Query =
-                httpd:parse_query(
-                  case ModData#mod.method of
-                      ?HTTP_GET when GetQueryString == [] ->
-                          try
-                              "/" ++ Str = Path,
-                              Int = list_to_integer(Str),
-                              true = Int > 0,
-                              "goto=" ++ ?SECTION_GAME ++ "&game=" ++ Str
-                          catch _:_ ->
-                                  GetQueryString end;
-                      ?HTTP_GET ->
-                          GetQueryString;
-                      ?HTTP_POST ->
-                          ModData#mod.entity_body;
-                      Other ->
-                          throw({bad_method, Other})
-                  end),
-            echessd_session:read(parse_cookies(ModData)),
-            process(ModData, Query)
+            process(
+              ModData,
+              _Query = echessd_query_parser:parse(ModData),
+              echessd_session:from_cookies(parse_cookies(ModData)))
     end.
 
 %% @hidden
-load(_Line, _AccIn) -> ok.
+-spec load(Line :: string(),
+           AccIn :: [{Option :: httpd:property(), Value :: any()}]) -> ok.
+load(_Line, _AccIn) ->
+    ok.
 
 %% @hidden
-store(OptVal, _Config) -> {ok, OptVal}.
+-spec store(OptVal :: {Option :: httpd:property(), Value :: any()},
+            Config :: [{Option :: httpd:property(), Value :: any()}]) ->
+                   {ok, {Option :: httpd:property(), Value :: any()}}.
+store(OptVal, _Config) ->
+    {ok, OptVal}.
 
 %% @hidden
-remove(_ConfigDB) -> ok.
+-spec remove(ConfigDB :: ets:tab()) -> ok.
+remove(_ConfigDB) ->
+    ok.
 
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
 
 %% @doc
--spec process(ModData :: #mod{}, Query :: any()) ->
+-spec process(ModData :: #mod{},
+              Query :: echessd_query_parser:http_query(),
+              Session :: #session{}) ->
                      {proceed, NewData :: list()}.
-process(ModData, Query) ->
-    echessd_httpd_lib:reset_extra_headers(),
+process(ModData, Query, Session) ->
+    ok = echessd_httpd_lib:reset_extra_headers(),
     erase(error),
-    Content =
-        try
-            if ModData#mod.method ==?HTTP_GET ->
-                    echessd_request_processor:process_get(Query);
-               true ->
-                    echessd_request_processor:process_post(Query)
-            end
-        catch
-            _:{error, Reason} ->
-                echessd_html:error(
-                  gettext(txt_resp_gen_error) ++ ":~n~p", [Reason]);
-            Type:Reason ->
-                echessd_html:error(
-                  gettext(txt_resp_gen_error) ++ ":~n~p",
-                  [{Type, Reason, erlang:get_stacktrace()}])
-        end,
     try
-        MimeType = ?mime_text_html,
-        case Content of
-            {redirect, URL} ->
-                echessd_log:debug("redirecting to ~9999p...", [URL]),
-                Body = echessd_html:redirection(URL),
-                Binary = list_to_binary(Body),
-                Headers =
-                    [{location, URL},
-                     {content_type, MimeType},
-                     {content_length, integer_to_list(size(Binary))}] ++
-                    echessd_httpd_lib:get_extra_headers(),
-                httpd_response:send_header(ModData, 303, Headers),
-                httpd_socket:deliver(
-                  ModData#mod.socket_type,
-                  ModData#mod.socket, Binary),
-                {proceed,
-                 [{response, {already_sent, 303, size(Binary)}},
-                  {mime_type, MimeType} |
-                  ModData#mod.data]};
-            _IoList ->
-                Binary = list_to_binary(Content),
-                Headers =
-                    [{content_type, MimeType},
-                     {content_length, integer_to_list(size(Binary))}] ++
-                    echessd_httpd_lib:get_extra_headers(),
-                httpd_response:send_header(ModData, 200, Headers),
-                httpd_socket:deliver(
-                  ModData#mod.socket_type,
-                  ModData#mod.socket, Binary),
-                {proceed,
-                 [{response, {already_sent, 200, size(Binary)}},
-                  {mime_type, MimeType} |
-                  ModData#mod.data]}
-        end
+        send_reply(
+          ModData,
+          generate_html(ModData#mod.method, Query, Session))
     catch
         Type2:Reason2 ->
             {break,
              [{response,
                {501,
-                echessd_html:error(
-                  gettext(txt_resp_send_error) ++ ":~n~p",
-                  [{Type2, Reason2, erlang:get_stacktrace()}])}}]}
+                geterr(txt_resp_send_error,
+                       {Type2, Reason2, erlang:get_stacktrace()})}}]}
     end.
 
-%% @doc Splits request URI to Path and Query strings (delimited by '?').
--spec split4pathNquery(RequestURI :: string()) ->
-                              {Path :: string(), Query :: string()}.
-split4pathNquery(RequestURI) ->
-    split4pathNquery(RequestURI, []).
+%% @doc Generate HTML
+-spec generate_html(Method :: method(),
+                    Query :: echessd_query_parser:http_query(),
+                    Session :: #session{}) -> result().
+generate_html(Method, Query, Session) ->
+    ok = echessd_log:debug("~s query=~9999p", [Method, Query]),
+    Action = proplists:get_value("action", Query),
+    try
+        if Method == ?HTTP_GET ->
+                echessd_request_processor:get(Action, Query, Session);
+           true ->
+                echessd_request_processor:post(Action, Query, Session)
+        end
+    catch
+        _:{error, Reason} ->
+            geterr(txt_resp_gen_error, Reason);
+        Type:Reason ->
+            FinalReason = {Type, Reason, erlang:get_stacktrace()},
+            geterr(txt_resp_gen_error, FinalReason)
+    end.
+
+%% @doc Send the generated page contents to the client.
+-spec send_reply(ModData :: #mod{}, Result :: result()) ->
+                        {proceed, NewData :: list()}.
+send_reply(ModData, {redirect, URL}) ->
+    ok = echessd_log:debug("redirecting to ~9999p...", [URL]),
+    Body = echessd_html:redirection(URL),
+    Binary = list_to_binary(Body),
+    Headers =
+        [{location, URL},
+         {content_type, ?mime_text_html},
+         {content_length, integer_to_list(size(Binary))}] ++
+        echessd_httpd_lib:get_extra_headers(),
+    httpd_response:send_header(ModData, 303, Headers),
+    httpd_socket:deliver(
+      ModData#mod.socket_type,
+      ModData#mod.socket, Binary),
+    {proceed,
+     [{response, {already_sent, 303, size(Binary)}},
+      {mime_type, ?mime_text_html} |
+      ModData#mod.data]};
+send_reply(ModData, IoList) ->
+    Binary = list_to_binary(IoList),
+    Headers =
+        [{content_type, ?mime_text_html},
+         {content_length, integer_to_list(size(Binary))}] ++
+        echessd_httpd_lib:get_extra_headers(),
+    httpd_response:send_header(ModData, 200, Headers),
+    httpd_socket:deliver(
+      ModData#mod.socket_type,
+      ModData#mod.socket, Binary),
+    {proceed,
+     [{response, {already_sent, 200, size(Binary)}},
+      {mime_type, ?mime_text_html} |
+      ModData#mod.data]}.
+
+%% ----------------------------------------------------------------------
+%% low level tools
 
 %% @doc
--spec split4pathNquery(RequestURI :: string(), Acc :: string()) ->
-                              {Path :: string(), Query :: string()}.
-split4pathNquery([$? | Tail], Path) ->
-    {lists:reverse(Path), Tail};
-split4pathNquery([H | Tail], Path) ->
-    split4pathNquery(Tail, [H | Path]);
-split4pathNquery(_, Path) ->
-    {lists:reverse(Path), []}.
-
-%% @doc
--spec parse_cookies(ModData :: #mod{}) ->
-                           Cookies :: [{Key :: nonempty_string(),
-                                        Value :: string()}].
+-spec parse_cookies(ModData :: #mod{}) -> Cookies :: cookies().
 parse_cookies(ModData) ->
     lists:flatmap(
       fun(Str0) ->
               Str = echessd_lib:strip(Str0, " "),
               case string:tokens(Str, "=") of
-                  [Key, Val] -> [{Key, Val}];
-                  _ -> []
+                  [Key, Val] ->
+                      [{Key, Val}];
+                  _ ->
+                      []
               end
       end,
       string:tokens(
@@ -223,8 +211,8 @@ parse_cookies(ModData) ->
 serve_internal_file(ModData, Path) ->
     WwwPath = filename:join("www", Path),
     MimeType =
-        %% todo: get mime type by filename suffix
-        ?mime_text_plain,
+        echessd_mime_types:lookup(
+          echessd_lib:strip(filename:extension(Path), ".")),
     case echessd_priv:read_file_info(WwwPath) of
         {ok, FileInfo} ->
             Headers =
@@ -248,16 +236,25 @@ serve_internal_file(ModData, Path) ->
                 {error, _Reason} ->
                     {break,
                      [{response,
-                       {404, echessd_html:error(gettext(txt_http_404_err))}}]}
+                       {404, geterr(txt_http_404_err)}}]}
             end;
         {error, _Reason} ->
             {break,
              [{response,
-               {404, echessd_html:error(gettext(txt_http_404_err))}}]}
+               {404, geterr(txt_http_404_err)}}]}
     end.
+
+%% @doc Get localized and formatted error message.
+-spec geterr(TextID :: atom()) -> iolist().
+geterr(TextID) ->
+    echessd_html:error(gettext(TextID)).
+
+%% @doc Get localized and formatted error message.
+-spec geterr(TextID :: atom(), Reason :: any()) -> iolist().
+geterr(TextID, Reason) ->
+    echessd_html:error(gettext(TextID) ++ ":~n~p", [Reason]).
 
 %% @doc
 -spec gettext(TextID :: atom()) -> iolist().
 gettext(TextID) ->
     echessd_lib:gettext(TextID, get(language)).
-

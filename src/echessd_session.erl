@@ -10,7 +10,7 @@
 -behaviour(gen_server).
 
 %% API exports
--export([start_link/0, new/1, get/1, save/1, del/1, from_cookie/1]).
+-export([start_link/0, new/1, get/1, save/1, del/1, from_cookies/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_info/2, handle_cast/2,
@@ -68,19 +68,19 @@ save(Session) ->
 del([_ | _] = SessionID) ->
     true = ets:delete(?MODULE, SessionID),
     ok;
-del(Session) ->
+del(Session) when is_record(Session, session) ->
     del(Session#session.id).
 
 %% @doc Restore the session from the Cookie.
--spec from_cookie(Cookie :: [{Key :: string(), Value :: string()}]) ->
-                         Session :: #session{}.
-from_cookie(Cookie) ->
-    case echessd_session:get(proplists:get_value("sid", Cookie)) of
+-spec from_cookies(Cookies :: echessd_httpd:cookies()) ->
+                          Session :: #session{}.
+from_cookies(Cookies) ->
+    case echessd_session:get(proplists:get_value("sid", Cookies)) of
         {ok, Session} ->
             Session;
         undefined ->
-            StrLangID = proplists:get_value("lang", Cookie),
-            StrStyleID = proplists:get_value("style", Cookie),
+            StrLangID = proplists:get_value("lang", Cookies),
+            StrStyleID = proplists:get_value("style", Cookies),
             Session = new(undefined),
             Session#session{
               language = echessd_lang:parse(StrLangID),

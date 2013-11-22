@@ -18,8 +18,6 @@
 
 -include("echessd.hrl").
 
--record(state, {}).
-
 %% ----------------------------------------------------------------------
 %% Internal signals and keywords
 %% ----------------------------------------------------------------------
@@ -31,19 +29,20 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Start process as part of a supervision tree.
+%% @doc Start the process as part of the supervision tree.
 -spec start_link() -> {ok, Pid :: pid()} | ignore | {error, Reason :: any()}.
 start_link() ->
     gen_server:start_link(
-      {local, ?MODULE}, ?MODULE,
-      _Args = undefined, _Options = []).
+      {local, ?MODULE}, ?MODULE, _Args = undefined, _Options = []).
 
-%% @doc Search mime type for file extension supplied.
+%% @doc Search mime type for the file extension.
 -spec lookup(Extension :: string()) -> MimeType :: string().
 lookup(Extension) ->
     case ets:lookup(?MODULE, string:to_lower(Extension)) of
-        [{_, MimeType}] -> MimeType;
-        _ -> "application/octet-stream"
+        [{_, MimeType}] ->
+            MimeType;
+        _ ->
+            "application/octet-stream"
     end.
 
 %% @doc Schedule configuration reload.
@@ -54,6 +53,8 @@ hup() ->
 %% ----------------------------------------------------------------------
 %% gen_server callbacks
 %% ----------------------------------------------------------------------
+
+-record(state, {}).
 
 %% @hidden
 -spec init(Args :: any()) -> {ok, InitialState :: #state{}}.

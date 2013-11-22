@@ -299,11 +299,12 @@ parse_value_(?CFG_COOKIE, String) ->
 -spec parse_boolean(String :: string()) -> {ok, boolean()} | error.
 parse_boolean(String) ->
     Lowered = string:to_lower(String),
-    case lists:member(Lowered, ["y", "yes", "t", "true", "1"]) of
+    case lists:member(Lowered, ["y", "yes", "t", "true", "1", "on"]) of
         true ->
             {ok, true};
         _ ->
-            case lists:member(Lowered, ["n", "no", "f", "false", "0"]) of
+            case lists:member(Lowered,
+                              ["n", "no", "f", "false", "0", "off"]) of
                 true ->
                     {ok, false};
                 _ ->
