@@ -5,26 +5,21 @@
 %% Description : web page styles definitions
 
 %% 'default' style definition
-{style,
- [{id, default},
-  {text_id, txt_style_default},
+{style, default,
+ [{text_id, txt_style_default},
   {filename, "default.css"}]}.
 
 %% 'black&white' style definition
-{style,
- [{id, bw},
-  {text_id, txt_style_bw},
+{style, bw,
+ [{text_id, txt_style_bw},
   {filename, "bw.css"}]}.
 
 %% 'terminal' style (green on black) definition
-{style,
- [{id, term},
-  {text_id, txt_style_term},
+{style, term,
+ [{text_id, txt_style_term},
   {filename, "term.css"}]}.
 
 %% 'old terminal' style (yellow on black) definition
-{style,
- [{id, oldterm},
-  {text_id, txt_style_oldterm},
+{style, oldterm,
+ [{text_id, txt_style_oldterm},
   {filename, "oldterm.css"}]}.
-

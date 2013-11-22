@@ -1,16 +1,16 @@
-%%% @doc
-%%% Echessd configuration keeper process.
+%% @doc
+%% CSS Styles keeper process.
 
-%%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
-%%% @since 20 Jan 2012
-%%% @copyright 2012, Aleksey Morarash
+%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
+%% @since 22 Nov 2012
+%% @copyright 2013, Aleksey Morarash
 
--module(echessd_cfg).
+-module(echessd_styles).
 
 -behaviour(gen_server).
 
 %% API exports
--export([start_link/0, get/1, hup/0]).
+-export([start_link/0, get/1, list/0, parse/1]).
 
 %% gen_server callback exports
 -export([init/1, handle_call/3, handle_info/2, handle_cast/2,
@@ -28,16 +28,31 @@ start_link() ->
     gen_server:start_link(
       {local, ?MODULE}, ?MODULE, _Args = undefined, _Options = []).
 
-%% @doc Return a value for the configuration key.
--spec get(Key :: echessd_config_parser:config_key()) -> Value :: any().
-get(Key) ->
-    [{Key, Value}] = ets:lookup(?MODULE, Key),
-    Value.
+%% @doc Return style info.
+-spec get(StyleID :: atom()) -> {CaptionTextID :: atom(),
+                                 Filename :: file:filename()}.
+get(StyleID) ->
+    [{StyleID, CaptionTextID, Filename}] = ets:lookup(?MODULE, StyleID),
+    {CaptionTextID, Filename}.
 
-%% @doc Tell the process to reread the configuration file.
--spec hup() -> ok.
-hup() ->
-    ok = gen_server:cast(?MODULE, hup).
+%% @doc Return a list of available styles.
+-spec list() -> [{StyleID :: atom(), CaptionTextID :: atom()}].
+list() ->
+    [{StyleID, CaptionTextID} ||
+        {StyleID, CaptionTextID, _Filename} <- ets:tab2list(?MODULE)].
+
+%% @doc Parse the Style ID to the internal representation.
+-spec parse(String :: string()) -> StyleID :: atom().
+parse([_ | _] = String) ->
+    Styles = [StyleID || {StyleID, _TextID} <- list()],
+    case echessd_lib:list_to_atom(String, Styles) of
+        {ok, StyleID} ->
+            StyleID;
+        error ->
+            echessd_cfg:get(?CFG_DEF_STYLE)
+    end;
+parse(_Bad) ->
+    echessd_cfg:get(?CFG_DEF_STYLE).
 
 %% ----------------------------------------------------------------------
 %% gen_server callbacks
@@ -53,10 +68,9 @@ init(_Args) ->
     {ok, _State = #state{}}.
 
 %% @hidden
--spec handle_cast(Request :: hup, State :: #state{}) ->
+-spec handle_cast(Request :: any(), State :: #state{}) ->
                          {noreply, NewState :: #state{}}.
 handle_cast(_Request, State) ->
-    ok = read(),
     {noreply, State}.
 
 %% @hidden
@@ -86,10 +100,15 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc
+%% @doc Read, parse and store CSS Style definitions.
 -spec read() -> ok.
 read() ->
-    {ok, ConfigPath} = application:get_env(?CFG_CONFIG_PATH),
-    Config = echessd_config_parser:read(ConfigPath),
-    true = ets:insert(?MODULE, Config),
+    {ok, Binary} = echessd_priv:read_file("echessd.styles"),
+    List = echessd_lib:string_to_terms(binary_to_list(Binary)),
+    Tuples =
+        [{ID, proplists:get_value(text_id, L),
+          proplists:get_value(filename, L)} ||
+            {style, ID, L} <- List],
+    true = ets:delete_all_objects(?MODULE),
+    true = ets:insert(?MODULE, Tuples),
     ok.

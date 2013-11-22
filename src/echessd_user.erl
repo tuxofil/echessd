@@ -19,7 +19,7 @@
               echessd_user_info/0
              ]).
 
--type echessd_user() :: string().
+-type echessd_user() :: nonempty_string().
 %% Username format definition.
 
 -type echessd_user_info() :: [echessd_user_property()].
@@ -37,7 +37,7 @@
         {show_comment, boolean()} |
         {notify, boolean()} |
         {auto_refresh, boolean()} |
-        {auto_refresh_period, integer()} |
+        {auto_refresh_period, pos_integer()} |
         {style, atom()} |
         {jid, string()} |
         {games, [echessd_game:echessd_game_id()]}.

@@ -1,19 +1,16 @@
+%%% @doc
+%%% Logger process.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 20 Jan 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc Logger process implementation.
 
 -module(echessd_log).
 
 -behaviour(gen_server).
 
 %% API exports
--export([start_link/0,
-         err/1, err/2,
-         info/1, info/2,
-         debug/1, debug/2,
-         reopen/0
-        ]).
+-export([start_link/0, err/2, info/2, debug/2, hup/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_info/2, handle_cast/2,
@@ -25,105 +22,91 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Starts logger process as part of a supervision tree.
-%% @spec start_link() -> {ok, pid()}
+%% @doc Start the logger process as part of the supervision tree.
+-spec start_link() -> {ok, pid()} | ignore | {error, Reason :: any()}.
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, no_args, []).
 
-%% @doc Logs message with level 'ERROR'. When log file is not opened
-%%      yet this data will be output to stdout.
-%% @spec err(Text) -> ok
-%%     Text = string()
-err(String) ->
-    log(?LOG_ERR, String).
-
-%% @doc Logs message with level 'ERROR'. When log file is not opened
-%%      yet this data will be output to stdout.
-%% @spec err(Format, Args) -> ok
-%%     Format = string(),
-%%     Args = list()
+%% @doc Log the message with 'ERROR' severity.
+-spec err(Format :: string(), Args :: list()) -> ok.
 err(Format, Args) ->
     log(?LOG_ERR, Format, Args).
 
-%% @doc Logs message with level 'INFO'. When log file is not opened
-%%      yet this data will be output to stdout.
-%% @spec info(Text) -> ok
-%%     Text = string()
-info(String) ->
-    log(?LOG_INFO, String).
-
-%% @doc Logs message with level 'INFO'. When log file is not opened
-%%      yet this data will be output to stdout.
-%% @spec info(Format, Args) -> ok
-%%     Format = string(),
-%%     Args = list()
+%% @doc Log the message with 'INFO' severity.
+-spec info(Format :: string(), Args :: list()) -> ok.
 info(Format, Args) ->
     log(?LOG_INFO, Format, Args).
 
-%% @doc Logs message with level 'DEBUG'. This message will be
-%%      silently discarded if log file is not opened yet.
-%% @spec debug(Text) -> ok
-%%     Text = string()
-debug(String) ->
-    log(?LOG_DEBUG, String).
-
-%% @doc Logs message with level 'DEBUG'. This message will be
-%%      silently discarded if log file is not opened yet.
-%% @spec debug(Format, Args) -> ok
-%%     Format = string(),
-%%     Args = list()
+%% @doc Log the message with 'DEBUG' severity.
+-spec debug(Format :: string(), Args :: list()) -> ok.
 debug(Format, Args) ->
     log(?LOG_DEBUG, Format, Args).
 
-%% @doc Sends signal to logger to reopen log file.
-%% @spec reopen() -> ok
-reopen() ->
-    gen_server:cast(?MODULE, reopen),
-    ok.
+%% @doc Tell the logger to reconfigure and reopen log file.
+-spec hup() -> ok.
+hup() ->
+    ok = gen_server:cast(?MODULE, hup).
 
 %% ----------------------------------------------------------------------
 %% gen_server callbacks
 %% ----------------------------------------------------------------------
 
--record(state, {file_descr}).
+-record(state,
+        {loglevel :: non_neg_integer(),
+         file_descr :: io:device() | undefined}).
 
 %% @hidden
+-spec init(Args :: any()) -> {ok, InitialState :: #state{}}.
 init(_Args) ->
-    process_flag(trap_exit, true),
-    {ok, #state{file_descr = openlog()}}.
+    false = process_flag(trap_exit, true),
+    ok = hup(),
+    {ok, #state{}}.
 
 %% @hidden
-handle_cast({log, T, MC, F, A}, State) ->
-    file:write(
-      State#state.file_descr,
-      format_msg(T, MC, F, A)),
+-spec handle_cast(Request :: hup, State :: #state{}) ->
+                         {noreply, NewState :: #state{}}.
+handle_cast(hup, State) ->
+    {noreply, do_reconfig(State)}.
+
+%% @hidden
+-spec handle_info(Info :: {log,
+                           Time :: erlang:timestamp(),
+                           Severity :: echessd_config_parser:loglevel(),
+                           Format :: string(), Args :: list()},
+                  State :: #state{}) ->
+                         {noreply, State :: #state{}}.
+handle_info({log, Time, Severity, Format, Args}, State)
+  when State#state.file_descr /= undefined ->
+    case loglevel_to_integer(Severity) =< State#state.loglevel of
+        true ->
+            IoList = format_msg(Time, Severity, Format, Args),
+            _Ignored = file:write(State#state.file_descr, IoList);
+        false ->
+            ok
+    end,
     {noreply, State};
-handle_cast(reopen, State) ->
-    {noreply,
-     State#state{file_descr = openlog(State#state.file_descr)}};
-handle_cast(_Request, State) ->
-    {noreply, State}.
-
-%% @hidden
 handle_info(_Request, State) ->
     {noreply, State}.
 
 %% @hidden
+-spec handle_call(Request :: any(), From :: any(), State :: #state{}) ->
+                         {noreply, NewState :: #state{}}.
 handle_call(_Request, _From, State) ->
     {noreply, State}.
 
 %% @hidden
+-spec terminate(Reason :: any(), State :: #state{}) -> ok.
 terminate(Reason, State) ->
-    IoDevice = State#state.file_descr,
-    file:write(
-      IoDevice,
-      format_msg(
-        now(), ?LOG_INFO,
-        "Terminating (~9999p)", [Reason])),
+    _Ignored =
+        file:write(
+          IoDevice = State#state.file_descr,
+          format_msg(now(), ?LOG_INFO, "Terminating (~9999p)", [Reason])),
     catch file:close(IoDevice),
     ok.
 
 %% @hidden
+-spec code_change(OldVersion :: any(), State :: #state{}, Extra :: any()) ->
+                         {ok, NewState :: #state{}}.
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
@@ -131,79 +114,79 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-log(MessageClass, String) ->
-    log(MessageClass, "~s", [String]).
+%% @doc
+-spec log(Severity :: echessd_config_parser:loglevel(),
+          Format :: string(), Args :: list()) -> ok.
+log(Severity, Format, Args) ->
+    catch ?MODULE ! {log, os:timestamp(), Severity, Format, Args},
+    ok.
 
-log(MessageClass, Format, Args) ->
-    LogLevel =
-        try echessd_cfg:get(?CFG_LOGLEVEL)
-        catch
-            _:_ ->
-                {ok, LogLevel0} =
-                    echessd_cfg:default(?CFG_LOGLEVEL),
-                LogLevel0
-        end,
-    if
-        (LogLevel == ?LOG_DEBUG
-         andalso
-           (MessageClass == ?LOG_DEBUG orelse
-            MessageClass == ?LOG_INFO orelse
-            MessageClass == ?LOG_ERR))
-        orelse
-        (LogLevel == ?LOG_INFO
-         andalso
-           (MessageClass == ?LOG_INFO orelse
-            MessageClass == ?LOG_ERR))
-        orelse
-        (LogLevel == ?LOG_ERR
-         andalso
-           (MessageClass == ?LOG_ERR)) ->
-            Time = now(),
-            try
-                gen_server:cast(
-                  ?MODULE,
-                  {log, Time, MessageClass, Format, Args})
-            catch
-                _:_ when MessageClass /= ?LOG_DEBUG ->
-                    %% logger is dead. write to stdout
-                    io:format(
-                      format_msg(
-                        Time, MessageClass, Format, Args));
-                _:_ -> ok
-            end;
-        true -> ok
-    end.
+%% @doc
+-spec loglevel_to_integer(echessd_config_parser:loglevel()) ->
+                                 non_neg_integer().
+loglevel_to_integer(?LOG_ERR) ->
+    1;
+loglevel_to_integer(?LOG_INFO) ->
+    2;
+loglevel_to_integer(?LOG_DEBUG) ->
+    3.
 
-openlog() ->
-    openlog(undefined).
-openlog(OldIoDevice) ->
-    catch file:close(OldIoDevice),
-    LogFilename = echessd_cfg:get(?CFG_LOGFILE),
-    catch filelib:ensure_dir(LogFilename),
-    case file:open(LogFilename, [raw, append]) of
-        {ok, IoDevice} ->
-            IoDevice;
-        {error, Reason} ->
-            io:format(
-              format_msg(
-                now(), ?LOG_ERR, "Unable to open ~9999p: ~9999p",
-                [LogFilename, Reason])),
-            throw(Reason)
-    end.
-
-format_msg(Time, MessageClass, Format, Args) ->
-    try format_msg_(Time, MessageClass, Format, Args)
+%% @doc Format the log message.
+-spec format_msg(Time :: erlang:timestamp(),
+                 Severity :: echessd_config_parser:loglevel(),
+                 Format :: string(), Args :: list()) -> iolist().
+format_msg(Time, Severity, Format, Args) ->
+    try
+        format_msg_(Time, Severity, Format, Args)
     catch
         Type:Reason ->
             format_msg_(
               Time, ?LOG_ERR, "bad log message ~99999p: ~99999p",
-              [{MessageClass, Format, Args},
-               {Type, Reason}])
+              [{Severity, Format, Args}, {Type, Reason}])
     end.
-format_msg_(Time, MessageClass, Format, Args) ->
+
+%% @doc
+-spec format_msg_(Time :: erlang:timestamp(),
+                  Severity :: echessd_config_parser:loglevel(),
+                  Format :: string(), Args :: list()) -> iolist().
+format_msg_(Time, Severity, Format, Args) ->
     io_lib:format(
       "~s ~s: " ++ Format ++ "~n",
       [echessd_lib:timestamp(Time),
-       string:to_upper(atom_to_list(MessageClass)) |
-       Args]).
+       string:to_upper(atom_to_list(Severity)) | Args]).
 
+%% @doc
+-spec do_reconfig(State :: #state{}) -> NewState :: #state{}.
+do_reconfig(State) ->
+    {ok, ConfigPath} = application:get_env(?CFG_CONFIG_PATH),
+    Config = echessd_config_parser:read(ConfigPath),
+    Loglevel = proplists:get_value(?CFG_LOGLEVEL, Config),
+    LogPath = proplists:get_value(?CFG_LOGFILE, Config),
+    State#state{
+      loglevel = loglevel_to_integer(Loglevel),
+      file_descr = openlog(State#state.file_descr, LogPath)
+     }.
+
+%% @doc
+-spec openlog(OldIoDevice :: io:device() | undefined,
+              LogPath :: nonempty_string() | undefined) ->
+                     NewIoDevice :: io:device() | undefined.
+openlog(OldIoDevice, LogPath) ->
+    catch file:close(OldIoDevice),
+    case LogPath of
+        [_ | _] ->
+            catch filelib:ensure_dir(LogPath),
+            case file:open(LogPath, [raw, append]) of
+                {ok, IoDevice} ->
+                    IoDevice;
+                {error, Reason} ->
+                    io:format(
+                      standard_error,
+                      format_msg(
+                        now(), ?LOG_ERR, "Unable to open ~9999p: ~p",
+                        [LogPath, Reason])),
+                    undefined
+            end;
+        undefined ->
+            undefined
+    end.

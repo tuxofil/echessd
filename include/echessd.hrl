@@ -38,14 +38,6 @@
 
 -define(CFG_CONFIG_PATH, config_path).
 
-%% Configuration storage (ETS) name
--define(echessd_cfg, echessd_cfg).
-
-%% database tables
--define(dbt_users, echessd_dbt_users).
--define(dbt_games, echessd_dbt_games).
--define(dbt_session, echessd_dbt_session).
-
 %% log message classes
 -define(LOG_ERR, err).
 -define(LOG_INFO, info).
@@ -53,9 +45,12 @@
 
 -define(LOG_LEVELS, [?LOG_ERR, ?LOG_INFO, ?LOG_DEBUG]).
 
-%% game styles
--define(GAME_CLASSIC, "classic").
+%% database tables
+-define(dbt_users, echessd_dbt_users).
+-define(dbt_games, echessd_dbt_games).
 
+%% game types
+-define(GAME_CLASSIC, "classic").
 -define(GAME_TYPES, [?GAME_CLASSIC]).
 
 %% site sections
@@ -114,6 +109,18 @@
 -define(bking, {?black, ?king}).
 
 -define(empty, z).
+
+%% user session record
+-record(session,
+        {id :: echessd_session_id(),
+         created :: erlang:timestamp(),
+         username :: echessd_user:echessd_user() | undefined,
+         timezone :: echessd_lib:administrative_offset() | undefined,
+         language :: (LanguageID :: atom() | undefined),
+         style :: (StyleID :: atom() | undefined),
+         userinfo :: echessd_user:echessd_user_info() | undefined,
+         vars = [] :: [{Key :: any(), Value :: any()}]
+        }).
 
 %% ----------------------------------------------------------------------
 

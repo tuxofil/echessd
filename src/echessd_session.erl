@@ -1,16 +1,20 @@
+%%% @doc
+%%% HTTP session keeper process.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 21 Jan 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc HTTP session implementation.
 
 -module(echessd_session).
 
--export([init/0,
-         mk/1,
-         get/1,
-         del/1,
-         read/1
-        ]).
+-behaviour(gen_server).
+
+%% API exports
+-export([start_link/0, new/1, get/1, save/1, del/1, from_cookie/1]).
+
+%% gen_server callbacks
+-export([init/1, handle_call/3, handle_info/2, handle_cast/2,
+         terminate/2, code_change/3]).
 
 -include("echessd.hrl").
 
@@ -18,94 +22,138 @@
 %% Type definitions
 %% ----------------------------------------------------------------------
 
--type echessd_session_id() :: string().
-%% HTTP session identifier.
+-export_type([echessd_session_id/0]).
+
+-type echessd_session_id() :: nonempty_string().
 
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Creates non-persistent storage of user current sessions.
--spec init() -> ok.
-init() ->
-    ?dbt_session = ets:new(?dbt_session, [named_table, public, set]),
-    ok.
+%% @doc Start the session keeper process as part of the supervision tree.
+-spec start_link() -> {ok, pid()} | ignore | {error, Reason :: any()}.
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, no_args, []).
 
-%% @doc Creates new session for user.
--spec mk(Username :: echessd_user:echessd_user()) -> echessd_session_id().
-mk(User) ->
-    ets:insert(?dbt_session, [{SID = sid(), User, ""}]),
-    SID.
+%% @doc Create a new session for the user.
+-spec new(Username :: echessd_user:echessd_user() | undefined) ->
+                 Session :: #session{}.
+new(Username) ->
+    #session{
+     id = generate_sid(),
+     created = os:timestamp(),
+     username = Username
+    }.
 
 %% @doc Fetch session data.
-%% @spec get(SID) -> {ok, Username, SessionVars} | undefined
-%%     SID = echessd_session_id(),
-%%     Username = echessd_user:echessd_user(),
-%%     SessionVars = proplist()
+-spec get(SID :: echessd_session_id()) ->
+                 {ok, Session :: #session{}} | undefined.
 get(SID) ->
-    case ets:lookup(?dbt_session, SID) of
-        [{_, User, Vars}] ->
-            {ok, User, Vars};
-        _ ->
+    case ets:lookup(?MODULE, SID) of
+        [Session] ->
+            {ok, fill_session(Session)};
+        [] ->
             undefined
     end.
 
-%% @doc Removes session (logout user).
-%% @spec del(SID) -> ok
-%%     SID = echessd_session_id()
-del(SID) ->
-    true = ets:delete(?dbt_session, SID),
+%% @doc Save the session.
+-spec save(Session :: #session{}) -> ok.
+save(Session) ->
+    true = ets:insert(?MODULE, Session#session{userinfo = undefined}),
     ok.
 
-%% @doc Read session data according to cookie contents and
-%%      write such data in process dictionary.
-%% @spec read(Cookie) -> ok
-%%     Cookie = proplist()
-read(Cookie) ->
-    put(logged_in, false),
-    erase(sid),
-    erase(username),
-    erase(userinfo),
-    erase(timezone),
-    erase(language),
-    [erase(K) || {{session_var, _} = K, _} <- erlang:get()],
-    SID = proplists:get_value("sid", Cookie),
-    case echessd_session:get(SID) of
-        {ok, Username, Vars} ->
-            case echessd_user:getprops(Username) of
-                {ok, UserInfo} ->
-                    put(logged_in, true),
-                    put(sid, SID),
-                    put(username, Username),
-                    put(userinfo, UserInfo),
-                    put(timezone,
-                        echessd_user:get_value(timezone, UserInfo)),
-                    {LangAbbr, _LangName} =
-                        echessd_user:lang_info(UserInfo),
-                    put(language, LangAbbr),
-                    lists:foreach(
-                      fun({K, V}) ->
-                              put({session_var, K}, V)
-                      end, Vars);
-                _ ->
-                    echessd_session:del(SID)
-            end;
-        _ ->
-            case echessd_lib:parse_language(
-                   proplists:get_value("lang", Cookie)) of
-                {LangAbbr, _LangName} ->
-                    put(language, LangAbbr);
-                _ -> nop
-            end
-    end, ok.
+%% @doc Remove the session (logout user).
+-spec del((SessionID :: echessd_session_id()) |
+          (Session :: #session{})) -> ok.
+del([_ | _] = SessionID) ->
+    true = ets:delete(?MODULE, SessionID),
+    ok;
+del(Session) ->
+    del(Session#session.id).
+
+%% @doc Restore the session from the Cookie.
+-spec from_cookie(Cookie :: [{Key :: string(), Value :: string()}]) ->
+                         Session :: #session{}.
+from_cookie(Cookie) ->
+    case echessd_session:get(proplists:get_value("sid", Cookie)) of
+        {ok, Session} ->
+            Session;
+        undefined ->
+            StrLangID = proplists:get_value("lang", Cookie),
+            StrStyleID = proplists:get_value("style", Cookie),
+            Session = new(undefined),
+            Session#session{
+              language = echessd_lang:parse(StrLangID),
+              style = echessd_styles:parse(StrStyleID)
+             }
+    end.
+
+%% ----------------------------------------------------------------------
+%% gen_server callbacks
+%% ----------------------------------------------------------------------
+
+-record(state, {}).
+
+%% @hidden
+-spec init(Args :: any()) -> {ok, InitialState :: #state{}}.
+init(_Args) ->
+    ?MODULE = ets:new(?MODULE, [named_table, {keypos, 2}, public]),
+    {ok, #state{}}.
+
+%% @hidden
+-spec handle_cast(Request :: any(), State :: #state{}) ->
+                         {noreply, NewState :: #state{}}.
+handle_cast(_Request, State) ->
+    {noreply, State}.
+
+%% @hidden
+-spec handle_info(Info :: any(), State :: #state{}) ->
+                         {noreply, State :: #state{}}.
+handle_info(_Request, State) ->
+    {noreply, State}.
+
+%% @hidden
+-spec handle_call(Request :: any(), From :: any(), State :: #state{}) ->
+                         {noreply, NewState :: #state{}}.
+handle_call(_Request, _From, State) ->
+    {noreply, State}.
+
+%% @hidden
+-spec terminate(Reason :: any(), State :: #state{}) -> ok.
+terminate(_Reason, _State) ->
+    ok.
+
+%% @hidden
+-spec code_change(OldVersion :: any(), State :: #state{}, Extra :: any()) ->
+                         {ok, NewState :: #state{}}.
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
 
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc Generates user session ID.
-%% @spec sid() -> echessd_session_id()
-sid() ->
-    random:seed(now()),
-    integer_to_list(random:uniform(1000000000000000000)).
+%% @doc Generate user session ID.
+-spec generate_sid() -> echessd_session_id().
+generate_sid() ->
+    _OldSeed = random:seed(now()),
+    erlang:integer_to_list(random:uniform(16#ffffffffffffffff), 16).
 
+%% @doc Fill the session object with data from user's account
+%% (for logged in user).
+-spec fill_session(Session :: #session{}) -> FilledSession :: #session{}.
+fill_session(Session) when Session#session.username /= undefined ->
+    case echessd_user:getprops(Session#session.username) of
+        {ok, UserInfo} ->
+            Session#session{
+              userinfo = UserInfo,
+              timezone = echessd_user:get_value(timezone, UserInfo),
+              language = echessd_user:get_value(language, UserInfo),
+              style    = echessd_user:get_value(style, UserInfo)
+             };
+        _ ->
+            ok = del(Session),
+            new(undefined)
+    end;
+fill_session(Session) ->
+    Session.

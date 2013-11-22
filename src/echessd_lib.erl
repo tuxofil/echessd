@@ -1,31 +1,28 @@
+%%% @doc
+%%% Common utilities and library functions.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 20 Jan 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc Common utilities and library functions.
 
 -module(echessd_lib).
 
--export([ip2str/1,
-         proplist_replace/2,
-         timestamp/1,
-         timestamp/2,
-         random_elem/1,
-         unconsult/3,
-         escape_html_entities/1,
-         gettext/2,
-         styles/0,
-         parse_style/1,
-         default_style/0,
-         languages/0,
-         parse_language/1,
-         administrative_offsets/0,
-         time_offset_to_list/1,
-         list_to_time_offset/1,
-         local_offset/0,
-         strip/2
-        ]).
-
--include("echessd.hrl").
+-export(
+   [ip2str/1,
+    proplist_replace/2,
+    timestamp/1,
+    timestamp/2,
+    random_elem/1,
+    unconsult/3,
+    escape_html_entities/1,
+    administrative_offsets/0,
+    time_offset_to_list/1,
+    list_to_time_offset/1,
+    local_offset/0,
+    strip/2,
+    string_to_terms/1,
+    list_to_atom/2
+   ]).
 
 %% ----------------------------------------------------------------------
 %% Type definitions
@@ -36,33 +33,29 @@
 -type administrative_offset() ::
         {Sign    :: -1 | 1,
          Hours   :: 0..14,
-         Minutes :: 0 | 30 | 45
-        }.
+         Minutes :: 0 | 30 | 45}.
 
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Converts IPv4 address to text representation.
-%% @spec ip2str(ip_address()) -> string()
+%% @doc Convert IPv4 address to canonic text representation.
+-spec ip2str(inet:ip4_address()) -> nonempty_string().
 ip2str({A, B, C, D}) ->
     io_lib:format("~B.~B.~B.~B", [A, B, C, D]).
 
-%% @doc Replaces items in proplist.
-%% @spec proplist_replace(PropList, NewValues) -> NewPropList
-%%     PropList = proplist(),
-%%     NewValues = proplist(),
-%%     NewPropList = proplist()
+%% @doc Replace items in proplist.
+-spec proplist_replace(PropList :: [proplists:property()],
+                       NewValues :: [proplists:property()]) ->
+                              NewPropList :: [proplists:property()].
 proplist_replace(PropList, NewValues) ->
     lists:foldl(
       fun({Key, _V} = Item, Acc) ->
-              [Item |
-               [I || {K, _} = I <- Acc,
-                     K /= Key]]
+              [Item | [I || {K, _} = I <- Acc, K /= Key]]
       end, PropList, NewValues).
 
-%% @doc Formats time as text.
-%% @spec timestamp(timestamp()) -> string()
+%% @doc Format time as text.
+-spec timestamp(erlang:timestamp()) -> nonempty_string().
 timestamp(Time) ->
     {{Year, Month, Day}, {Hour, Minutes, Seconds}} =
         calendar:now_to_local_time(Time),
@@ -76,8 +69,9 @@ timestamp(Time) ->
       [Year, Month, Day, Hour, Minutes, Seconds,
        Sign, OffHours, OffMinutes]).
 
-%% @doc Formats time as text with specified time offset.
-%% @spec timestamp(timestamp(), administrative_offset()) -> string()
+%% @doc Format time as text with the specified time offset.
+-spec timestamp(erlang:timestamp(), administrative_offset()) ->
+                       nonempty_string().
 timestamp(Timestamp, {OffsetSign, OffsetHours, OffsetMinutes}) ->
     {{Year, Month, Day}, {Hour, Minutes, Seconds}} =
         calendar:gregorian_seconds_to_datetime(
@@ -93,20 +87,20 @@ timestamp(Timestamp, {OffsetSign, OffsetHours, OffsetMinutes}) ->
       [Year, Month, Day, Hour, Minutes, Seconds,
        Sign, OffsetHours, OffsetMinutes]).
 
-%% @doc Return random element of the list supplied.
-%% @spec random_elem(list()) -> term()
-random_elem([Item]) -> Item;
-random_elem(List) when is_list(List) ->
+%% @doc Return random element of the given list.
+-spec random_elem(list()) -> any().
+random_elem([Item]) ->
+    Item;
+random_elem([_ | _] = List) ->
     lists:nth(random:uniform(length(List)), List).
 
-%% @doc Writes Erlang terms to file as text.
-%%      Result file can be read by file:consult/1,
-%%      resulting the same terms.
-%% @spec unconsult(Filename, Comment, Terms) -> ok | {error, Reason}
-%%     Filename = string(),
-%%     Comment = string(),
-%%     Terms = list(),
-%%     Reason = term()
+%% @doc Write the Erlang terms to a file as text.
+%% The file then can be read by file:consult/1,
+%% resulting the same Erlang terms.
+-spec unconsult(Filename :: file:filename(),
+                Comment :: string(),
+                Terms :: list()) ->
+                       ok | {error, Reason :: any()}.
 unconsult(Filename, Comment, Terms) ->
     CommentBlock =
         case Comment of
@@ -123,11 +117,9 @@ unconsult(Filename, Comment, Terms) ->
       [CommentBlock,
        [io_lib:format("~80p.~n~n", [T]) || T <- Terms]]).
 
-%% @doc Converts all chars with special meaning in HTML to
+%% @doc Convert all chars with special meaning in HTML to
 %%      HTML entities.
-%% @spec escape_html_entities(String) -> NewString
-%%     String = string(),
-%%     NewString = string()
+-spec escape_html_entities(String :: string()) -> NewString :: string().
 escape_html_entities(String) ->
     lists:flatmap(
       fun($<) -> "&lt;";
@@ -139,92 +131,8 @@ escape_html_entities(String) ->
               [C]
       end, String).
 
-%% @doc Fetches localized text with specified ID.
-%% @spec gettext(TextID, LangID) -> string()
-%%     TextID = term(),
-%%     LangID = atom()
-gettext(TextID, LangID) ->
-    {_Languages, Strings} = echessd_cfg:get(?CFG_LANG_INFO),
-    case dict:find({TextID, LangID}, Strings) of
-        {ok, Text} -> Text;
-        _ ->
-            DefLang = echessd_cfg:get(?CFG_DEF_LANG),
-            case dict:find({TextID, DefLang}, Strings) of
-                {ok, Text} -> Text;
-                _ ->
-                    echessd_log:err(
-                      "Failed to fetch text "
-                      "~9999p for lang ~9999p "
-                      "(default lang is ~9999p)",
-                      [TextID, LangID, DefLang]),
-                    ""
-            end
-    end.
-
-%% @doc Return all styles defined.
-%% @spec styles() -> List
-%%     List = [{StyleName, StyleNameTextID, StyleFilename}],
-%%     StyleName = atom(),
-%%     StyleNameTextID = atom(),
-%%     StyleFilename = string()
-styles() ->
-    echessd_cfg:get(?CFG_STYLES_INFO).
-
-%% @doc Parses style name.
-%% @spec parse_style(String) -> {StyleName, StyleNameTextID, StyleFilename}
-%%     String = string(),
-%%     StyleName = atom(),
-%%     StyleNameTextID = atom(),
-%%     StyleFilename = string()
-parse_style(String) ->
-    StylesInfo = echessd_cfg:get(?CFG_STYLES_INFO),
-    case [I || {N, _T, _F} = I <- StylesInfo,
-               atom_to_list(N) == String] of
-        [Style | _] -> Style;
-        _ -> default_style()
-    end.
-
-%% @doc Return default style.
-%% @spec default_style() -> {StyleName, StyleNameTextID, StyleFilename}
-%%     StyleName = atom(),
-%%     StyleNameTextID = atom(),
-%%     StyleFilename = string()
-default_style() ->
-    StylesInfo = echessd_cfg:get(?CFG_STYLES_INFO),
-    DefStyle = echessd_cfg:get(?CFG_DEF_STYLE),
-    case [I || {N, _T, _F} = I <- StylesInfo,
-               N == DefStyle] of
-        [Style | _] -> Style;
-        _ -> {undefined, undefined, ""}
-    end.
-
-%% @doc Return list of supported languages.
-%% @spec languages() -> List
-%%     List = [{LangAbbreviation, LangName}],
-%%     LangAbbreviation = atom(),
-%%     LangName = string()
-languages() ->
-    {Languages, _Strings} = echessd_cfg:get(?CFG_LANG_INFO),
-    Languages.
-
-%% @doc Parses language identifier.
-%% @spec parse_language(String) -> {LangAbbreviation, LangName} | undefined
-%%     LangAbbreviation = atom(),
-%%     LangName = string()
-parse_language([_ | _] = String) ->
-    Languages = languages(),
-    List = [{atom_to_list(N), N} || {N, _} <- Languages],
-    Stripped = string:to_lower(strip(String, " \t\r\n")),
-    case [V || {K, V} <- List, K == Stripped] of
-        [Parsed | _] ->
-            {Parsed, proplists:get_value(Parsed, Languages)};
-        _ -> undefined
-    end;
-parse_language(_) -> undefined.
-
-%% @doc Return list of all adminitrative time offsets.
-%% @spec administrative_offsets() -> Offsets
-%%     Offsets = [administrative_offset()]
+%% @doc Return a list of all adminitrative time offsets available.
+-spec administrative_offsets() -> [administrative_offset()].
 administrative_offsets() ->
     Negative =
         [{12, 0}, {11, 0}, {10, 0}, {9, 30}, {9, 0},
@@ -239,9 +147,9 @@ administrative_offsets() ->
     [{-1, H, M} || {H, M} <- Negative] ++
         [{1, H, M} || {H, M} <- Positive].
 
-%% @doc Formats time offset as for ISO8601 timestamp.
-%% @spec time_offset_to_list(Offset) -> string()
-%%     Offset = administrative_offset()
+%% @doc Format the time offset as for ISO8601 timestamp.
+-spec time_offset_to_list(Offset :: administrative_offset()) ->
+                                 nonempty_string().
 time_offset_to_list({S, H, M}) ->
     Sign =
         if S == -1 -> "-";
@@ -250,10 +158,10 @@ time_offset_to_list({S, H, M}) ->
     lists:flatten(
       io_lib:format("~s~2..0B~2..0B", [Sign, H, M])).
 
-%% @doc Parse time offset string representation.
-%% @spec list_to_time_offset(String) -> {ok, Offset} | error
-%%     String = string(),
-%%     Offset = administrative_offset()
+%% @doc Parse the time offset string representation.
+-spec list_to_time_offset(String :: string()) ->
+                                 {ok, Offset :: administrative_offset()} |
+                                 error.
 list_to_time_offset(String) ->
     case io_lib:fread("~c~2d~2d", String) of
         {ok, [Sign, H, M], []} ->
@@ -269,16 +177,15 @@ list_to_time_offset(String) ->
         _ -> error
     end.
 
-%% @doc Return local offset (on server).
-%% @spec local_offset() -> Offset
-%%     Offset = administrative_offset()
-local_offset() -> local_offset(now()).
+%% @doc Return the local time offset.
+-spec local_offset() -> administrative_offset().
+local_offset() ->
+    local_offset(now()).
 
-%% @doc Removes Characters from beginning and ending of String.
-%% @spec strip(String, Characters) -> StrippedString
-%%     String = string(),
-%%     Characters = string(),
-%%     StrippedString = string()
+%% @doc Remove the Characters from the beginning and
+%% from the end of the String.
+-spec strip(String :: string(), Characters :: string()) ->
+                   StrippedString :: string().
 strip(String, Characters) ->
     lists:reverse(
       strip_(
@@ -294,14 +201,36 @@ strip_([Char | Tail] = String, Chars) ->
             String
     end.
 
+%% @doc Parse the input string to a list of Erlang terms.
+-spec string_to_terms(String :: string()) -> [Term :: any()].
+string_to_terms(String) ->
+    {ok, Tokens, _EndLocation} = erl_scan:string(String),
+    [begin
+         {ok, Term} = erl_parse:parse_term(TermTokens),
+         Term
+     end || TermTokens <- explode_tokens(Tokens)].
+
+%% @doc "Convert" string to an atom only if the result atom
+%% is present in the list, supplied as the second argument.
+-spec list_to_atom(String :: string(), Atoms :: [atom()]) ->
+                          {ok, Atom :: atom()} | error.
+list_to_atom(_, []) ->
+    error;
+list_to_atom(String, [Atom | Tail]) -> 
+    case atom_to_list(Atom) of
+        String ->
+            {ok, Atom};
+        _ ->
+            list_to_atom(String, Tail)
+    end.
+
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc Return local offset (on server).
-%% @spec local_offset(Time) -> Offset
-%%     Time = timestamp(),
-%%     Offset = administrative_offset()
+%% @doc Return the local time offset.
+-spec local_offset(Time :: erlang:timestamp()) ->
+                          Offset :: administrative_offset().
 local_offset(Time) ->
     SecondsDiff =
         calendar:datetime_to_gregorian_seconds(
@@ -317,3 +246,35 @@ local_offset(Time) ->
         end,
     {Sign, OffsetHours, OffsetMinutes}.
 
+%% @doc
+-spec explode_tokens(Tokens :: erl_scan:tokens()) ->
+                            [TermTokens :: erl_scan:tokens()].
+explode_tokens(Tokens) ->
+    explode_tokens(Tokens, _Acc = []).
+
+%% @doc
+-spec explode_tokens(Tokens :: erl_scan:tokens(),
+                     Acc :: [TermTokens :: erl_scan:tokens()]) ->
+                            [TermTokens :: erl_scan:tokens()].
+explode_tokens([], Acc) ->
+    lists:reverse(Acc);
+explode_tokens(Tokens, Acc) ->
+    {TermTokens, Tail} = split_tokens(Tokens),
+    explode_tokens(Tail, [TermTokens | Acc]).
+
+%% @doc
+-spec split_tokens(Tokens :: erl_scan:tokens()) ->
+                          {TermTokens :: erl_scan:tokens(),
+                           RestOfTokens :: erl_scan:tokens()}.
+split_tokens(Tokens) ->
+    split_tokens(Tokens, _Acc = []).
+
+%% @doc
+-spec split_tokens(Tokens :: erl_scan:tokens(),
+                   Acc :: erl_scan:tokens()) ->
+                          {TermTokens :: erl_scan:tokens(),
+                           RestOfTokens :: erl_scan:tokens()}.
+split_tokens([{dot, _} = Dot | Tail], Acc) ->
+    {lists:reverse([Dot | Acc]), Tail};
+split_tokens([Token | Tail], Acc) ->
+    split_tokens(Tail, [Token | Acc]).
