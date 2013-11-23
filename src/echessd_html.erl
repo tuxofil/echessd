@@ -171,8 +171,7 @@ home(Session) ->
 %% @doc Make 'registered users list' page.
 -spec users(Session :: #session{}) -> HTML :: iolist().
 users(Session) ->
-    {ok, Users0} = echessd_user:list(),
-    Users = lists:usort(Users0) -- [Session#session.username],
+    Users = lists:usort(echessd_user:list()) -- [Session#session.username],
     Title = gettext(Session, txt_users, []),
     [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
      navigation(Session), "<br>",
@@ -193,6 +192,7 @@ user(Session, Query) ->
                     opponent(Session, Opponent, OppInfo);
                 {error, Reason} ->
                     ?MODULE:error(
+                       Session,
                        gettext(Session, txt_user_fetch_error, []) ++ ":~n~p",
                        [Opponent, Reason])
             end
@@ -201,8 +201,8 @@ user(Session, Query) ->
 %% @private
 %% @doc user/2 helper fun.
 -spec opponent(Session :: #session{},
-               Opponent :: echessd_user:echessd_user(),
-               OppInfo :: echessd_user:user_info()) ->
+               Opponent :: echessd_user:name(),
+               OppInfo :: echessd_user:info()) ->
                   HTML :: iolist().
 opponent(Session, Opponent, OppInfo) ->
     Title = gettext(Session, txt_user, []) ++ " '" ++ Opponent ++ "'",
@@ -263,8 +263,8 @@ game(Session, Query) ->
 %% @doc game/2 helper fun.
 -spec game(Session :: #session{},
            Query :: echessd_query_parser:http_query(),
-           GameID :: echessd_game:echessd_game_id(),
-           GameInfo :: echessd_game:echessd_game_info()) ->
+           GameID :: echessd_game:id(),
+           GameInfo :: echessd_game:info()) ->
                   HTML :: iolist().
 game(Session, Query, GameID, GameInfo) ->
     Step = proplists:get_value(?Q_STEP, Query),
@@ -432,11 +432,9 @@ draw_confirm(Session, Query) ->
     [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
      warning(Session, txt_draw_confirm_text, []),
      "<form method=post>",
-     "<input type=hidden name=action value=" ++ ?SECTION_DRAW ++ ">",
-     "<input type=hidden name=game value=" ++
-         integer_to_list(GameID) ++ ">",
-     "<input type=submit class=btn value='" ++
-         gettext(Session, txt_draw_button, []) ++ "'>",
+     hidden(?Q_GOTO, ?SECTION_DRAW),
+     hidden(?Q_GAME, GameID),
+     submit(Session, txt_draw_button),
      "</form>",
      navig_links([{"javascript: history.back();",
                    gettext(Session, txt_ouch_back_link, [])}]),
@@ -458,12 +456,9 @@ giveup_confirm(Session, Query) ->
     [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
      warning(Session, txt_giveup_confirm_text, [userlink(Opponent)]),
      "<form method=post>",
-     "<input type=hidden name=action value=" ++
-         atom_to_list(?SECTION_GIVEUP) ++ ">",
-     "<input type=hidden name=game value=" ++
-         integer_to_list(GameID) ++ ">",
-     "<input type=submit class=btn value='" ++
-         gettext(Session, txt_giveup_button, []) ++ "'>",
+     hidden(?Q_GOTO, ?SECTION_GIVEUP),
+     hidden(?Q_GAME, GameID),
+     submit(Session, txt_giveup_button),
      "</form>",
      navig_links([{"javascript: history.back();",
                    gettext(Session, txt_ouch_back_link, [])}]),
@@ -498,7 +493,7 @@ error(Session, Format, Args) ->
 %% @doc Make 'access denied' page.
 -spec eaccess(Session :: #session{}) -> HTML :: iolist().
 eaccess(Session) ->
-    ?MODULE:error(gettext(Session, txt_access_denied, [])).
+    ?MODULE:error(Session, gettext(Session, txt_access_denied, [])).
 
 %% @doc Make 303-redirection page.
 -spec redirection(Session :: #session{},
@@ -561,8 +556,8 @@ log_reg_page(Session, Section, Title, Content) ->
 
 %% @doc
 -spec fetch_game(Session :: #session{},
-                 GameID :: echessd_game:echessd_game_id()) ->
-                        {ok, GameInfo :: echessd_game:echessd_gameinfo()} |
+                 GameID :: echessd_game:id()) ->
+                        {ok, GameInfo :: echessd_game:info()} |
                         (ErrorPagePayload :: iolist()).
 fetch_game(Session, GameID) ->
     case echessd_game:getprops(GameID) of
@@ -574,6 +569,7 @@ fetch_game(Session, GameID) ->
                             {ok, GameInfo};
                         _ ->
                             ?MODULE:error(
+                               Session,
                                gettext(Session, txt_game_fetch_error, []) ++
                                    ":~n~p", [GameID, {no_such_game, GameID}])
                     end;
@@ -584,6 +580,7 @@ fetch_game(Session, GameID) ->
                             {ok, GameInfo};
                         _ ->
                             ?MODULE:error(
+                               Session,
                                gettext(
                                  Session, txt_game_not_confirmed_error,
                                  [GameID]))
@@ -591,13 +588,14 @@ fetch_game(Session, GameID) ->
             end;
         {error, Reason} ->
             ?MODULE:error(
+               Session,
                gettext(Session, txt_game_fetch_error, []) ++ ":~n~p",
                [GameID, Reason])
     end.
 
 %% @doc
 -spec is_my_game(Session :: #session{},
-                 GameInfo :: echessd_game:echessd_gameinfo()) ->
+                 GameInfo :: echessd_game:info()) ->
                         boolean().
 is_my_game(Session, GameInfo) ->
     Iam = Session#session.username,
@@ -612,8 +610,8 @@ is_my_game(Session, GameInfo) ->
 
 %% @doc Make 'user info' table.
 -spec user_info(Session :: #session{},
-                Username :: echessd_user:echessd_user(),
-                UserInfo :: echessd_user:echessd_userinfo()) ->
+                Username :: echessd_user:name(),
+                UserInfo :: echessd_user:info()) ->
                        HTML :: iolist().
 user_info(Session, Username, UserInfo) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
@@ -625,8 +623,8 @@ user_info(Session, Username, UserInfo) ->
 
 %% @doc Return the cells for the 'user info' table.
 -spec user_info_cells(Session :: #session{},
-                      Username :: echessd_user:echessd_user(),
-                      UserInfo :: echessd_user:echessd_userinfo()) ->
+                      Username :: echessd_user:name(),
+                      UserInfo :: echessd_user:info()) ->
                              [{CellCaption :: iolist(),
                                CellValue :: iolist()}].
 user_info_cells(Session, Username, UserInfo) ->
@@ -660,8 +658,8 @@ user_info_cells(Session, Username, UserInfo) ->
 
 %% @doc
 -spec user_games(Session :: #session{},
-                 Username :: echessd_user:echessd_user(),
-                 UserInfo :: echessd_user:echessd_userinfo(),
+                 Username :: echessd_user:name(),
+                 UserInfo :: echessd_user:info(),
                  ShowNotAcknowledged :: boolean()) ->
                         HTML :: iolist().
 user_games(Session, Username, UserInfo, ShowNotAcknowledged) ->
@@ -727,9 +725,9 @@ user_games(Session, Username, UserInfo, ShowNotAcknowledged) ->
 
 %% @doc
 -spec user_game_(Session :: #session{},
-                 Owner :: echessd_user:echessd_user(),
-                 GameID :: echessd_game:echessd_game_id(),
-                 GameInfo :: echessd_game:echessd_gameinfo()) ->
+                 Owner :: echessd_user:name(),
+                 GameID :: echessd_game:id(),
+                 GameInfo :: echessd_game:info()) ->
                         HTML :: iolist().
 user_game_(Session, Owner, GameID, GameInfo) ->
     GamePlayers =
@@ -781,9 +779,9 @@ user_game_(Session, Owner, GameID, GameInfo) ->
 
 %% @doc
 -spec user_unconfirmed_game_(Session :: #session{},
-                             Owner :: echessd_user:echessd_user(),
-                             GameID :: echessd_game:echessd_game_id(),
-                             GameInfo :: echessd_game:echessd_gameinfo()) ->
+                             Owner :: echessd_user:name(),
+                             GameID :: echessd_game:id(),
+                             GameInfo :: echessd_game:info()) ->
                                     HTML :: iolist().
 user_unconfirmed_game_(Session, Owner, GameID, GameInfo) ->
     GamePlayers =
@@ -1001,13 +999,13 @@ select_option(Value, Caption, IsSelected) ->
      ">", Caption, "</option>"].
 
 %% @doc
--spec userlink(Username :: echessd_user:echessd_user()) ->
+-spec userlink(Username :: echessd_user:name()) ->
                       HTML :: iolist().
 userlink(Username) ->
     a(url([{?Q_GOTO, ?SECTION_USER}, {?Q_NAME, Username}]), Username).
 
 %% @doc
--spec gamelink(GameID :: echessd_game:echessd_game_id()) ->
+-spec gamelink(GameID :: echessd_game:id()) ->
                       HTML :: iolist().
 gamelink(GameID) ->
     a(url([{?Q_GOTO, ?SECTION_GAME}, {?Q_GAME, GameID}]),
@@ -1015,7 +1013,7 @@ gamelink(GameID) ->
 
 %% @doc
 -spec newgame_link(Session :: #session{},
-                   WithUsername :: echessd_user:echessd_user()) ->
+                   WithUsername :: echessd_user:name()) ->
                           HTML :: iolist().
 newgame_link(Session, WithUsername) ->
     navig_links(
@@ -1023,10 +1021,10 @@ newgame_link(Session, WithUsername) ->
         gettext(Session, txt_new_game_link, [])}]).
 
 %% @doc
--spec chess_table(GameID :: echessd_game:echessd_game_id(),
+-spec chess_table(GameID :: echessd_game:id(),
                   Step :: non_neg_integer() | last,
                   IsLast :: boolean(),
-                  GameType :: echessd_query_parser:gametype(),
+                  GameType :: echessd_game:gametype(),
                   Board :: any(),
                   IsRotated :: boolean(),
                   ActiveCells :: any(),
@@ -1084,7 +1082,7 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
                 td(""))).
 
 %% @doc
--spec hist_buttons(GameID :: echessd_game:echessd_game_id(),
+-spec hist_buttons(GameID :: echessd_game:id(),
                    Step :: non_neg_integer() | last,
                    IsLast :: boolean()) ->
                           HTML :: iolist().
@@ -1130,7 +1128,7 @@ cell(Board, C, R) ->
 
 %% @doc
 -spec game_history(Step :: non_neg_integer() | last,
-                   GameID :: echessd_game:echessd_game_id(),
+                   GameID :: echessd_game:id(),
                    History :: any()) ->
                           HTML :: iolist().
 game_history(last, GameID, History) ->
@@ -1156,7 +1154,7 @@ ghc(N, StrW, StrB) ->
        tag(td, ["valign=bottom"], StrB)]).
 
 %% @doc
--spec game_history_itemlink(GameID :: echessd_game:echessd_game_id(),
+-spec game_history_itemlink(GameID :: echessd_game:id(),
                             CurStep :: non_neg_integer() | last,
                             Step :: non_neg_integer() | last,
                             Ply :: any()) ->
@@ -1226,19 +1224,17 @@ captures([_ | _] = Captures) ->
         end);
 captures(_) -> "".
 
--type chessman() ::
-        ?wpawn | ?wrook | ?wknight | ?wbishop | ?wqueen | ?wking |
-        ?bpawn | ?brook | ?bknight | ?bbishop | ?bqueen | ?bking.
-
 %% @doc
--spec chessman(Chessman :: chessman() | ?empty) -> HTML :: iolist().
+-spec chessman(Chessman :: echessd_game:chessman() | ?empty) ->
+                      HTML :: iolist().
 chessman(?empty) ->
     "&nbsp;";
 chessman(Chessman) ->
     "&#" ++ integer_to_list(chessman_(Chessman)) ++ ";".
 
 %% @doc
--spec chessman_(Chessman :: chessman()) -> Codepoint :: pos_integer().
+-spec chessman_(Chessman :: echessd_game:chessman()) ->
+                       Codepoint :: pos_integer().
 chessman_(?wking  ) -> 9812;
 chessman_(?wqueen ) -> 9813;
 chessman_(?wrook  ) -> 9814;
@@ -1288,7 +1284,7 @@ navigation(_Session) ->
 
 %% @doc
 -spec game_navigation(Session :: #session{},
-                      GameID :: echessd_game:echessd_game_id(),
+                      GameID :: echessd_game:id(),
                       ShowEndGameLinks :: boolean()) ->
                              HTML :: iolist().
 game_navigation(Session, GameID, ShowEndGameLinks) ->

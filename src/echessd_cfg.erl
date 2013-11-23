@@ -69,7 +69,7 @@ handle_info(_Request, State) ->
 -spec handle_call(Request :: any(), From :: any(), State :: #state{}) ->
                          {noreply, NewState :: #state{}}.
 handle_call(_Request, _From, State) ->
-    {reply, State, State}.
+    {noreply, State}.
 
 %% @hidden
 -spec terminate(Reason :: any(), State :: #state{}) -> ok.

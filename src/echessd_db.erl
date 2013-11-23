@@ -77,7 +77,7 @@ wait() ->
 
 %% @doc Fetch registered users names.
 %% @spec list_users() -> {ok, Users} | {error, Reason}
-%%     Users = [echessd_user:echessd_user()],
+%%     Users = [echessd_user:name()],
 %%     Reason = term()
 list_users() ->
     transaction(
@@ -95,8 +95,8 @@ list_users() ->
 
 %% @doc Adds new user.
 %% @spec adduser(Username, UserInfo) -> ok | {error, Reason}
-%%     Username = echessd_user:echessd_user(),
-%%     UserInfo = echessd_user:echessd_user_info(),
+%%     Username = echessd_user:name(),
+%%     UserInfo = echessd_user:info(),
 %%     Reason = term()
 adduser(Username, UserInfo) ->
     transaction_ok(
@@ -111,7 +111,7 @@ adduser(Username, UserInfo) ->
 
 %% @doc Removes existing user.
 %% @spec deluser(Username) -> ok | {error, Reason}
-%%     Username = echessd_user:echessd_user(),
+%%     Username = echessd_user:name(),
 %%     Reason = term()
 deluser(Username) ->
     transaction_ok(
@@ -121,8 +121,8 @@ deluser(Username) ->
 
 %% @doc Fetch user properties.
 %% @spec get_user_props(Username) -> {ok, UserInfo} | {error, Reason}
-%%     Username = echessd_user:echessd_user(),
-%%     UserInfo = echessd_user:echessd_user_info(),
+%%     Username = echessd_user:name(),
+%%     UserInfo = echessd_user:info(),
 %%     Reason = term()
 get_user_props(Username) ->
     transaction(
@@ -133,8 +133,8 @@ get_user_props(Username) ->
 
 %% @doc Set user properties.
 %% @spec set_user_props(Username, UserInfo) -> ok | {error, Reason}
-%%     Username = echessd_user:echessd_user(),
-%%     UserInfo = echessd_user:echessd_user_info(),
+%%     Username = echessd_user:name(),
+%%     UserInfo = echessd_user:info(),
 %%     Reason = term()
 set_user_props(Username, UserInfo) ->
     transaction_ok(
@@ -146,8 +146,8 @@ set_user_props(Username, UserInfo) ->
 
 %% @doc Adds new game to database.
 %% @spec addgame(GameInfo) -> {ok, GameID} | {error, Reason}
-%%     GameInfo = echessd_game:echessd_game_info(),
-%%     GameID = echessd_game:echessd_game_id(),
+%%     GameInfo = echessd_game:info(),
+%%     GameID = echessd_game:id(),
 %%     Reason = term()
 addgame(GameInfo) ->
     transaction(
@@ -164,8 +164,8 @@ addgame(GameInfo) ->
 
 %% @doc Acknowledge the game.
 %% @spec game_ack(GameID, Username) -> ok | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
-%%     Username = echessd_user:echessd_user(),
+%%     GameID = echessd_game:id(),
+%%     Username = echessd_user:name(),
 %%     Reason = term()
 game_ack(GameID, Username) ->
     transaction_ok(
@@ -197,8 +197,8 @@ game_ack(GameID, Username) ->
 
 %% @doc Deny not confirmed game.
 %% @spec game_deny(GameID, Username) -> ok | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
-%%     Username = echessd_user:echessd_user(),
+%%     GameID = echessd_game:id(),
+%%     Username = echessd_user:name(),
 %%     Reason = term()
 game_deny(GameID, Username) ->
     transaction_ok(
@@ -224,8 +224,8 @@ game_deny(GameID, Username) ->
 
 %% @doc Fetch game properties.
 %% @spec get_game_props(GameID) -> {ok, GameInfo} | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
-%%     GameInfo = echessd_game:echessd_game_info(),
+%%     GameID = echessd_game:id(),
+%%     GameInfo = echessd_game:info(),
 %%     Reason = term()
 get_game_props(GameID) ->
     transaction(
@@ -235,8 +235,8 @@ get_game_props(GameID) ->
 
 %% @doc Set game properties.
 %% @spec set_game_props(GameID, GameInfo) -> ok | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
-%%     GameInfo = echessd_game:echessd_game_info(),
+%%     GameID = echessd_game:id(),
+%%     GameInfo = echessd_game:info(),
 %%     Reason = term()
 set_game_props(GameID, GameInfo) ->
     transaction_ok(
@@ -265,7 +265,7 @@ set_game_props_(GameID, GameInfo) ->
 
 %% @doc Remove game from database.
 %% @spec delgame(GameID) -> ok | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
+%%     GameID = echessd_game:id(),
 %%     Reason = term()
 delgame(GameID) ->
     transaction_ok(
@@ -294,10 +294,10 @@ delgame_(GameID, GameInfo) ->
 
 %% @doc Makes turn for user.
 %% @spec gameply(GameID, Username, Ply) -> {ok, GameInfo} | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
-%%     Username = echessd_user:echessd_user(),
-%%     Ply = echessd_game:echessd_ply(),
-%%     GameInfo = echessd_game:echessd_game_info(),
+%%     GameID = echessd_game:id(),
+%%     Username = echessd_user:name(),
+%%     Ply = echessd_game:ply(),
+%%     GameInfo = echessd_game:info(),
 %%     Reason = term()
 gameply(GameID, Username, Ply) ->
     transaction(
@@ -358,8 +358,8 @@ gameply(GameID, Username, Ply) ->
 
 %% @doc Make user fail the game by giving up.
 %% @spec game_give_up(GameID, Username) -> ok | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
-%%     Username = echessd_user:echessd_user(),
+%%     GameID = echessd_game:id(),
+%%     Username = echessd_user:name(),
 %%     Reason = term()
 game_give_up(GameID, Username) ->
     transaction_ok(
@@ -408,8 +408,8 @@ game_give_up(GameID, Username) ->
 
 %% @doc Makes draw request.
 %% @spec game_request_draw(GameID, Username) -> ok | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
-%%     Username = echessd_user:echessd_user(),
+%%     GameID = echessd_game:id(),
+%%     Username = echessd_user:name(),
 %%     Reason = term()
 game_request_draw(GameID, Username) ->
     transaction_ok(
@@ -475,7 +475,7 @@ game_request_draw(GameID, Username) ->
 
 %% @doc Denies last ply for specified game.
 %% @spec gamerewind(GameID) -> ok | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
+%%     GameID = echessd_game:id(),
 %%     Reason = term()
 gamerewind(GameID) ->
     transaction_ok(
@@ -492,7 +492,7 @@ gamerewind(GameID) ->
 
 %% @doc Denies all plies for specified game.
 %% @spec gamereset(GameID) -> ok | {error, Reason}
-%%     GameID = echessd_game:echessd_game_id(),
+%%     GameID = echessd_game:id(),
 %%     Reason = term()
 gamereset(GameID) ->
     transaction_ok(
@@ -508,8 +508,8 @@ gamereset(GameID) ->
 %% @doc Return all users data from database.
 %% @spec dump_users() -> {ok, List} | {error, Reason}
 %%     List = [{Username, UserInfo}],
-%%     Username = echessd_user:echessd_user(),
-%%     UserInfo = echessd_user:echessd_user_info(),
+%%     Username = echessd_user:name(),
+%%     UserInfo = echessd_user:info(),
 %%     Reason = term()
 dump_users() ->
     transaction(
@@ -523,8 +523,8 @@ dump_users() ->
 %% @doc Return all games data from database.
 %% @spec dump_games() -> {ok, List} | {error, Reason}
 %%     List = [{GameID, GameInfo}],
-%%     GameID = echessd_game:echessd_game_id(),
-%%     GameInfo = echessd_game:echessd_game_info(),
+%%     GameID = echessd_game:id(),
+%%     GameInfo = echessd_game:info(),
 %%     Reason = term()
 dump_games() ->
     transaction(
@@ -540,8 +540,8 @@ dump_games() ->
 %%      import operations.
 %% @spec import_users(Users) -> ok | {error, Reason}
 %%     Users = [{Username, UserInfo}],
-%%     Username = echessd_user:echessd_user(),
-%%     UserInfo = echessd_user:echessd_user_info(),
+%%     Username = echessd_user:name(),
+%%     UserInfo = echessd_user:info(),
 %%     Reason = term()
 import_users(Users) ->
     transaction_ok(
@@ -557,8 +557,8 @@ import_users(Users) ->
 %%      import operations.
 %% @spec import_games(Games) -> ok | {error, Reason}
 %%     Games = [{GameID, GameInfo}],
-%%     GameID = echessd_game:echessd_game_id(),
-%%     GameInfo = echessd_game:echessd_game_info(),
+%%     GameID = echessd_game:id(),
+%%     GameInfo = echessd_game:info(),
 %%     Reason = term()
 import_games(Games) ->
     transaction_ok(

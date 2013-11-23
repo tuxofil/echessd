@@ -57,8 +57,9 @@ main(Args) ->
             nop
     end,
     ConfigPath = proplists:get_value(config, ParsedArgs),
-    {InstanceID, Cookie} =
-        echessd_config_parser:read_instance_cfg(ConfigPath),
+    Config = echessd_config_parser:read(ConfigPath),
+    InstanceID = proplists:get_value(?CFG_CONFIG_PATH, Config),
+    Cookie = proplists:get_value(?CFG_COOKIE, Config),
     case proplists:is_defined(hup, ParsedArgs) of
         true ->
             do_hup(InstanceID, Cookie);
@@ -100,7 +101,7 @@ export_database(Filename) ->
                         [{user, K, V} || {K, V} <- UsersData] ++
                         [{game, K, V} || {K, V} <- GamesData],
                     Timestamp = echessd_lib:timestamp(now()),
-                    application:load(?MODULE),
+                    _Ignored = application:load(?MODULE),
                     AppVersion =
                         case application:get_key(?MODULE, vsn) of
                             {ok, [_ | _] = Version} ->

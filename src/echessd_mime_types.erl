@@ -133,7 +133,7 @@ read_mime_types_loop(FH, Acc) ->
         eof ->
             {ok, lists:reverse(Acc)};
         {ok, Line} ->
-            case epv_lib:strip(Line, " \t\r\n") of
+            case echessd_lib:strip(Line, " \t\r\n") of
                 [C | _] = Stripped when C /= $# ->
                     [MimeType | Extensions] =
                         string:tokens(Stripped, " \t"),

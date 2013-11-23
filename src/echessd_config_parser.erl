@@ -116,7 +116,8 @@ parse(ConfigContents) ->
     lists:flatmap(fun parse_kv/1, preparse(ConfigContents)).
 
 %% @doc Parse the key-value pair.
--spec parse_kv({LineNo :: pos_integer(), StrKey :: nonempty_string(),
+-spec parse_kv({LineNo :: pos_integer(),
+                StrKey :: nonempty_string(),
                 StrValue :: string()}) ->
                       [{Key :: config_key(), Value :: any()}].
 parse_kv({LineNo, StrKey, StrValue}) ->
@@ -124,18 +125,18 @@ parse_kv({LineNo, StrKey, StrValue}) ->
         {ok, Key} ->
             case parse_value(Key, StrValue) of
                 {ok, Value} ->
-                    {Key, Value};
+                    [{Key, Value}];
                 error ->
                     echessd_log:err(
                       "~w> Bad value for '~w' at line ~w: ~9999p",
                       [?MODULE, Key, LineNo, StrValue]),
-                    error
+                    []
             end;
         error ->
             echessd_log:err(
               "~w> Unknown configuration key at line ~w: ~9999p",
               [?MODULE, LineNo, StrKey]),
-            error
+            []
     end.
 
 %% @doc Complete the config with default values for undefined

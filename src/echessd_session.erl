@@ -22,9 +22,9 @@
 %% Type definitions
 %% ----------------------------------------------------------------------
 
--export_type([echessd_session_id/0]).
+-export_type([id/0]).
 
--type echessd_session_id() :: nonempty_string().
+-type id() :: nonempty_string().
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -36,7 +36,7 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, no_args, []).
 
 %% @doc Create a new session for the user.
--spec new(Username :: echessd_user:echessd_user() | undefined) ->
+-spec new(Username :: echessd_user:name() | undefined) ->
                  Session :: #session{}.
 new(Username) ->
     #session{
@@ -46,7 +46,7 @@ new(Username) ->
     }.
 
 %% @doc Fetch session data.
--spec get(SID :: echessd_session_id()) ->
+-spec get(SID :: id()) ->
                  {ok, Session :: #session{}} | undefined.
 get(SID) ->
     case ets:lookup(?MODULE, SID) of
@@ -63,7 +63,7 @@ save(Session) ->
     ok.
 
 %% @doc Remove the session (logout user).
--spec del((SessionID :: echessd_session_id()) |
+-spec del((SessionID :: id()) |
           (Session :: #session{})) -> ok.
 del([_ | _] = SessionID) ->
     true = ets:delete(?MODULE, SessionID),
@@ -134,7 +134,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% ----------------------------------------------------------------------
 
 %% @doc Generate user session ID.
--spec generate_sid() -> echessd_session_id().
+-spec generate_sid() -> id().
 generate_sid() ->
     _OldSeed = random:seed(now()),
     erlang:integer_to_list(random:uniform(16#ffffffffffffffff), 16).

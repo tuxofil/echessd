@@ -78,11 +78,11 @@ handle_get(Section, Query, Session) ->
         end,
     case Section of
         ?SECTION_REG ->
-            echessd_html:register();
+            echessd_html:register(NewSession);
         ?SECTION_GAME ->
             handle_show(NewSession, Query);
         _ ->
-            echessd_html:login()
+            echessd_html:login(NewSession)
     end.
 
 %% @doc Handle HTTP POST request and return HTML page contents.
@@ -111,7 +111,7 @@ handle_post(?SECTION_LOGIN, Query, Session) ->
                        {"Set-Cookie", "lang=" ++ StrLangID}]),
                     {redirect, "/"};
                 _ ->
-                    echessd_html:eaccess()
+                    echessd_html:eaccess(Session)
             end
     end;
 handle_post(?SECTION_REG, Query, Session)
@@ -165,7 +165,7 @@ handle_post(?SECTION_PASSWD, Query, Session)
                     end
             end;
         _ ->
-            echessd_html:eaccess()
+            echessd_html:eaccess(Session)
     end;
 handle_post(?SECTION_SAVEUSER, Query, Session)
   when ?is_logged_in(Session) ->
@@ -264,8 +264,8 @@ handle_post(?SECTION_GIVEUP, Query, Session)
             put(error, Error)
     end,
     redirect_to_game(GameID);
-handle_post(_, _, _) ->
-    echessd_html:eaccess().
+handle_post(_, _, Session) ->
+    echessd_html:eaccess(Session).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
@@ -273,8 +273,8 @@ handle_post(_, _, _) ->
 
 %% @doc
 -spec handle_show(Session :: #session{},
-                  Query :: echessd_httpd:http_query()) ->
-                         echessd_httpd:result().
+                  Query :: echessd_query_parser:http_query()) ->
+                         echessd_request_processor:result().
 handle_show(Session, Query) ->
     case proplists:get_value(?Q_GOTO, Query, ?SECTION_HOME) of
         ?SECTION_GAME ->
@@ -284,13 +284,13 @@ handle_show(Session, Query) ->
         ?SECTION_USER ->
             echessd_html:user(Session, Query);
         ?SECTION_EDITUSER ->
-            echessd_html:edituser();
+            echessd_html:edituser(Session);
         ?SECTION_PASSWD_FORM ->
-            echessd_html:passwd();
+            echessd_html:passwd(Session);
         ?SECTION_NEWGAME ->
             echessd_html:newgame(Session, Query);
         ?SECTION_DRAW_CONFIRM ->
-            echessd_html:draw_confirm(Query);
+            echessd_html:draw_confirm(Session, Query);
         ?SECTION_GIVEUP_CONFIRM ->
             echessd_html:giveup_confirm(Session, Query);
         ?SECTION_HOME ->
@@ -298,10 +298,11 @@ handle_show(Session, Query) ->
     end.
 
 %% @doc
--spec redirect_to_game(GameID :: pos_integer()) -> nonempty_string().
+-spec redirect_to_game(GameID :: pos_integer()) ->
+                              {redirect, URL :: nonempty_string()}.
 redirect_to_game(GameID) ->
     {redirect,
-     echessd_httpd:encode_query(
+     echessd_query_parser:encode(
        [{?Q_GOTO, ?SECTION_GAME}, {?Q_GAME, GameID}])}.
 
 %% @doc
@@ -312,12 +313,12 @@ gettext(Session, TextID) ->
 %% @doc Return formatted and localized error message.
 -spec geterr(Session :: #session{}, TextID :: atom()) -> iolist().
 geterr(Session, TextID) ->
-    echessd_html:error(gettext(Session, TextID)).
+    echessd_html:error(Session, gettext(Session, TextID)).
 
 %% @doc Return formatted and localized error message.
 -spec geterr(Session :: #session{}, TextID :: atom(), Reason :: any()) ->
                     iolist().
 geterr(Session, TextID, Reason) ->
     echessd_html:error(
-      gettext(Session, TextID) ++ ":~n~9999p", [Reason]).
+      Session, gettext(Session, TextID) ++ ":~n~9999p", [Reason]).
 

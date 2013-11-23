@@ -163,13 +163,13 @@
 
 %% user session record
 -record(session,
-        {id :: echessd_session:echessd_session_id(),
+        {id :: echessd_session:id(),
          created :: erlang:timestamp(),
-         username :: echessd_user:echessd_user() | undefined,
+         username :: echessd_user:name() | undefined,
          timezone :: echessd_lib:administrative_offset() | undefined,
          language :: (LanguageID :: atom() | undefined),
          style :: (StyleID :: atom() | undefined),
-         userinfo :: echessd_user:echessd_user_info() | undefined,
+         userinfo :: echessd_user:info() | undefined,
          vars = [] :: [{Key :: any(), Value :: any()}]
         }).
 

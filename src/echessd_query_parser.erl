@@ -20,8 +20,7 @@
    [http_query/0,
     http_query_item/0,
     http_query_key/0,
-    section/0,
-    gametype/0
+    section/0
    ]).
 
 -type http_query() :: [http_query_item()].
@@ -34,7 +33,7 @@
         {?Q_MOVE, nonempty_string()} |
         {?Q_COMMENT, string()} |
         {?Q_PRIVATE, boolean()} |
-        {?Q_GAMETYPE, gametype()} |
+        {?Q_GAMETYPE, echessd_game:gametype()} |
         {?Q_COLOR, ?black | ?white} |
         {?Q_OPPONENT, nonempty_string()} |
         {?Q_EDIT_JID, string()} |
@@ -76,8 +75,6 @@
         ?SECTION_DRAW_CONFIRM | ?SECTION_DRAW | ?SECTION_GIVEUP_CONFIRM |
         ?SECTION_GIVEUP.
 
--type gametype() :: ?GAME_CLASSIC.
-
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
@@ -112,11 +109,13 @@ parse(ModData) ->
         end)).
 
 %% @doc Encode the query to URL query string.
--spec encode(Query :: echessd_httpd:http_query()) -> string().
+-spec encode(Query :: echessd_query_parser:http_query()) ->
+                    URL :: nonempty_string().
 encode(Query) ->
-    ["/?",
-     string:join([atom_to_list(K) ++ "=" ++ encode(K, V) ||
-                     {K, V} <- Query], "&")].
+    lists:flatten(
+      ["/?",
+       string:join([atom_to_list(K) ++ "=" ++ encode(K, V) ||
+                       {K, V} <- Query], "&")]).
 
 %% @doc Encode the query item value.
 -spec encode(QueryKey :: http_query_key(),
@@ -135,7 +134,7 @@ encode(_QueryKey, QueryValue) ->
 %% @doc
 -spec parse_(DecodedQuery :: [{Key :: nonempty_string(),
                               Value :: string()}]) ->
-                   Query :: echessd_httpd:http_query().
+                   Query :: echessd_query_parser:http_query().
 parse_([]) ->
     [];
 parse_([{StrKey, StrValue} | Tail]) ->
@@ -152,7 +151,7 @@ parse_([{StrKey, StrValue} | Tail]) ->
     end.
 
 %% @doc Parse the value for the query variable.
--spec parse_query_value(Key :: echessd_httpd:http_query_key(),
+-spec parse_query_value(Key :: echessd_query_parser:http_query_key(),
                         StrValue :: string()) ->
                                {ok, Value :: any()} | error.
 parse_query_value(Key, StrValue) ->
@@ -165,7 +164,7 @@ parse_query_value(Key, StrValue) ->
 
 %% @doc Parse the value for the query variable.
 %% The function return valid Erlang term or throws exception on an error.
--spec parse_query_value_(Key :: echessd_httpd:http_query_key(),
+-spec parse_query_value_(Key :: echessd_query_parser:http_query_key(),
                          StrValue :: string()) ->
                                 Value :: any().
 parse_query_value_(?Q_GOTO, String) ->

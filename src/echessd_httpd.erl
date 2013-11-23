@@ -106,7 +106,8 @@ process(ModData, Query, Session) ->
     erase(error),
     try
         send_reply(
-          ModData, generate_html(ModData#mod.method, Query, Session))
+          ModData, Session,
+          generate_html(ModData#mod.method, Query, Session))
     catch
         Type:Reason ->
             ErrMsg = geterr(Session, txt_resp_send_error,
@@ -134,11 +135,12 @@ generate_html(Method, Query, Session) ->
 
 %% @doc Send the generated page contents to the client.
 -spec send_reply(ModData :: #mod{},
+                 Session :: #session{},
                  Result :: echessd_request_processor:result()) ->
                         {proceed, NewData :: list()}.
-send_reply(ModData, {redirect, URL}) ->
+send_reply(ModData, Session, {redirect, URL}) ->
     ok = echessd_log:debug("redirecting to ~9999p...", [URL]),
-    Body = echessd_html:redirection(URL),
+    Body = echessd_html:redirection(Session, URL),
     Binary = list_to_binary(Body),
     Headers =
         [{location, URL}, {content_type, ?mime_text_html},
@@ -150,7 +152,7 @@ send_reply(ModData, {redirect, URL}) ->
     {proceed,
      [{response, {already_sent, 303, size(Binary)}},
       {mime_type, ?mime_text_html} | ModData#mod.data]};
-send_reply(ModData, IoList) ->
+send_reply(ModData, _Session, IoList) ->
     Binary = list_to_binary(IoList),
     Headers =
         [{content_type, ?mime_text_html},
@@ -210,24 +212,27 @@ serve_internal_file(ModData, Path) ->
                        {already_sent, 200, FileInfo#file_info.size}},
                       {mime_type, MimeType} | ModData#mod.data]};
                 {error, _Reason} ->
-                    {break, [{response, {404, geterr(txt_http_404_err)}}]}
+                    {break, [{response,
+                              {404, geterr(#session{}, txt_http_404_err)}}]}
             end;
         {error, _Reason} ->
-            {break, [{response, {404, geterr(txt_http_404_err)}}]}
+            {break, [{response,
+                      {404, geterr(#session{}, txt_http_404_err)}}]}
     end.
 
 %% @doc Get localized and formatted error message.
--spec geterr(TextID :: atom()) -> iolist().
-geterr(TextID) ->
-    echessd_html:error(gettext(#session{}, TextID)).
+-spec geterr(Session :: #session{}, TextID :: atom()) -> iolist().
+geterr(Session, TextID) ->
+    echessd_html:error(Session, gettext(#session{}, TextID)).
 
 %% @doc Get localized and formatted error message.
 -spec geterr(Session :: #session{}, TextID :: atom(),
              Reason :: any()) -> iolist().
 geterr(Session, TextID, Reason) ->
-    echessd_html:error(gettext(Session, TextID) ++ ":~n~p", [Reason]).
+    echessd_html:error(
+      Session, gettext(Session, TextID) ++ ":~n~p", [Reason]).
 
 %% @doc
 -spec gettext(Session :: #session{}, TextID :: atom()) -> iolist().
 gettext(Session, TextID) ->
-    echessd_lib:gettext(TextID, Session#session.language).
+    echessd_lang:gettext(TextID, Session#session.language).

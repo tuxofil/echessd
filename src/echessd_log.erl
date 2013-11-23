@@ -80,7 +80,8 @@ handle_info({log, Time, Severity, Format, Args}, State)
     case loglevel_to_integer(Severity) =< State#state.loglevel of
         true ->
             IoList = format_msg(Time, Severity, Format, Args),
-            _Ignored = file:write(State#state.file_descr, IoList);
+            _Ignored = file:write(State#state.file_descr, IoList),
+            ok;
         false ->
             ok
     end,

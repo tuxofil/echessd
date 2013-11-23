@@ -20,9 +20,9 @@
 
 %% @doc Dispatches notifications about ply of Username in game GameID.
 %% @spec ply(GameID, Username, Ply) -> ok
-%%     GameID = echessd_game:echessd_game_id(),
-%%     Username = echessd_user:echessd_username(),
-%%     Ply = echessd_game:echessd_ply()
+%%     GameID = echessd_game:id(),
+%%     Username = echessd_user:name(),
+%%     Ply = echessd_game:ply()
 ply(GameID, Username, Ply) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Watchers =
@@ -55,7 +55,7 @@ ply(GameID, Username, Ply) ->
 
 %% @doc Dispatches notifications about game creation.
 %% @spec game_add(GameID) -> ok
-%%     GameID = echessd_game:echessd_game_id()
+%%     GameID = echessd_game:id()
 game_add(GameID) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Creator = echessd_game:get_creator(GameInfo),
@@ -72,7 +72,7 @@ game_add(GameID) ->
 
 %% @doc Dispatches notifications about game acknowledge.
 %% @spec game_ack(GameID) -> ok
-%%     GameID = echessd_game:echessd_game_id()
+%%     GameID = echessd_game:id()
 game_ack(GameID) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Creator = echessd_game:get_creator(GameInfo),
@@ -92,7 +92,7 @@ game_ack(GameID) ->
 
 %% @doc Dispatches notifications about game end.
 %% @spec game_end(GameID) -> ok
-%%     GameID = echessd_game:echessd_game_id()
+%%     GameID = echessd_game:id()
 game_end(GameID) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Watchers =

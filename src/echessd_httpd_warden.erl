@@ -72,7 +72,7 @@ handle_info(?reconfig, State) ->
         State#state.bindport /= BindPort,
     if NeedToRestart ->
             catch exit(State#state.server, kill),
-            echessd_log:debug("starting httpd..."),
+            echessd_log:debug("starting httpd...", []),
             case echessd_httpd:start_link(BindAddr, BindPort) of
                 {ok, Pid} when is_pid(Pid) ->
                     echessd_log:info(
