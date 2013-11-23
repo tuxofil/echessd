@@ -8,7 +8,7 @@
 -module(echessd_query_parser).
 
 %% API exports
--export([parse/1, encode/1]).
+-export([parse/1, encode/1, encode/2]).
 
 -include("echessd.hrl").
 
@@ -20,7 +20,8 @@
    [http_query/0,
     http_query_item/0,
     http_query_key/0,
-    section/0
+    section/0,
+    gametype/0
    ]).
 
 -type http_query() :: [http_query_item()].
@@ -52,7 +53,9 @@
         {?Q_EDIT_PASSWORD2, nonempty_string()} |
         {?Q_EDIT_USERNAME, nonempty_string()} |
         {?Q_USERNAME, nonempty_string()} |
-        {?Q_PASSWORD, nonempty_string()}.
+        {?Q_PASSWORD, nonempty_string()} |
+        {?Q_LANG, LangID :: atom()} |
+        {?Q_USER, nonempty_string()}.
 
 -type http_query_key() ::
         ?Q_GOTO | ?Q_STEP | ?Q_GAME | ?Q_NAME | ?Q_MOVE | ?Q_COMMENT |
@@ -62,7 +65,7 @@
         ?Q_EDIT_SHOW_HISTORY | ?Q_EDIT_SHOW_IN_LIST | ?Q_EDIT_LANGUAGE |
         ?Q_EDIT_TIMEZONE | ?Q_EDIT_FULLNAME | ?Q_EDIT_PASSWORD0 |
         ?Q_EDIT_PASSWORD1 | ?Q_EDIT_PASSWORD2 | ?Q_EDIT_USERNAME |
-        ?Q_USERNAME | ?Q_PASSWORD.
+        ?Q_USERNAME | ?Q_PASSWORD | ?Q_LANG | ?Q_USER.
 
 -type section() ::
         ?SECTION_HOME | ?SECTION_GAME | ?SECTION_USERS |
@@ -112,9 +115,18 @@ parse(ModData) ->
 -spec encode(Query :: echessd_httpd:http_query()) -> string().
 encode(Query) ->
     ["/?",
-     string:join([atom_to_list(K) ++ "=" ++
-                      encode_query_value(K, V) ||
+     string:join([atom_to_list(K) ++ "=" ++ encode(K, V) ||
                      {K, V} <- Query], "&")].
+
+%% @doc Encode the query item value.
+-spec encode(QueryKey :: http_query_key(),
+             QueryValue :: any()) -> iolist().
+encode(?Q_EDIT_TIMEZONE, Offset) ->
+    echessd_lib:time_offset_to_list(Offset);
+encode(_QueryKey, QueryValue) when is_list(QueryValue) ->
+    QueryValue;
+encode(_QueryKey, QueryValue) ->
+    io_lib:format("~w", QueryValue).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
@@ -139,7 +151,7 @@ parse_([{StrKey, StrValue} | Tail]) ->
             parse_(Tail)
     end.
 
-%% @doc
+%% @doc Parse the value for the query variable.
 -spec parse_query_value(Key :: echessd_httpd:http_query_key(),
                         StrValue :: string()) ->
                                {ok, Value :: any()} | error.
@@ -151,17 +163,13 @@ parse_query_value(Key, StrValue) ->
             error
     end.
 
-%% @doc
+%% @doc Parse the value for the query variable.
+%% The function return valid Erlang term or throws exception on an error.
 -spec parse_query_value_(Key :: echessd_httpd:http_query_key(),
                          StrValue :: string()) ->
                                 Value :: any().
 parse_query_value_(?Q_GOTO, String) ->
-    case echessd_lib:list_to_atom(String, ?ALL_SECTIONS) of
-        {ok, SectionID} ->
-            SectionID;
-        _ ->
-            ?SECTION_HOME
-    end;
+    echessd_lib:list_to_atom(String, ?ALL_SECTIONS, ?SECTION_HOME);
 parse_query_value_(?Q_STEP, String) ->
     try list_to_integer(String) of
         Int when Int >= 0 ->
@@ -176,30 +184,16 @@ parse_query_value_(?Q_GAME, String) ->
     Int = list_to_integer(String),
     true = Int >= 1,
     Int;
-parse_query_value_(?Q_NAME, [_ | _] = String) ->
-    [_ | _] = echessd_lib:strip(String, " \t\r\n");
 parse_query_value_(?Q_MOVE, [_ | _] = String) ->
-    [_ | _] = string:to_lower(echessd_lib:strip(String, " \t\r\n"));
+    [_, _, _, _ | _] = string:to_lower(echessd_lib:strip(String, " \t\r\n"));
 parse_query_value_(?Q_COMMENT, String) ->
     echessd_lib:strip(String, " \t\r\n");
-parse_query_value_(?Q_PRIVATE, String) ->
-    length(String) > 0;
 parse_query_value_(?Q_GAMETYPE, String) ->
-    case echessd_lib:list_to_atom(String, ?GAME_TYPES) of
-        {ok, GameType} ->
-            GameType;
-        _ ->
-            ?GAME_CLASSIC
-    end;
+    echessd_lib:list_to_atom(String, ?GAME_TYPES, ?GAME_CLASSIC);
 parse_query_value_(?Q_COLOR, String) ->
-    case echessd_lib:list_to_atom(String, [?black, ?white]) of
-        {ok, Color} ->
-            Color;
-        _ ->
-            echessd_lib:random_elem([?white, ?black])
-    end;
-parse_query_value_(?Q_OPPONENT, String) ->
-    [_ | _] = echessd_lib:strip(String, " \t\r\n");
+    echessd_lib:list_to_atom(
+      String, [?black, ?white],
+      echessd_lib:random_elem([?white, ?black]));
 parse_query_value_(?Q_EDIT_JID, String) ->
     echessd_lib:strip(String, " \t\r\n");
 parse_query_value_(?Q_EDIT_STYLE, String) ->
@@ -213,18 +207,6 @@ parse_query_value_(?Q_EDIT_AUTO_PERIOD, String) ->
         _:_ ->
             echessd_user:default(auto_refresh_period)
     end;
-parse_query_value_(?Q_EDIT_AUTO_REFRESH, String) ->
-    length(String) > 0;
-parse_query_value_(?Q_EDIT_NOTIFY, String) ->
-    length(String) > 0;
-parse_query_value_(?Q_EDIT_SHOW_COMMENT, String) ->
-    length(String) > 0;
-parse_query_value_(?Q_EDIT_SHOW_HISTORY, String) ->
-    length(String) > 0;
-parse_query_value_(?Q_EDIT_SHOW_IN_LIST, String) ->
-    length(String) > 0;
-parse_query_value_(?Q_EDIT_LANGUAGE, String) ->
-    echessd_lang:parse(String);
 parse_query_value_(?Q_EDIT_TIMEZONE, String) ->
     case echessd_lib:list_to_time_offset(String) of
         {ok, Offset} ->
@@ -234,43 +216,28 @@ parse_query_value_(?Q_EDIT_TIMEZONE, String) ->
     end;
 parse_query_value_(?Q_EDIT_FULLNAME, String) ->
     echessd_lib:strip(String, " \t\r\n");
-parse_query_value_(?Q_EDIT_PASSWORD0, [_ | _] = String) ->
+parse_query_value_(PasswordKey, [_ | _] = String)
+  when PasswordKey == ?Q_PASSWORD; PasswordKey == ?Q_EDIT_PASSWORD0;
+       PasswordKey == ?Q_EDIT_PASSWORD1;
+       PasswordKey == ?Q_EDIT_PASSWORD2 ->
     String;
-parse_query_value_(?Q_EDIT_PASSWORD1, [_ | _] = String) ->
-    String;
-parse_query_value_(?Q_EDIT_PASSWORD2, [_ | _] = String) ->
-    String;
-parse_query_value_(?Q_EDIT_USERNAME, String) ->
+parse_query_value_(UsernameKey, String)
+  when UsernameKey == ?Q_EDIT_USERNAME;
+       UsernameKey == ?Q_USERNAME;
+       UsernameKey == ?Q_NAME;
+       UsernameKey == ?Q_USER;
+       UsernameKey == ?Q_OPPONENT ->
     [_ | _] = echessd_lib:strip(String, " \t\r\n");
-parse_query_value_(?Q_USERNAME, String) ->
-    [_ | _] = echessd_lib:strip(String, " \t\r\n");
-parse_query_value_(?Q_PASSWORD, [_ | _] = String) ->
-    String.
+parse_query_value_(BooleanKey, String)
+  when BooleanKey == ?Q_PRIVATE;
+       BooleanKey == ?Q_EDIT_AUTO_REFRESH;
+       BooleanKey == ?Q_EDIT_NOTIFY;
+       BooleanKey == ?Q_EDIT_SHOW_COMMENT;
+       BooleanKey == ?Q_EDIT_SHOW_HISTORY;
+       BooleanKey == ?Q_EDIT_SHOW_IN_LIST ->
+    length(String) > 0;
+parse_query_value_(LanguageKey, String)
+  when LanguageKey == ?Q_EDIT_LANGUAGE;
+       LanguageKey == ?Q_LANG ->
+    echessd_lang:parse(String).
 
-%% @doc
--spec encode_query_value(Key :: echessd_httpd:http_query_key(),
-                         Value :: any()) -> string().
-encode_query_value(?Q_NAME, String) ->
-    String;
-encode_query_value(?Q_OPPONENT, String) ->
-    String;
-encode_query_value(?Q_MOVE, String) ->
-    String;
-encode_query_value(?Q_COMMENT, String) ->
-    String;
-encode_query_value(?Q_EDIT_JID, String) ->
-    String;
-encode_query_value(?Q_EDIT_FULLNAME, String) ->
-    String;
-encode_query_value(?Q_EDIT_PASSWORD0, String) ->
-    String;
-encode_query_value(?Q_EDIT_PASSWORD1, String) ->
-    String;
-encode_query_value(?Q_EDIT_PASSWORD2, String) ->
-    String;
-encode_query_value(?Q_EDIT_USERNAME, String) ->
-    String;
-encode_query_value(?Q_USERNAME, String) ->
-    String;
-encode_query_value(_Key, Value) ->
-    io_lib:format("~w", Value).

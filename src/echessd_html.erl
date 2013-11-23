@@ -8,21 +8,21 @@
 -module(echessd_html).
 
 -export(
-   [login/0,
-    register/0,
-    edituser/0,
-    passwd/0,
-    eaccess/0,
-    home/0,
+   [login/1,
+    register/1,
+    edituser/1,
+    passwd/1,
+    eaccess/1,
+    home/1,
     game/2,
-    draw_confirm/1,
-    giveup_confirm/1,
-    users/0,
-    user/1,
-    newgame/0,
-    error/1, error/2,
-    redirection/1,
-    notyet/0
+    draw_confirm/2,
+    giveup_confirm/2,
+    users/1,
+    user/2,
+    newgame/2,
+    error/2, error/3,
+    redirection/2,
+    notyet/1
    ]).
 
 -include("echessd.hrl").
@@ -32,328 +32,243 @@
 %% ----------------------------------------------------------------------
 
 %% @doc Make 'login' page.
--spec login() -> iolist().
-login() ->
-    Content =
-        navig_links([{"?goto=" ++ ?SECTION_REG, gettext(txt_lgn_rnu_link)}]) ++
-        case echessd_cfg:get(?CFG_SHOW_ABOUT) of
-            true -> "<br>" ++ tag(p, gettext(txt_about)) ++ "<br>";
-            _ -> ""
-        end ++
-        "<form method=post>"
-        "<input name=action type=hidden value=login>" ++
-        gettext(txt_lgn_login) ++ ": <input name=username type=text><br>" ++
-        gettext(txt_lgn_passw) ++ ": <input name=password type=password><br>"
-        "<input type=submit class=btn value='" ++ gettext(txt_lgn_ok_button) ++ "'>"
-        "</form>" ++
-        case echessd_cfg:get(?CFG_SHOW_COPYRIGHTS) of
-            true -> "<hr>" ++ tag(p, gettext(txt_copyrights));
-            _ -> ""
-        end,
-    log_reg_page("echessd - " ++ gettext(txt_lgn_title), Content).
+-spec login(Session :: #session{}) -> HTML :: iolist().
+login(Session) ->
+    log_reg_page(
+      Session, ?SECTION_LOGIN,
+      "echessd - " ++ gettext(Session, txt_lgn_title, []),
+      [navig_links(
+         [{url([{?Q_GOTO, ?SECTION_REG}]),
+           gettext(Session, txt_lgn_rnu_link, [])}]),
+       case echessd_cfg:get(?CFG_SHOW_ABOUT) of
+           true ->
+               ["<br>", tag(p, gettext(Session, txt_about, [])), "<br>"];
+           _ -> ""
+       end,
+       "<form method=post>",
+       hidden(?Q_GOTO, ?SECTION_LOGIN),
+       input(Session, ?Q_USERNAME, txt_lgn_login, ""), "<br>",
+       password(Session, ?Q_PASSWORD, txt_lgn_passw), "<br>",
+       submit(Session, txt_lgn_ok_button),
+       "</form>",
+       case echessd_cfg:get(?CFG_SHOW_COPYRIGHTS) of
+           true ->
+               "<hr>" ++ tag(p, gettext(Session, txt_copyrights, []));
+           _ -> ""
+       end]).
 
-%% @doc Makes 'register new user' page content.
-%% @spec register() -> io_list()
-register() ->
-    Timezones =
-        [echessd_lib:time_offset_to_list(O) ||
-            O <- echessd_lib:administrative_offsets()],
-    ServerZone =
-        echessd_lib:time_offset_to_list(
-          echessd_lib:local_offset()),
-    DefLang = echessd_cfg:get(?CFG_DEF_LANG),
-    Content =
-        navig_links([{"?goto=" ++ ?SECTION_LOGIN, gettext(txt_rnu_ret_link)}]) ++
-        "<form method=post>"
-        "<input name=action type=hidden value=register>" ++
-        gettext(txt_rnu_login) ++ ": <input name=regusername type=text><br>" ++
-        gettext(txt_rnu_passw) ++ ": <input name=regpassword1 type=password><br>" ++
-        gettext(txt_rnu_passw_conf) ++ ": <input name=regpassword2 type=password><br>" ++
-        gettext(txt_rnu_fullname) ++ ": <input name=regfullname type=text> (" ++
-        gettext(txt_rnu_optional) ++ ")<br>" ++
-        gettext(txt_rnu_timezone) ++ ": <select name=regtimezone>" ++
-        lists:map(
-          fun(Zone) when Zone == ServerZone ->
-                  "<option value='" ++ Zone ++ "' selected>" ++
-                      Zone ++ "</option>";
-             (Zone) ->
-                  "<option value='" ++ Zone ++ "'>" ++ Zone ++ "</option>"
-          end, Timezones) ++
-        "</select><br>" ++
-        gettext(txt_rnu_language) ++ ": <select name=reglanguage>" ++
-        lists:map(
-          fun({LangAbbr, LangName}) ->
-                  "<option value='" ++ atom_to_list(LangAbbr) ++ "'" ++
-                      if LangAbbr == DefLang ->
-                              " selected";
-                         true -> ""
-                      end ++ ">" ++
-                      LangName ++ "</option>"
-          end, echessd_lib:languages()) ++
-        "</select><br>"
-        ++ gettext(txt_jid) ++ ": <input name=regjid type=text value=''> (" ++
-        gettext(txt_rnu_optional) ++ ")<br>" ++
-        "<label for=sil>"
-        "<input type=checkbox id=sil name=regshowinlist checked>&nbsp;"
-        ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
-        "<input type=submit class=btn value='" ++
-        gettext(txt_rnu_ok_button) ++ "'>"
-        "</form>",
-    log_reg_page("echessd - " ++ gettext(txt_rnu_title), Content).
+%% @doc Make 'register new user' page.
+-spec register(Session :: #session{}) -> HTML :: iolist().
+register(Session) ->
+    Optional = [" (", gettext(Session, txt_rnu_optional, []), ")<br>"],
+    log_reg_page(
+      Session, ?SECTION_REG,
+      "echessd - " ++ gettext(Session, txt_rnu_title, []),
+      [navig_links([{url([{?Q_GOTO, ?SECTION_LOGIN}]),
+                     gettext(Session, txt_rnu_ret_link, [])}]),
+       "<form method=post>",
+       hidden(?Q_GOTO, ?SECTION_REG),
+       input(Session, ?Q_EDIT_USERNAME, txt_rnu_login, ""), "<br>",
+       password(Session, ?Q_EDIT_PASSWORD1, txt_rnu_passw), "<br>",
+       password(Session, ?Q_EDIT_PASSWORD2, txt_rnu_passw_conf), "<br>",
+       input(Session, ?Q_EDIT_FULLNAME, txt_rnu_fullname, ""), Optional,
+       select(Session, ?Q_EDIT_TIMEZONE, txt_timezone,
+              echessd_lib:local_offset(),
+              echessd_lib:administrative_offsets()), "<br>",
+       select(Session, ?Q_EDIT_LANGUAGE, txt_rnu_language,
+              Session#session.language, echessd_lang:list()), "<br>",
+       input(Session, ?Q_EDIT_JID, txt_jid, ""), Optional,
+       checkbox(Session, "sil", ?Q_EDIT_SHOW_IN_LIST,
+                txt_rnu_show_in_list, true), "<br>",
+       submit(Session, txt_rnu_ok_button),
+       "</form>"]).
 
-%% @doc Makes 'edit user properties' page content.
-%% @spec edituser() -> io_list()
-edituser() ->
-    Username = get(username),
-    {ok, UserInfo} = echessd_user:getprops(Username),
-    Fullname =
-        echessd_lib:escape_html_entities(
-          echessd_user:get_value(fullname, UserInfo)),
-    Timezones =
-        [echessd_lib:time_offset_to_list(O) ||
-            O <- echessd_lib:administrative_offsets()],
-    Timezone =
-        echessd_lib:time_offset_to_list(
-          echessd_user:get_value(timezone, UserInfo)),
-    {OldLangAbbr, _OldLangName} = echessd_user:lang_info(UserInfo),
-    OldStyle = echessd_user:get_value(style, UserInfo),
-    JID =
-        echessd_lib:escape_html_entities(
-          echessd_user:get_value(jid, UserInfo)),
-    AutoRefreshPeriod =
-        integer_to_list(
-          echessd_user:get_value(auto_refresh_period, UserInfo)),
-    html_page_header(
-      "echessd - " ++ gettext(txt_edit_profile_title),
-      [{h1, gettext(txt_edit_profile_title)}]) ++
-        navigation() ++
-        "<br>" ++
-        navig_links(
-          [{"?goto=" ++ ?SECTION_PASSWD_FORM,
-            gettext(txt_predit_passwd_link)}]) ++
-        "<form method=post>"
-        "<input name=action type=hidden value=" ++ ?SECTION_SAVEUSER ++ ">" ++
-        gettext(txt_fullname) ++ ": <input name=editfullname type=text "
-        "value='" ++ Fullname ++ "'><br>" ++
-        gettext(txt_timezone) ++ ": <select name=edittimezone>" ++
-        lists:map(
-          fun(Zone) when Zone == Timezone ->
-                  "<option value='" ++ Zone ++ "' selected>" ++
-                      Zone ++ "</option>";
-             (Zone) ->
-                  "<option value='" ++ Zone ++ "'>" ++ Zone ++ "</option>"
-          end, Timezones) ++
-        "</select><br>" ++
-        gettext(txt_predit_lang) ++ ": <select name=editlanguage>" ++
-        lists:map(
-          fun({LangAbbr, LangName}) ->
-                  "<option value='" ++ atom_to_list(LangAbbr) ++ "'" ++
-                      if LangAbbr == OldLangAbbr ->
-                              " selected";
-                         true -> ""
-                      end ++ ">" ++
-                      LangName ++ "</option>"
-          end, echessd_lib:languages()) ++
-        "</select><br>"
-        ++ gettext(txt_style) ++ ": <select name=editstyle>" ++
-        lists:map(
-          fun({N, TxtID, _F}) ->
-                  "<option value=" ++ atom_to_list(N) ++
-                      if N == OldStyle -> " selected";
-                         true -> ""
-                      end ++ ">" ++ gettext(TxtID) ++ "</option>"
-          end, echessd_lib:styles()) ++
-        "</select><br>"
-        ++ gettext(txt_jid) ++ ": <input name=editjid type=text "
-        "value='" ++ JID ++ "'> (" ++
-        gettext(txt_rnu_optional) ++ ")<br>" ++
-        "<label for=enot>"
-        "<input type=checkbox id=enot name=editnotify" ++
-        case echessd_user:get_value(notify, UserInfo) of
-            false -> "";
-            _ -> " checked"
-        end ++ ">&nbsp;"
-        ++ gettext(txt_notify) ++ "</label><br>"
-        "<label for=sil>"
-        "<input type=checkbox id=sil name=editshowinlist" ++
-        case echessd_user:get_value(show_in_list, UserInfo) of
-            false -> "";
-            _ -> " checked"
-        end ++ ">&nbsp;"
-        ++ gettext(txt_rnu_show_in_list) ++ "</label><br>"
-        "<label for=sh>"
-        "<input type=checkbox id=sh name=editshowhistory" ++
-        case echessd_user:get_value(show_history, UserInfo) of
-            false -> "";
-            _ -> " checked"
-        end ++ ">&nbsp;"
-        ++ gettext(txt_rnu_show_history) ++ "</label><br>"
-        "<label for=sc>"
-        "<input type=checkbox id=sc name=editshowcomment" ++
-        case echessd_user:get_value(show_comment, UserInfo) of
-            false -> "";
-            _ -> " checked"
-        end ++ ">&nbsp;"
-        ++ gettext(txt_rnu_show_comment) ++ "</label><br>"
-        "<label for=autoref>"
-        "<input type=checkbox id=autoref name=editautorefresh" ++
-        case echessd_user:get_value(auto_refresh, UserInfo) of
-            true -> " checked";
-            _ -> ""
-        end ++ ">&nbsp;"
-        ++ gettext(txt_auto_refresh) ++ "</label><br>" ++
-        gettext(txt_auto_refresh_period) ++
-        ": <input name=editautoperiod type=text "
-        "value='" ++ AutoRefreshPeriod ++ "'><br>" ++
-        "<input type=submit class=btn value='" ++
-        gettext(txt_predit_save_button) ++ "'>"
-        "</form>"
-        "<br>" ++
-        html_page_footer([]).
+%% @doc Make 'edit user properties' page.
+-spec edituser(Session :: #session{}) -> iolist().
+edituser(Session) ->
+    UserInfo = Session#session.userinfo,
+    Title = gettext(Session, txt_edit_profile_title, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     navigation(Session), "<br>",
+     navig_links(
+       [{url([{?Q_GOTO, ?SECTION_PASSWD_FORM}]),
+         gettext(Session, txt_predit_passwd_link, [])}]),
+     "<form method=post>",
+     hidden(?Q_GOTO, ?SECTION_SAVEUSER),
+     input(Session, ?Q_EDIT_FULLNAME, txt_fullname,
+           echessd_user:get_value(fullname, UserInfo)), "<br>",
+     select(Session, ?Q_EDIT_TIMEZONE, txt_timezone,
+            echessd_user:get_value(timezone, UserInfo),
+            echessd_lib:administrative_offsets()), "<br>",
+     select(Session, ?Q_EDIT_LANGUAGE, txt_predit_lang,
+            Session#session.language, echessd_lang:list()), "<br>",
+     select(Session, ?Q_EDIT_STYLE, txt_style,
+            Session#session.style, echessd_styles:list()), "<br>",
+     input(Session, ?Q_EDIT_JID, txt_jid,
+           echessd_user:get_value(jid, UserInfo)) ++ " (" ++
+         gettext(Session, txt_rnu_optional, []) ++ ")<br>",
+     checkbox(Session, "enot", ?Q_EDIT_NOTIFY, txt_notify,
+              echessd_user:get_value(notify, UserInfo)), "<br>",
+     checkbox(Session, "sil", ?Q_EDIT_SHOW_IN_LIST, txt_rnu_show_in_list,
+              echessd_user:get_value(show_in_list, UserInfo)), "<br>",
+     checkbox(Session, "sh", ?Q_EDIT_SHOW_HISTORY, txt_rnu_show_history,
+              echessd_user:get_value(show_history, UserInfo)), "<br>",
+     checkbox(Session, "sc", ?Q_EDIT_SHOW_COMMENT, txt_rnu_show_comment,
+              echessd_user:get_value(show_comment, UserInfo)), "<br>",
+     checkbox(Session, "autoref", ?Q_EDIT_AUTO_REFRESH, txt_auto_refresh,
+              echessd_user:get_value(auto_refresh, UserInfo)), "<br>",
+     input(Session, ?Q_EDIT_AUTO_PERIOD, txt_auto_refresh_period,
+           echessd_user:get_value(auto_refresh_period, UserInfo)), "<br>",
+     submit(Session, txt_predit_save_button),
+     "</form><br>",
+     html_page_footer()].
 
-%% @doc Makes 'change user password' page content.
-%% @spec passwd() -> io_list()
-passwd() ->
-    html_page_header(
-      "echessd - " ++ gettext(txt_passwd_title),
-      [{h1, gettext(txt_passwd_title)}]) ++
-        navigation() ++
-        "<br>" ++
-        "<form method=post>"
-        "<input name=action type=hidden value=" ++ ?SECTION_PASSWD ++ ">" ++
-        gettext(txt_passwd_passw) ++ ": "
-        "<input name=editpassword0 type=password><br>" ++
-        gettext(txt_passwd_passw_new) ++ ": "
-        "<input name=editpassword1 type=password><br>" ++
-        gettext(txt_passwd_passw_new_confirm) ++ ": "
-        "<input name=editpassword2 type=password><br>" ++
-        "<input type=submit class=btn value='" ++
-        gettext(txt_passwd_save_button) ++ "'>"
-        "</form>"
-        "<br>" ++
-        html_page_footer([]).
+%% @doc Make 'change user password' page.
+-spec passwd(Session :: #session{}) -> HTML :: iolist().
+passwd(Session) ->
+    Title = gettext(Session, txt_passwd_title, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     navigation(Session),
+     "<br><form method=post>",
+     hidden(?Q_GOTO, ?SECTION_PASSWD),
+     gettext(Session, txt_passwd_passw, []) ++ ": " ++
+         "<input name=editpassword0 type=password><br>",
+     gettext(Session, txt_passwd_passw_new, []) ++ ": " ++
+         "<input name=editpassword1 type=password><br>",
+     gettext(Session, txt_passwd_passw_new_confirm, []), ": " ++
+         "<input name=editpassword2 type=password><br>",
+     submit(Session, txt_passwd_save_button),
+     "</form><br>",
+     html_page_footer()].
 
-%% @doc Makes 'home' page content.
-%% @spec home() -> io_list()
-home() ->
-    Username = get(username),
-    {ok, UserInfo} = echessd_user:getprops(Username),
-    html_page_header(
-      "echessd - " ++ gettext(txt_home),
-      [{h1, gettext(txt_home) ++ ": " ++ Username}]) ++
-        navigation() ++
-        navig_links([{"?goto=" ++ ?SECTION_EDITUSER,
-                      gettext(txt_edit_profile_title)}]) ++
-        "<br>" ++
-        user_info(Username, UserInfo) ++
-        "<br>" ++
-        user_games(Username, UserInfo, true) ++
-        case echessd_user:get_value(auto_refresh, UserInfo) of
-            true ->
-                Period =
-                    integer_to_list(
-                      echessd_user:get_value(
-                        auto_refresh_period, UserInfo) * 1000),
-                tag(
-                  script, [],
-                  "setTimeout(\"document.location.href='/'\"," ++
-                      Period ++ ")");
-            _ -> ""
-        end ++
-        html_page_footer([]).
+%% @doc Make 'home' page.
+-spec home(Session :: #session{}) -> HTML :: iolist().
+home(Session) ->
+    Username = Session#session.username,
+    UserInfo = Session#session.userinfo,
+    Title = gettext(Session, txt_home, []),
+    [html_page_header(Session, "echessd - " ++ Title,
+                      [{h1, Title ++ ": " ++ Username}]),
+     navigation(Session),
+     navig_links([{url([{?Q_GOTO, ?SECTION_EDITUSER}]),
+                   gettext(Session, txt_edit_profile_title, [])}]), "<br>",
+     user_info(Session, Username, UserInfo), "<br>",
+     user_games(Session, Username, UserInfo, true),
+     case echessd_user:get_value(auto_refresh, UserInfo) of
+         true ->
+             Period =
+                 integer_to_list(
+                   echessd_user:get_value(
+                     auto_refresh_period, UserInfo) * 1000),
+             tag(
+               script, [],
+               "setTimeout(\"document.location.href='/'\"," ++
+                   Period ++ ")");
+         _ -> ""
+     end,
+     html_page_footer()].
 
-%% @doc Makes 'registered users list' page content.
-%% @spec users() -> io_list()
-users() ->
+%% @doc Make 'registered users list' page.
+-spec users(Session :: #session{}) -> HTML :: iolist().
+users(Session) ->
     {ok, Users0} = echessd_user:list(),
-    Users = lists:usort(Users0) -- [get(username)],
-    Title = gettext(txt_users),
-    html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
-        navigation() ++
-        "<br>" ++
-        string:join(
-          lists:map(
-            fun(Username) ->
-                    "*&nbsp;" ++ userlink(Username)
-            end, Users), "<br>") ++
-        html_page_footer([]).
+    Users = lists:usort(Users0) -- [Session#session.username],
+    Title = gettext(Session, txt_users, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     navigation(Session), "<br>",
+     string:join([["*&nbsp;", userlink(U)] || U <- Users], "<br>"),
+     html_page_footer()].
 
-%% @doc Makes 'user details' page content.
-%% @spec user(Username) -> io_list()
-%%     Username = echessd_user:echessd_user()
-user(Username) ->
-    case get(username) of
-        Username -> home();
-        _ ->
-            case echessd_user:getprops(Username) of
-                {ok, UserInfo} ->
-                    user(Username, UserInfo);
+%% @doc Make 'user details' page.
+-spec user(Session :: #session{},
+           Query :: echessd_query_parser:http_query()) ->
+                  HTML :: iolist().
+user(Session, Query) ->
+    case proplists:get_value(?Q_NAME, Query) of
+        MyName when MyName == Session#session.username ->
+            home(Session);
+        Opponent ->
+            case echessd_user:getprops(Opponent) of
+                {ok, OppInfo} ->
+                    opponent(Session, Opponent, OppInfo);
                 {error, Reason} ->
                     ?MODULE:error(
-                       gettext(txt_user_fetch_error) ++ ":~n~p",
-                       [Username, Reason])
+                       gettext(Session, txt_user_fetch_error, []) ++ ":~n~p",
+                       [Opponent, Reason])
             end
     end.
-user(Username, UserInfo) ->
-    Title = gettext(txt_user) ++ " '" ++ Username ++ "'",
-    html_page_header("echessd - " ++ Title, [{h1, Title}]) ++
-        navigation() ++
-        "<br>" ++
-        user_info(Username, UserInfo) ++
-        "<br>" ++
-        user_games(Username, UserInfo, false) ++
-        "<br>" ++
-        newgame_link(Username) ++
-        html_page_footer([]).
 
-%% @doc Makes 'create new game' page content.
-%% @spec newgame() -> io_list()
-newgame() ->
-    Opponent = proplists:get_value("user", get(query_proplist)),
-    Iam = get(username),
+%% @private
+%% @doc user/2 helper fun.
+-spec opponent(Session :: #session{},
+               Opponent :: echessd_user:echessd_user(),
+               OppInfo :: echessd_user:user_info()) ->
+                  HTML :: iolist().
+opponent(Session, Opponent, OppInfo) ->
+    Title = gettext(Session, txt_user, []) ++ " '" ++ Opponent ++ "'",
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     navigation(Session), "<br>",
+     user_info(Session, Opponent, OppInfo), "<br>",
+     user_games(Session, Opponent, OppInfo, false), "<br>",
+     newgame_link(Session, Opponent),
+     html_page_footer()].
+
+%% @doc Make 'create new game' page.
+-spec newgame(Session :: #session{},
+              Query :: echessd_query_parser:http_query()) ->
+                     HTML :: iolist().
+newgame(Session, Query) ->
+    Opponent = proplists:get_value(?Q_USER, Query),
+    Iam = Session#session.username,
     H2Title =
         if Iam == Opponent ->
-                gettext(txt_ng_title_h2_test, [Iam, Iam]);
+                gettext(Session, txt_ng_title_h2_test, [Iam, Iam]);
            true ->
-                gettext(txt_ng_title_h2_normal, [Iam, Opponent])
+                gettext(Session, txt_ng_title_h2_normal, [Iam, Opponent])
         end,
-    ColorSelector =
-        if Iam == Opponent ->
-                "<input name=color type=hidden value=white>";
-           true ->
-                gettext(txt_ng_color) ++ ": <select name=color>"
-                    "<option value='random'>" ++ gettext(txt_ng_color_random) ++ "</option>"
-                    "<option value='white'>" ++ gettext(txt_ng_color_white) ++ "</option>"
-                    "<option value='black'>" ++ gettext(txt_ng_color_black) ++ "</option>"
-                    "</select><br>"
-        end,
-    html_page_header("echessd - " ++ gettext(txt_ng_title),
-                     [{h1, gettext(txt_ng_title)}]) ++
-        navigation() ++
-        h2(H2Title) ++
-        "<form method=post>"
-        "<input name=action type=hidden value=" ++ ?SECTION_NEWGAME ++ ">"
-        "<input name=opponent type=hidden value='" ++ Opponent ++ "'>"
-        "<input name=gametype type=hidden value=classic>"
-        ++ ColorSelector ++
-        "<label for=prv><input name=private type=checkbox id=prv>&nbsp;" ++
-        gettext(txt_ng_private) ++ "</label><br>"
-        "<input type=submit class=btn value='" ++
-        gettext(txt_ng_ok_button) ++ "'>"
-        "</form>" ++
-        html_page_footer([]).
+    Title = gettext(Session, txt_ng_title, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     navigation(Session),
+     h2(H2Title),
+     "<form method=post>",
+     hidden(?Q_GOTO, ?SECTION_NEWGAME),
+     hidden(?Q_OPPONENT, Opponent),
+     hidden(?Q_GAMETYPE, ?GAME_CLASSIC),
+     if Iam == Opponent ->
+             hidden(?Q_COLOR, ?white);
+        true ->
+             select(Session, ?Q_COLOR, txt_ng_color, undefined,
+                    [{random, gettext(Session, txt_ng_color_random, [])},
+                     {?white, gettext(Session, txt_ng_color_white, [])},
+                     {?black, gettext(Session, txt_ng_color_black, [])}])
+     end,
+     checkbox(Session, "prv", ?Q_PRIVATE, txt_ng_private, false), "<br>",
+     submit(Session, txt_ng_ok_button),
+     "</form>",
+     html_page_footer()].
 
-%% @doc Makes 'game' page content.
-%% @spec game(GameID, Step) -> io_list()
-%%     GameID = echessd_game:echessd_game_id(),
-%%     Step = integer() | last
-game(GameID, Step) ->
-    case fetch_game(GameID) of
-        {ok, GameInfo} -> game(GameID, GameInfo, Step);
-        ErrorContent -> ErrorContent
+%% @doc Make 'game' page.
+-spec game(Session :: #session{},
+           Query :: echessd_query_parser:http_query()) ->
+                  HTML :: iolist().
+game(Session, Query) ->
+    case fetch_game(Session, GameID = proplists:get_value(?Q_GAME, Query)) of
+        {ok, GameInfo} ->
+            game(Session, Query, GameID, GameInfo);
+        ErrorContent ->
+            ErrorContent
     end.
-game(GameID, GameInfo, Step) ->
-    Iam = get(username),
+
+%% @private
+%% @doc game/2 helper fun.
+-spec game(Session :: #session{},
+           Query :: echessd_query_parser:http_query(),
+           GameID :: echessd_game:echessd_game_id(),
+           GameInfo :: echessd_game:echessd_game_info()) ->
+                  HTML :: iolist().
+game(Session, Query, GameID, GameInfo) ->
+    Step = proplists:get_value(?Q_STEP, Query),
+    Iam = Session#session.username,
     GameType = proplists:get_value(type, GameInfo),
     FullHistory = proplists:get_value(moves, GameInfo, []),
     FullHistoryLen = length(FullHistory),
@@ -401,9 +316,9 @@ game(GameID, GameInfo, Step) ->
     IsMyTurn = TurnUser == Iam andalso GameStatus == none,
     Title =
         if IsMyTurn ->
-                "echessd: " ++ gettext(txt_your_move);
+                "echessd: " ++ gettext(Session, txt_your_move, []);
            true ->
-                "echessd: " ++ gettext(txt_game) ++ " #" ++
+                "echessd: " ++ gettext(Session, txt_game, []) ++ " #" ++
                     integer_to_list(GameID)
         end,
     {GroupedPossibles, ActiveCells} =
@@ -418,9 +333,10 @@ game(GameID, GameInfo, Step) ->
            true -> {[], []}
         end,
     UserInfo =
-        case get(userinfo) of
-            UserInfo0 when is_list(UserInfo0) -> UserInfo0;
-            _ -> []
+        if is_list(Session#session.userinfo) ->
+                Session#session.userinfo;
+           true ->
+                []
         end,
     ShowHistory = echessd_user:get_value(show_history, UserInfo),
     ShowComment = echessd_user:get_value(show_comment, UserInfo),
@@ -434,7 +350,7 @@ game(GameID, GameInfo, Step) ->
           IsRotated, ActiveCells, LastPly) ++
         case Comment of
             [_ | _] when ShowComment ->
-                tag(p, gettext(txt_comment) ++ ": " ++ Comment);
+                tag(p, gettext(Session, txt_comment, []) ++ ": " ++ Comment);
             _ -> ""
         end ++
         if IsMyTurn andalso IsLast ->
@@ -446,280 +362,309 @@ game(GameID, GameInfo, Step) ->
                         js_init(GroupedPossibles,
                                 ActiveCells, LastPly)) ++
                     "<form method=post>" ++
-                    gettext(txt_move_caption) ++ ":&nbsp;"
+                    gettext(Session, txt_move_caption, []) ++ ":&nbsp;"
                     "<input name=action type=hidden value=move>"
                     "<input name=game type=hidden value=" ++
                     integer_to_list(GameID) ++ ">"
                     "<input name=move type=text size=5 id=edmv>"
                     "<input type=submit class=btn value='" ++
-                    gettext(txt_move_ok_button) ++ "'>"
+                    gettext(Session, txt_move_ok_button, []) ++ "'>"
                     "<input type=reset class=btn value='" ++
-                    gettext(txt_move_reset_button) ++ "' "
+                    gettext(Session, txt_move_reset_button, []) ++ "' "
                     "onclick='clr();'><br>" ++
-                    gettext(txt_move_comment_caption) ++ ":&nbsp;"
+                    gettext(Session, txt_move_comment_caption, []) ++ ":&nbsp;"
                     "<input type=text name=comment>"
                     "</form><br>";
             true -> ""
         end ++
         captures(Captures),
-    html_page_header(Title, []) ++
-        game_navigation(GameID, IsMyGame andalso GameStatus == none) ++
-        case GameStatus of
-            checkmate ->
-                h2(gettext(txt_gt_over_checkmate, [userlink(Winner)]));
-            give_up ->
-                h2(gettext(txt_gt_over_giveup, [userlink(Winner)]));
-            {draw, stalemate} ->
-                h2(gettext(txt_gt_over_stalemate));
-            {draw, agreement} ->
-                h2(gettext(txt_gt_over_agreement));
-            {draw, DrawType} ->
-                h2(gettext(txt_gt_over_draw, [DrawType]));
-            _ ->
-                case proplists:get_value(
-                       draw_request_from, GameInfo) of
-                    Iam when IsMyGame ->
-                        tag("div", ["class=warning"],
-                            gettext(txt_gt_youre_drawing));
-                    Opponent when IsMyGame ->
-                        tag("div", ["class=warning"],
-                            gettext(txt_gt_opponent_drawing,
-                                    [userlink(Opponent)]));
-                    _ -> ""
-                end
-        end ++
-        if ShowHistory ->
-                tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
-                    tr(
-                      [tag(td, ["valign=top"], ChessTable),
-                       tag(td, ["valign=top"],
-                           game_history(Step, GameID, FullHistory))]));
-           true -> ChessTable
-        end ++
-        if AutoRefresh ->
-                Period =
-                    integer_to_list(AutoRefreshPeriod * 1000),
-                tag(
-                  script, [],
-                  "setTimeout(\"document.location.href='" ++
-                      "/?goto=" ++ ?SECTION_GAME ++
-                      "&game=" ++ integer_to_list(GameID) ++
-                      if is_integer(Step) ->
-                              "&step=" ++ integer_to_list(Step);
-                         true -> ""
-                      end ++ "'\"," ++ Period ++ ")");
-            true -> ""
-        end ++
-        html_page_footer([]).
+    [html_page_header(Session, Title, []),
+     game_navigation(Session, GameID, IsMyGame andalso GameStatus == none),
+     case GameStatus of
+         checkmate ->
+             h2(gettext(Session, txt_gt_over_checkmate, [userlink(Winner)]));
+         give_up ->
+             h2(gettext(Session, txt_gt_over_giveup, [userlink(Winner)]));
+         {draw, stalemate} ->
+             h2(gettext(Session, txt_gt_over_stalemate, []));
+         {draw, agreement} ->
+             h2(gettext(Session, txt_gt_over_agreement, []));
+         {draw, DrawType} ->
+             h2(gettext(Session, txt_gt_over_draw, [DrawType]));
+         _ ->
+             case proplists:get_value(
+                    draw_request_from, GameInfo) of
+                 Iam when IsMyGame ->
+                     warning(Session, txt_gt_youre_drawing, []);
+                 Opponent when IsMyGame ->
+                     warning(Session, txt_gt_opponent_drawing,
+                             [userlink(Opponent)]);
+                 _ -> ""
+             end
+     end,
+     if ShowHistory ->
+             tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
+                 tr(
+                   [tag(td, ["valign=top"], ChessTable),
+                    tag(td, ["valign=top"],
+                        game_history(Step, GameID, FullHistory))]));
+        true ->
+             ChessTable
+     end,
+     if AutoRefresh ->
+             Period = integer_to_list(AutoRefreshPeriod * 1000),
+             tag(
+               script,
+               "setTimeout(\"document.location.href='" ++
+                   url([{?Q_GOTO, ?SECTION_GAME}, {?Q_GAME, GameID},
+                        {?Q_STEP, Step}]) ++ "'\"," ++ Period ++ ")");
+        true -> ""
+     end,
+     html_page_footer()].
 
-%% @doc Makes 'draw confirmation' page content.
-%% @spec draw_confirm(GameID) -> io_list()
-%%     GameID = echessd_game:echessd_game_id()
-draw_confirm(GameID) ->
-    html_page_header("echessd - " ++ gettext(txt_draw_confirm_title),
-                     [{h1, gettext(txt_draw_confirm_title)}]) ++
-        tag("div", ["class=warning"],
-            gettext(txt_draw_confirm_text)) ++
-        "<form method=post>"
-        "<input type=hidden name=action value=" ++ ?SECTION_DRAW ++ ">"
-        "<input type=hidden name=game value=" ++
-        integer_to_list(GameID) ++ ">"
-        "<input type=submit class=btn value='" ++
-        gettext(txt_draw_button) ++ "'>"
-        "</form>" ++
-        navig_links([{"javascript: history.back();",
-                      gettext(txt_ouch_back_link)}]) ++
-        html_page_footer([]).
+%% @doc Make 'draw confirmation' page.
+-spec draw_confirm(Session :: #session{},
+                   Query :: echessd_query_parser:http_query()) ->
+                          HTML :: iolist().
+draw_confirm(Session, Query) ->
+    GameID = proplists:get_value(?Q_GAME, Query),
+    Title = gettext(Session, txt_draw_confirm_title, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     warning(Session, txt_draw_confirm_text, []),
+     "<form method=post>",
+     "<input type=hidden name=action value=" ++ ?SECTION_DRAW ++ ">",
+     "<input type=hidden name=game value=" ++
+         integer_to_list(GameID) ++ ">",
+     "<input type=submit class=btn value='" ++
+         gettext(Session, txt_draw_button, []) ++ "'>",
+     "</form>",
+     navig_links([{"javascript: history.back();",
+                   gettext(Session, txt_ouch_back_link, [])}]),
+     html_page_footer()].
 
-%% @doc Makes 'giving up confirmation' page content.
-%% @spec giveup_confirm(GameID) -> io_list()
-%%     GameID = echessd_game:echessd_game_id()
-giveup_confirm(GameID) ->
-    Iam = get(username),
+%% @doc Make 'giving up confirmation' page.
+-spec giveup_confirm(Session :: #session{},
+                     Query :: echessd_query_parser:http_query()) ->
+                            HTML :: iolist().
+giveup_confirm(Session, Query) ->
+    GameID = proplists:get_value(?Q_GAME, Query),
+    Iam = Session#session.username,
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Players =
         [N || {users, L} <- GameInfo,
               {N, C} <- L, lists:member(C, [?white, ?black])],
     [Opponent | _] = Players -- [Iam],
-    html_page_header("echessd - " ++ gettext(txt_giveup_confirm_title),
-                     [{h1, gettext(txt_giveup_confirm_title)}]) ++
-        tag("div", ["class=warning"],
-            gettext(txt_giveup_confirm_text, [userlink(Opponent)])) ++
-        "<form method=post>"
-        "<input type=hidden name=action value=" ++ ?SECTION_GIVEUP ++ ">"
-        "<input type=hidden name=game value=" ++
-        integer_to_list(GameID) ++ ">"
-        "<input type=submit class=btn value='" ++
-        gettext(txt_giveup_button) ++ "'>"
-        "</form>" ++
-        navig_links([{"javascript: history.back();",
-                      gettext(txt_ouch_back_link)}]) ++
-        html_page_footer([]).
+    Title = gettext(Session, txt_giveup_confirm_title, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     warning(Session, txt_giveup_confirm_text, [userlink(Opponent)]),
+     "<form method=post>",
+     "<input type=hidden name=action value=" ++
+         atom_to_list(?SECTION_GIVEUP) ++ ">",
+     "<input type=hidden name=game value=" ++
+         integer_to_list(GameID) ++ ">",
+     "<input type=submit class=btn value='" ++
+         gettext(Session, txt_giveup_button, []) ++ "'>",
+     "</form>",
+     navig_links([{"javascript: history.back();",
+                   gettext(Session, txt_ouch_back_link, [])}]),
+     html_page_footer()].
 
-%% @doc Makes 'under construction' page content.
-%% @spec notyet() -> io_list()
-notyet() ->
-    html_page_header("echessd - " ++ gettext(txt_not_implemented_title),
-                     [{h1, gettext(txt_not_implemented_title)}]) ++
-        h2(gettext(txt_not_implemented_text)) ++
-        navig_links([{"javascript: history.back();", "Back"}]) ++
-        html_page_footer([]).
+%% @doc Make 'under construction' page.
+-spec notyet(Session :: #session{}) -> iolist().
+notyet(Session) ->
+    Title = gettext(Session, txt_not_implemented_title, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     h2(gettext(Session, txt_not_implemented_text, [])),
+     navig_links([{"javascript: history.back();",
+                   gettext(Session, txt_ouch_back_link, [])}]),
+     html_page_footer()].
 
-%% @doc Makes 'error' page content.
-%% @spec error(Message) -> io_list()
-%%     Message = io_list()
-error(Message) ->
-    html_page_header("echessd - " ++ gettext(txt_error_page_title),
-                     [{h1, gettext(txt_error_page_title)}]) ++
-        tag("div", ["class=error"], pre(Message)) ++
-        "<br>" ++
-        navig_links([{"javascript: history.back();", gettext(txt_back_link)}]) ++
-        html_page_footer([]).
+%% @doc Make 'error' page.
+-spec error(Session :: #session{}, Message :: iolist()) -> HTML :: iolist().
+error(Session, Message) ->
+    Title = gettext(Session, txt_error_page_title, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     tag("div", ["class=error"], pre(Message)), "<br>",
+     navig_links([{"javascript: history.back();",
+                   gettext(Session, txt_back_link, [])}]),
+     html_page_footer()].
 
-%% @doc Makes 'error' page content.
-%% @spec error(Format, Args) -> io_list()
-%%     Format = string(),
-%%     Args = list()
-error(Format, Args) ->
-    ?MODULE:error(io_lib:format(Format, Args)).
+%% @doc Make 'error' page.
+-spec error(Session :: #session{},
+            Format :: string(), Args :: list()) -> HTML :: iolist().
+error(Session, Format, Args) ->
+    ?MODULE:error(Session, io_lib:format(Format, Args)).
 
-%% @doc Makes 'access denied' page content.
-%% @spec eaccess() -> io_list()
-eaccess() ->
-    ?MODULE:error(gettext(txt_access_denied)).
+%% @doc Make 'access denied' page.
+-spec eaccess(Session :: #session{}) -> HTML :: iolist().
+eaccess(Session) ->
+    ?MODULE:error(gettext(Session, txt_access_denied, [])).
 
-%% @doc Makes 303-redirection page content.
-%% @spec redirection(URL) -> io_list()
-%%     URL = string()
-redirection(URL) ->
-    html_page_header("echessd - " ++ gettext(txt_redirection),
-                     [{h1, gettext(txt_redirection)}]) ++
-        tag(p, gettext(txt_redirection_description)) ++
-        a(URL, URL) ++
-        html_page_footer([]).
+%% @doc Make 303-redirection page.
+-spec redirection(Session :: #session{},
+                  URL :: nonempty_string()) -> HTML :: iolist().
+redirection(Session, URL) ->
+    Title = gettext(Session, txt_redirection, []),
+    [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
+     tag(p, gettext(Session, txt_redirection_description, [])),
+     a(URL, URL),
+     html_page_footer()].
 
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
 
+%% @doc
+-spec js_init(Grouped :: list(), ActiveCells :: list(),
+              LastPly :: nonempty_string()) ->
+                     HTML :: iolist().
 js_init(Grouped, ActiveCells, LastPly) ->
-    "var ACs = [" ++
-        string:join(["'" ++ C ++ "'" || C <- ActiveCells], ",")
-        ++ "];\n"
-        "var I1s = [" ++
-        string:join(["'" ++ I1 ++ "'" || {I1, _} <- Grouped], ",") ++ "];\n"
-        "var I2s = [" ++
-        string:join(
-          ["[" ++
-               string:join(["'" ++ I2 ++ "'" || I2 <- L], ",")
-           ++ "]" || {_, L} <- Grouped], ",")
-        ++ "];\n"
-        "var LPs = [" ++
-        case LastPly of
-            [A, B, C, D] ->
-                "'" ++ [A, B] ++ "','" ++ [C, D] ++ "'";
-            _ -> ""
-        end ++ "];\n".
+    ["var ACs = [",
+     string:join(["'" ++ C ++ "'" || C <- ActiveCells], ","),
+     "];\nvar I1s = [",
+     string:join(["'" ++ I1 ++ "'" || {I1, _} <- Grouped], ","),
+     "];\nvar I2s = [",
+     string:join(
+       [[$[, string:join([[$', I2, $'] || I2 <- L], ","), $]] ||
+           {_, L} <- Grouped], ","),
+     "];\nvar LPs = [",
+     case LastPly of
+         [A, B, C, D] ->
+             [$', [A, B], "','", [C, D], $'];
+         _ -> ""
+     end, "];\n"].
 
-group_possibles([], Result) -> Result;
+%% @doc
+-spec group_possibles(Plies :: list(), Acc :: list()) -> FinalAcc :: list().
+group_possibles([], Result) ->
+    Result;
 group_possibles([[A, B, C, D] | Tail], [{[A, B], List} | ResTail]) ->
     group_possibles(Tail, [{[A, B], [[C, D] | List]} | ResTail]);
 group_possibles([[A, B, C, D] | Tail], Result) ->
     group_possibles(Tail, [{[A, B], [[C, D]]} | Result]).
 
-log_reg_page(Title, Content) ->
-    html_page_header(Title, []) ++
+%% @doc
+-spec log_reg_page(Session :: #session{},
+                   Section :: echessd_query_parser:section(),
+                   Title :: string(),
+                   HtmlPagePayload :: iolist()) -> HtmlPage :: iolist().
+log_reg_page(Session, Section, Title, Content) ->
+    html_page_header(Session, Title, []) ++
         navig_links(
           lists:map(
-            fun(Lang) ->
-                    Section =
-                        case get(section) of
-                            [_ | _] = Section0 -> Section0;
-                            _ -> ?SECTION_LOGIN
-                        end,
-                    {"/?goto=" ++ Section ++ "&lang=" ++ Lang, Lang}
-            end,
-            [atom_to_list(A) || {A, _} <- echessd_lib:languages()])) ++
-        h1(Title) ++
-        Content ++
-        html_page_footer([]).
+            fun(LangID) ->
+                    {echessd_query_parser:encode(
+                       [{?Q_GOTO, Section}, {?Q_LANG, LangID}]), LangID}
+            end, [LangID || {LangID, _} <- echessd_lang:list()])) ++
+        h1(Title) ++ Content ++
+        html_page_footer().
 
-fetch_game(GameID) ->
+%% @doc
+-spec fetch_game(Session :: #session{},
+                 GameID :: echessd_game:echessd_game_id()) ->
+                        {ok, GameInfo :: echessd_game:echessd_gameinfo()} |
+                        (ErrorPagePayload :: iolist()).
+fetch_game(Session, GameID) ->
     case echessd_game:getprops(GameID) of
         {ok, GameInfo} ->
             case proplists:get_value(private, GameInfo) of
                 true ->
-                    case is_my_game(GameInfo) of
-                        true -> {ok, GameInfo};
+                    case is_my_game(Session, GameInfo) of
+                        true ->
+                            {ok, GameInfo};
                         _ ->
-                            Reason = {no_such_game, GameID},
                             ?MODULE:error(
-                               gettext(txt_game_fetch_error) ++ ":~n~p",
-                               [GameID, Reason])
+                               gettext(Session, txt_game_fetch_error, []) ++
+                                   ":~n~p", [GameID, {no_such_game, GameID}])
                     end;
                 _ ->
                     case proplists:get_value(
                            acknowledged, GameInfo) of
-                        true -> {ok, GameInfo};
+                        true ->
+                            {ok, GameInfo};
                         _ ->
                             ?MODULE:error(
                                gettext(
-                                 txt_game_not_confirmed_error,
+                                 Session, txt_game_not_confirmed_error,
                                  [GameID]))
                     end
             end;
         {error, Reason} ->
             ?MODULE:error(
-               gettext(txt_game_fetch_error) ++ ":~n~p",
+               gettext(Session, txt_game_fetch_error, []) ++ ":~n~p",
                [GameID, Reason])
     end.
 
-is_my_game(GameInfo) ->
-    Iam = get(username),
+%% @doc
+-spec is_my_game(Session :: #session{},
+                 GameInfo :: echessd_game:echessd_gameinfo()) ->
+                        boolean().
+is_my_game(Session, GameInfo) ->
+    Iam = Session#session.username,
     Users = proplists:get_value(users, GameInfo, []),
     case [N || {N, C} <- Users, N == Iam,
                lists:member(C, [?white, ?black])] of
-        [_ | _] -> true;
-        _ -> false
+        [_ | _] ->
+            true;
+        _ ->
+            false
     end.
 
-user_info(Username, UserInfo) ->
+%% @doc Make 'user info' table.
+-spec user_info(Session :: #session{},
+                Username :: echessd_user:echessd_user(),
+                UserInfo :: echessd_user:echessd_userinfo()) ->
+                       HTML :: iolist().
+user_info(Session, Username, UserInfo) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         tr(
           string:join(
             [tr(td(b(K ++ ":&nbsp;")) ++ td(V)) ||
-                {K, V} <- user_info_cells(Username, UserInfo)]
+                {K, V} <- user_info_cells(Session, Username, UserInfo)]
             , "\n"))).
-user_info_cells(Username, UserInfo) ->
+
+%% @doc Return the cells for the 'user info' table.
+-spec user_info_cells(Session :: #session{},
+                      Username :: echessd_user:echessd_user(),
+                      UserInfo :: echessd_user:echessd_userinfo()) ->
+                             [{CellCaption :: iolist(),
+                               CellValue :: iolist()}].
+user_info_cells(Session, Username, UserInfo) ->
     LangInfo = echessd_user:lang_info(UserInfo),
     lists:flatmap(
-      fun(login) -> [{gettext(txt_login), Username}];
+      fun(login) -> [{gettext(Session, txt_login, []), Username}];
          (fullname = Key) ->
-              [{gettext(txt_fullname),
+              [{gettext(Session, txt_fullname, []),
                 case echessd_user:get_value(Key, UserInfo) of
                     [_ | _] = Value ->
                         echessd_lib:escape_html_entities(Value);
-                    _ -> gettext(txt_not_sure)
+                    _ -> gettext(Session, txt_not_sure, [])
                 end}];
          (created = Key) ->
-              [{gettext(txt_registered),
+              [{gettext(Session, txt_registered, []),
                 case echessd_user:get_value(Key, UserInfo) of
                     Value when ?is_now(Value) ->
                         echessd_lib:timestamp(
                           Value, get(timezone));
-                    _ -> gettext(txt_unknown)
+                    _ -> gettext(Session, txt_unknown, [])
                 end}];
          (timezone = Key) ->
-              [{gettext(txt_timezone),
+              [{gettext(Session, txt_timezone, []),
                 echessd_lib:time_offset_to_list(
                   echessd_user:get_value(Key, UserInfo))}];
          (language) ->
               {_LangAbbr, LangName} = LangInfo,
-              [{gettext(txt_language), LangName}];
+              [{gettext(Session, txt_language, []), LangName}];
          (_) -> []
       end, [login, fullname, created, timezone, language]).
 
-user_games(Username, UserInfo, ShowNotAcknowledged) ->
+%% @doc
+-spec user_games(Session :: #session{},
+                 Username :: echessd_user:echessd_user(),
+                 UserInfo :: echessd_user:echessd_userinfo(),
+                 ShowNotAcknowledged :: boolean()) ->
+                        HTML :: iolist().
+user_games(Session, Username, UserInfo, ShowNotAcknowledged) ->
     %% fetch all user games info
     UserGames =
         lists:flatmap(
@@ -728,7 +673,7 @@ user_games(Username, UserInfo, ShowNotAcknowledged) ->
                       {ok, GameInfo} ->
                           Visible =
                               not (proplists:get_value(private, GameInfo) == true)
-                              orelse is_my_game(GameInfo),
+                              orelse is_my_game(Session, GameInfo),
                           if Visible -> [{GameID, GameInfo}];
                              true -> []
                           end;
@@ -754,102 +699,128 @@ user_games(Username, UserInfo, ShowNotAcknowledged) ->
           end, Confirmed),
     case NotEnded of
         [_ | _] ->
-            h2(gettext(txt_user_games) ++ ":") ++
+            h2(gettext(Session, txt_user_games, []) ++ ":") ++
                 string:join(
-                  [user_game_(Username, I, L) ||
+                  [user_game_(Session, Username, I, L) ||
                       {I, L} <- NotEnded], "<br>") ++
                 "<br>";
         _ -> ""
     end ++
         case NotConfirmed of
             [_ | _] when ShowNotAcknowledged ->
-                h2(gettext(txt_unconf_games) ++ ":") ++
+                h2(gettext(Session, txt_unconf_games, []) ++ ":") ++
                     string:join(
-                      [user_unconfirmed_game_(Username, I, L) ||
+                      [user_unconfirmed_game_(Session, Username, I, L) ||
                           {I, L} <- NotConfirmed], "<br>") ++
                     "<br>";
             _ -> ""
         end ++
         case Ended of
             [_ | _] ->
-                h2(gettext(txt_user_ended_games) ++ ":") ++
+                h2(gettext(Session, txt_user_ended_games, []) ++ ":") ++
                     string:join(
-                      [user_game_(Username, I, L) ||
+                      [user_game_(Session, Username, I, L) ||
                           {I, L} <- Ended], "<br>") ++
                     "<br>";
             _ -> ""
         end.
 
-user_game_(Owner, GameID, GameInfo) ->
+%% @doc
+-spec user_game_(Session :: #session{},
+                 Owner :: echessd_user:echessd_user(),
+                 GameID :: echessd_game:echessd_game_id(),
+                 GameInfo :: echessd_game:echessd_gameinfo()) ->
+                        HTML :: iolist().
+user_game_(Session, Owner, GameID, GameInfo) ->
     GamePlayers =
         [{N, C} || {N, C} <- proplists:get_value(users, GameInfo, []),
                    lists:member(C, [?white, ?black])],
     UniquePlayerNames = lists:usort([N || {N, _} <- GamePlayers]),
     IsTest = length(UniquePlayerNames) == 1,
     "* " ++ gamelink(GameID) ++
-        if IsTest -> " " ++ gettext(txt_test_game);
+        if IsTest ->
+                " " ++ gettext(Session, txt_test_game, []);
            true ->
                 Color = proplists:get_value(Owner, GamePlayers),
                 Opponent = hd(UniquePlayerNames -- [Owner]),
                 OpponentColor = proplists:get_value(Opponent, GamePlayers),
-                " " ++ chessman({Color, ?king}) ++ " " ++ gettext(txt_vs) ++
+                " " ++ chessman({Color, ?king}) ++ " " ++
+                    gettext(Session, txt_vs, []) ++
                     " " ++ userlink(Opponent) ++ " " ++
                     chessman({OpponentColor, ?king})
         end ++
         case proplists:get_value(status, GameInfo) of
             none ->
                 case get(username) == echessd_game:who_must_turn(GameInfo) of
-                    true when not IsTest -> " !!!";
-                    _ -> ""
+                    true when not IsTest ->
+                        " !!!";
+                    _ ->
+                        ""
                 end;
-            checkmate when IsTest -> " - " ++ gettext(txt_checkmate);
+            checkmate when IsTest ->
+                " - " ++ gettext(Session, txt_checkmate, []);
             checkmate ->
                 case proplists:get_value(winner, GameInfo) of
-                    Owner -> " - " ++ gettext(txt_win);
-                    _ -> " - " ++ gettext(txt_loose)
+                    Owner ->
+                        " - " ++ gettext(Session, txt_win, []);
+                    _ ->
+                        " - " ++ gettext(Session, txt_loose, [])
                 end;
-            give_up when IsTest -> " - " ++ gettext(txt_gived_up);
+            give_up when IsTest ->
+                " - " ++ gettext(Session, txt_gived_up, []);
             give_up ->
                 case proplists:get_value(winner, GameInfo) of
-                    Owner -> " - " ++ gettext(txt_win_giveup);
-                    _ -> " - " ++ gettext(txt_loose_giveup)
+                    Owner ->
+                        " - " ++ gettext(Session, txt_win_giveup, []);
+                    _ ->
+                        " - " ++ gettext(Session, txt_loose_giveup, [])
                 end;
             {draw, _} ->
-                " - " ++ gettext(txt_draw)
+                " - " ++ gettext(Session, txt_draw, [])
         end.
 
-user_unconfirmed_game_(Owner, GameID, GameInfo) ->
-    StrGameID = integer_to_list(GameID),
+%% @doc
+-spec user_unconfirmed_game_(Session :: #session{},
+                             Owner :: echessd_user:echessd_user(),
+                             GameID :: echessd_game:echessd_game_id(),
+                             GameInfo :: echessd_game:echessd_gameinfo()) ->
+                                    HTML :: iolist().
+user_unconfirmed_game_(Session, Owner, GameID, GameInfo) ->
     GamePlayers =
         [{N, C} || {N, C} <- proplists:get_value(users, GameInfo, []),
                    lists:member(C, [?white, ?black])],
     UniquePlayerNames = lists:usort([N || {N, _} <- GamePlayers]),
-    "* #" ++ StrGameID ++ " " ++
+    "* #" ++ integer_to_list(GameID) ++ " " ++
         case proplists:get_value(creator, GameInfo) of
             Owner ->
                 Opponent = hd(UniquePlayerNames -- [Owner]),
                 OpponentColor = proplists:get_value(Opponent, GamePlayers),
-                gettext(txt_waiting_for,
+                gettext(Session, txt_waiting_for,
                         [userlink(Opponent) ++ " " ++
                              chessman({OpponentColor, ?king})]);
             Opponent ->
                 OpponentColor = proplists:get_value(Opponent, GamePlayers),
-                AckURL =
-                    "?action=" ++ ?SECTION_ACKGAME ++ "&game=" ++ StrGameID,
-                gettext(txt_waiting_for_you,
+                AckURL = url([{?Q_GOTO, ?SECTION_ACKGAME}, {?Q_GAME, GameID}]),
+                gettext(Session, txt_waiting_for_you,
                         [userlink(Opponent) ++ " " ++
                              chessman({OpponentColor, ?king})]) ++ " " ++
-                    tag("a", ["href='" ++ AckURL ++ "'"],
-                        gettext(txt_game_confirm))
+                    tag(a, ["href='" ++ AckURL ++ "'"],
+                        gettext(Session, txt_game_confirm, []))
         end ++ " " ++
-        tag("a", ["href='" ++ "?action=" ++ ?SECTION_DENYGAME ++
-                      "&game=" ++ StrGameID ++"'"],
-            gettext(txt_game_deny)).
+        tag(a, ["href='" ++
+                    url([{?Q_GOTO, ?SECTION_DENYGAME}, {?Q_GAME, GameID}]) ++
+                    "'"],
+            gettext(Session, txt_game_deny, [])).
 
-html_page_header(Title, Options) ->
-    UserStyle = echessd_user:get_value(style, get(userinfo)),
+%% @doc
+-spec html_page_header(Session :: #session{},
+                       Title :: string(),
+                       Options :: list()) ->
+                              HtmlPageHeader :: iolist().
+html_page_header(Session, Title, Options) ->
+    UserStyle = Session#session.style,
     StylesFilename =
-        case [F || {N, _T, F} <- echessd_lib:styles(), N == UserStyle] of
+        case [F || {N, _T, F} <- echessd_styles:list(), N == UserStyle] of
             [Filename0 | _] -> Filename0;
             _ ->
                 {_N, _T, Filename0} = echessd_lib:default_style(),
@@ -872,42 +843,195 @@ html_page_header(Title, Options) ->
             undefined -> "";
             Error ->
                 tag("div", ["class=error"],
-                    pre(gettext(txt_error) ++ ": " ++ format_error(Error)))
+                    pre(gettext(Session, txt_error, []) ++ ": " ++
+                            format_error(Session, Error)))
         end.
 
-html_page_footer(_Options) ->
-    "\n\n</body>\n"
-        "</html>\n".
+%% @doc
+-spec html_page_footer() -> HtmlPageFooter :: iolist().
+html_page_footer() ->
+    "\n\n</body>\n</html>\n".
 
-h1(String)  -> tag("h1", String).
-h2(String)  -> tag("h2", String).
-b(String)   -> tag("b", String).
-tt(String)  -> tag("tt", String).
-td(String)  -> tag("td", String).
-tr(String)  -> tag("tr", String).
-pre(String) -> tag("pre", String).
-a(URL, Caption) -> tag("a", ["href='" ++ URL ++ "'"], Caption).
+%% @doc
+-spec h1(String :: string()) -> HTML :: iolist().
+h1(String) ->
+    tag(h1, String).
 
-tag(Tag, Value) -> tag(Tag, [], Value).
+%% @doc
+-spec h2(String :: string()) -> HTML :: iolist().
+h2(String) ->
+    tag(h2, String).
+
+%% @doc
+-spec b(String :: string()) -> HTML :: iolist().
+b(String) ->
+    tag(b, String).
+
+%% @doc
+-spec tt(String :: string()) -> HTML :: iolist().
+tt(String) ->
+    tag(tt, String).
+
+%% @doc
+-spec td(String :: string()) -> HTML :: iolist().
+td(String) ->
+    tag(td, String).
+
+%% @doc
+-spec tr(String :: string()) -> HTML :: iolist().
+tr(String) ->
+    tag(tr, String).
+
+%% @doc
+-spec pre(String :: string()) -> HTML :: iolist().
+pre(String) ->
+    tag(pre, String).
+
+%% @doc
+-spec a(URL :: string(), Caption :: string()) -> HTML :: iolist().
+a(URL, Caption) ->
+    tag(a, ["href='" ++ URL ++ "'"], Caption).
+
+%% @equiv tag(Tag, [], Value)
+%% @doc
+-spec tag(Tag :: atom() | nonempty_string(),
+          Value :: iolist()) -> HTML :: iolist().
+tag(Tag, Value) ->
+    tag(Tag, [], Value).
+
+%% @doc
+-spec tag(Tag :: atom() | nonempty_string(),
+          Attrs :: [string()],
+          Value :: iolist()) -> HTML :: iolist().
 tag(Tag, Attrs, Value) when is_atom(Tag) ->
     tag(atom_to_list(Tag), Attrs, Value);
-tag(Tag, Attrs, Value) ->
-    "<" ++ Tag ++
-        [" " ++ V || V <- Attrs] ++
-        ">" ++ Value ++ "</" ++ Tag ++ ">".
+tag([_ | _] = Tag, Attrs, Value) ->
+    [$<, Tag, [[$\s | V] || V <- Attrs], $>, Value, "</", Tag, $>].
 
+%% @doc
+-spec checkbox(Session :: #session{},
+               ID :: nonempty_string(),
+               Name :: echessd_query_parser:http_query_key(),
+               CaptionTextID :: atom(),
+               IsChecked :: boolean()) ->
+                      HTML :: iolist().
+checkbox(Session, ID, Name, CaptionTextID, IsChecked) ->
+    [io_lib:format(
+       "<label for=~s><input type=checkbox id=~s name=~w", [ID, ID, Name]),
+     proplists:get_value(IsChecked, [{false, ""}], " checked"), ">&nbsp;",
+     gettext(Session, CaptionTextID, []), "</label>"].
+
+%% @doc
+-spec input(Session :: #session{},
+            Name :: echessd_query_parser:http_query_key(),
+            CaptionTextID :: atom(),
+            Value :: any()) ->
+                   HTML :: iolist().
+input(Session, Name, CaptionTextID, Value) ->
+    EncodedValue =
+        echessd_lib:escape_html_entities(
+          echessd_query_parser:encode(Name, Value)),
+    [gettext(Session, CaptionTextID, []), ": ",
+     io_lib:format("<input name=~w type=text value='~s'>",
+                   [Name, EncodedValue])].
+
+%% @doc
+-spec password(Session :: #session{},
+               Name :: echessd_query_parser:http_query_key(),
+               CaptionTextID :: atom()) -> HTML :: iolist().
+password(Session, Name, CaptionTextID) ->
+    [gettext(Session, CaptionTextID, []), ": ",
+     io_lib:format("<input name=~w type=password>", [Name])].
+
+%% @doc
+-spec submit(Session :: #session{}, CaptionTextID :: atom()) ->
+                    HTML :: iolist().
+submit(Session, CaptionTextID) ->
+    ["<input type=submit class=btn value='",
+     echessd_lib:escape_html_entities(
+       gettext(Session, CaptionTextID, [])), "'>"].
+
+%% @doc
+-spec hidden(Name :: echessd_query_parser:http_query_key(),
+             Value :: any()) -> HTML :: iolist().
+hidden(Name, Value) ->
+    EncodedValue =
+        echessd_lib:escape_html_entities(
+          echessd_query_parser:encode(Name, Value)),
+    io_lib:format("<input name=~w type=hidden value='~s'>",
+                  [Name, EncodedValue]).
+
+%% @doc
+-spec select(Session :: #session{},
+             Name :: echessd_query_parser:http_query_key(),
+             CaptionTextID :: atom(),
+             Value :: any(),
+             Items :: [{ItemValue :: any(), Caption :: string()}]) ->
+                    HTML :: iolist().
+select(Session, Name, CaptionTextID, Value, Items) ->
+    EncodedValue =
+        echessd_lib:escape_html_entities(
+          echessd_query_parser:encode(Name, Value)),
+    [gettext(Session, CaptionTextID, []),
+     ": <select name='", atom_to_list(Name), "'>",
+     lists:map(
+       fun({ItemValue, Caption}) ->
+               EncodedItemValue =
+                   echessd_lib:escape_html_entities(
+                     echessd_query_parser:encode(Name, ItemValue)),
+               select_option(EncodedItemValue, Caption,
+                             EncodedItemValue == EncodedValue);
+          (ItemValue) ->
+               EncodedItemValue =
+                   echessd_lib:escape_html_entities(
+                     echessd_query_parser:encode(Name, ItemValue)),
+               select_option(EncodedItemValue, EncodedItemValue,
+                             EncodedItemValue == EncodedValue)
+       end, Items),
+     "</select>"].
+
+%% @doc
+-spec select_option(Value :: iolist(),
+                    Caption :: iolist(),
+                    IsSelected :: boolean()) ->
+                           HTML :: iolist().
+select_option(Value, Caption, IsSelected) ->
+    ["<option value='", Value, "'",
+     proplists:get_value(IsSelected, [{true, " selected"}], ""),
+     ">", Caption, "</option>"].
+
+%% @doc
+-spec userlink(Username :: echessd_user:echessd_user()) ->
+                      HTML :: iolist().
 userlink(Username) ->
-    a("?goto=" ++ ?SECTION_USER ++ "&name=" ++ Username, Username).
+    a(url([{?Q_GOTO, ?SECTION_USER}, {?Q_NAME, Username}]), Username).
 
+%% @doc
+-spec gamelink(GameID :: echessd_game:echessd_game_id()) ->
+                      HTML :: iolist().
 gamelink(GameID) ->
-    StrID = integer_to_list(GameID),
-    a("?goto=" ++ ?SECTION_GAME ++ "&game=" ++ StrID, "#" ++ StrID).
+    a(url([{?Q_GOTO, ?SECTION_GAME}, {?Q_GAME, GameID}]),
+      ["#", echessd_query_parser:encode(?Q_GAME, GameID)]).
 
-newgame_link(WithUsername) ->
+%% @doc
+-spec newgame_link(Session :: #session{},
+                   WithUsername :: echessd_user:echessd_user()) ->
+                          HTML :: iolist().
+newgame_link(Session, WithUsername) ->
     navig_links(
-      [{"?goto=" ++ ?SECTION_NEWGAME++ "&user=" ++ WithUsername,
-        gettext(txt_new_game_link)}]).
+      [{url([{?Q_GOTO, ?SECTION_GAME}, {?Q_USER, WithUsername}]),
+        gettext(Session, txt_new_game_link, [])}]).
 
+%% @doc
+-spec chess_table(GameID :: echessd_game:echessd_game_id(),
+                  Step :: non_neg_integer() | last,
+                  IsLast :: boolean(),
+                  GameType :: echessd_query_parser:gametype(),
+                  Board :: any(),
+                  IsRotated :: boolean(),
+                  ActiveCells :: any(),
+                  LastPly :: any()) ->
+                         HTML :: iolist().
 chess_table(GameID, Step, IsLast, _GameType, Board,
             IsRotated, ActiveCells, LastPly) ->
     {ColStep, RowStep} =
@@ -959,6 +1083,11 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
                 tag("td", ["colspan=8"], hist_buttons(GameID, Step, IsLast)) ++
                 td(""))).
 
+%% @doc
+-spec hist_buttons(GameID :: echessd_game:echessd_game_id(),
+                   Step :: non_neg_integer() | last,
+                   IsLast :: boolean()) ->
+                          HTML :: iolist().
 hist_buttons(GameID, Step, IsLast) ->
     Hiddens =
         ["<input type=hidden name=goto value=" ++ ?SECTION_GAME ++ ">"
@@ -991,8 +1120,19 @@ hist_buttons(GameID, Step, IsLast) ->
                   tag(td, ["class=hbc"], HistBtn("&gt;&gt;", last, not IsLast))]
          end])).
 
-cell(Board, C, R) -> element(C, element(8 - R + 1, Board)).
+%% @doc
+-spec cell(Board :: any(),
+           C :: any(),
+           R :: any()) ->
+                  any().
+cell(Board, C, R) ->
+    element(C, element(8 - R + 1, Board)).
 
+%% @doc
+-spec game_history(Step :: non_neg_integer() | last,
+                   GameID :: echessd_game:echessd_game_id(),
+                   History :: any()) ->
+                          HTML :: iolist().
 game_history(last, GameID, History) ->
     game_history(length(History), GameID, History);
 game_history(CurStep, GameID, History) ->
@@ -1006,11 +1146,21 @@ game_history(CurStep, N, GameID, [PlyW, PlyB | Tail]) ->
 game_history(CurStep, N, GameID, [PlyW]) ->
     ghc(N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW), "");
 game_history(_, _, _, _) -> "".
+
+%% @doc
+-spec ghc(N :: any(), StrW :: any(), StrB :: any()) -> HTML :: iolist().
 ghc(N, StrW, StrB) ->
     tr(
       [tag(td, ["valign=bottom"], tt(integer_to_list(N) ++ ".&nbsp;")),
        tag(td, ["valign=bottom"], StrW), td("&nbsp;"),
        tag(td, ["valign=bottom"], StrB)]).
+
+%% @doc
+-spec game_history_itemlink(GameID :: echessd_game:echessd_game_id(),
+                            CurStep :: non_neg_integer() | last,
+                            Step :: non_neg_integer() | last,
+                            Ply :: any()) ->
+                                   HTML :: iolist().
 game_history_itemlink(GameID, CurStep, Step, Ply) ->
     {Coords, Comment} =
         case Ply of
@@ -1038,13 +1188,26 @@ game_history_itemlink(GameID, CurStep, Step, Ply) ->
             _ -> ""
         end.
 
-cseq(1) -> lists:seq(1, 8);
-cseq(-1) -> lists:seq(8, 1, -1).
+%% @doc
+-spec cseq(Direction :: 1 | -1) -> [1..8].
+cseq(1) ->
+    lists:seq(1, 8);
+cseq(-1) ->
+    lists:seq(8, 1, -1).
 
-inply([A, B, _C, _D | _], [A, B]) -> true;
-inply([_A, _B, C, D | _], [C, D]) -> true;
-inply(_, _) -> false.
+%% @doc
+-spec inply(Ply :: nonempty_string(),
+            Cell :: nonempty_string()) ->
+                   boolean().
+inply([A, B, _C, _D | _], [A, B]) ->
+    true;
+inply([_A, _B, C, D | _], [C, D]) ->
+    true;
+inply(_, _) ->
+    false.
 
+%% @doc
+-spec captures(Captures :: list()) -> HTML :: iolist().
 captures([_ | _] = Captures) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         case [chessman_(F) || {?black, _} = F <- Captures] of
@@ -1063,9 +1226,19 @@ captures([_ | _] = Captures) ->
         end);
 captures(_) -> "".
 
-chessman(?empty) -> "&nbsp;";
+-type chessman() ::
+        ?wpawn | ?wrook | ?wknight | ?wbishop | ?wqueen | ?wking |
+        ?bpawn | ?brook | ?bknight | ?bbishop | ?bqueen | ?bking.
+
+%% @doc
+-spec chessman(Chessman :: chessman() | ?empty) -> HTML :: iolist().
+chessman(?empty) ->
+    "&nbsp;";
 chessman(Chessman) ->
     "&#" ++ integer_to_list(chessman_(Chessman)) ++ ";".
+
+%% @doc
+-spec chessman_(Chessman :: chessman()) -> Codepoint :: pos_integer().
 chessman_(?wking  ) -> 9812;
 chessman_(?wqueen ) -> 9813;
 chessman_(?wrook  ) -> 9814;
@@ -1079,8 +1252,13 @@ chessman_(?bbishop) -> 9821;
 chessman_(?bknight) -> 9822;
 chessman_(?bpawn  ) -> 9823.
 
+%% @doc
+-spec navig_links(List :: list()) -> HTML :: iolist().
 navig_links(List) ->
     navig_links(List, []).
+
+%% @doc
+-spec navig_links(List :: list(), Options :: list()) -> HTML :: iolist().
 navig_links(List, Options) ->
     tag("div", ["class=navig"],
         proplists:get_value(prepend, Options, "") ++
@@ -1097,51 +1275,82 @@ navig_links(List, Options) ->
                 _ -> ""
             end).
 
-navigation() ->
-    case get(username) of
-        [_ | _] ->
-            navig_links(
-              [{"/", gettext(txt_home)},
-               {"/?goto=" ++ ?SECTION_USERS, gettext(txt_users)},
-               {"/?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}]);
-        _ -> ""
-    end.
+%% @doc
+-spec navigation(Session :: #session{}) -> HTML :: iolist().
+navigation(Session) when is_list(Session#session.username) ->
+    navig_links(
+      [{url([]), gettext(Session, txt_home, [])},
+       {url([{?Q_GOTO, ?SECTION_USERS}]), gettext(Session, txt_users, [])},
+       {url([{?Q_GOTO, ?SECTION_EXIT}]), gettext(Session, txt_logout, [])}]);
+navigation(_Session) ->
+    %% not logged in
+    "".
 
-game_navigation(GameID, ShowEndGameLinks) ->
-    StrID = integer_to_list(GameID),
+%% @doc
+-spec game_navigation(Session :: #session{},
+                      GameID :: echessd_game:echessd_game_id(),
+                      ShowEndGameLinks :: boolean()) ->
+                             HTML :: iolist().
+game_navigation(Session, GameID, ShowEndGameLinks) ->
     Links =
-        [{"/?goto=" ++ ?SECTION_DRAW_CONFIRM ++
-              "&game=" ++ StrID, gettext(txt_req_draw)},
-         {"/?goto=" ++ ?SECTION_GIVEUP_CONFIRM ++
-              "&game=" ++ StrID, gettext(txt_do_giveup)}],
+        [{url([{?Q_GOTO, ?SECTION_DRAW_CONFIRM},
+               {?Q_GAME, GameID}]), gettext(Session, txt_req_draw, [])},
+         {url([{?Q_GOTO, ?SECTION_GIVEUP_CONFIRM},
+               {?Q_GAME, GameID}]), gettext(Session, txt_do_giveup, [])}],
     navig_links(
       case get(username) of
           [_ | _] ->
-              [{"/", gettext(txt_home)}] ++
+              [{"/", gettext(Session, txt_home, [])}] ++
                   if ShowEndGameLinks -> Links;
                      true -> ""
                   end ++
-                  [{"/?action=" ++ ?SECTION_EXIT, gettext(txt_logout)}];
-          _ -> [{"/", gettext(txt_authenticate)}]
+                  [{url([{?Q_GOTO, ?SECTION_EXIT}]),
+                    gettext(Session, txt_logout, [])}];
+          _ -> [{"/", gettext(Session, txt_authenticate, [])}]
       end,
-      [{prepend, gettext(txt_game) ++ " #" ++
+      [{prepend, gettext(Session, txt_game, []) ++ " #" ++
             integer_to_list(GameID) ++ ": "}]).
 
-format_error({error, Reason}) ->
-    format_error(Reason);
-format_error({wrong_move, Reason}) ->
-    gettext(txt_badmove) ++
+%% @doc
+-spec format_error(Session :: #session{},
+                   Error :: {error, Reason :: any()} |
+                            {wrong_move, Reason :: any()} |
+                            any()) ->
+                          PlainErrorMessage :: iolist().
+format_error(Session, {error, Reason}) ->
+    format_error(Session, Reason);
+format_error(Session, {wrong_move, Reason}) ->
+    gettext(Session, txt_badmove, []) ++
         case Reason of
-            check -> gettext(txt_king_in_check);
-            badmove -> "";
-            friendly_fire -> "";
-            _ -> format_error(Reason)
+            check ->
+                gettext(Session, txt_king_in_check, []);
+            badmove ->
+                "";
+            friendly_fire ->
+                "";
+            _ ->
+                format_error(Session, Reason)
         end;
-format_error(Term) ->
+format_error(_Session, Term) ->
     io_lib:format("~120p", [Term]).
 
-gettext(TextID) ->
-    echessd_lib:gettext(TextID, get(language)).
-gettext(TextID, Args) ->
-    io_lib:format(gettext(TextID), Args).
+%% @doc
+-spec warning(Session :: #session{}, TextID :: atom(), Args :: list()) ->
+                     HTML :: iolist().
+warning(Session, TextID, Args) ->
+    tag("div", ["class=warning"], gettext(Session, TextID, Args)).
 
+%% @doc
+-spec gettext(Session :: #session{},
+              FormatTextID :: atom(),
+              Args :: list()) -> iolist().
+gettext(Session, TextID, []) ->
+    echessd_lang:gettext(TextID, Session#session.language);
+gettext(Session, TextID, Args) ->
+    io_lib:format(gettext(Session, TextID, []), Args).
+
+%% @equiv echessd_query_parser:encode(Query)
+%% @doc Generate Echessd URL.
+-spec url(Query :: echessd_query_parser:http_query()) -> iolist().
+url(URL) ->
+    echessd_query_parser:encode(URL).

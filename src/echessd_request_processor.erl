@@ -7,20 +7,40 @@
 
 -module(echessd_request_processor).
 
--export([handle_get/3, handle_post/3]).
+-export([handle/4]).
 
 -include("echessd.hrl").
 
 -define(is_logged_in(Session), Session#session.username /= undefined).
 
 %% ----------------------------------------------------------------------
+%% Type definitions
+%% ----------------------------------------------------------------------
+
+-export_type([result/0]).
+
+-type result() ::
+        {redirect, URL :: string()} |
+        (HtmlPageContent :: iolist()).
+
+%% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
 
+%% @doc Handle HTTP request and return HTML page contents.
+-spec handle(Method :: nonempty_string(),
+             Section :: echessd_query_parser:section(),
+             Query :: echessd_query_parser:http_query(),
+             Session :: #session{}) -> result().
+handle(?HTTP_GET, Section, Query, Session) ->
+    handle_get(Section, Query, Session);
+handle(?HTTP_POST, Section, Query, Session) ->
+    handle_post(Section, Query, Session).
+
 %% @doc Handle HTTP GET request and return HTML page contents.
--spec handle_get(Section :: echessd_httpd:section(),
-                 Query :: echessd_httpd:http_query(),
-                 Session :: #session{}) -> echessd_httpd:result().
+-spec handle_get(Section :: echessd_query_parser:section(),
+                 Query :: echessd_query_parser:http_query(),
+                 Session :: #session{}) -> result().
 handle_get(?SECTION_EXIT, _Query, Session)
   when ?is_logged_in(Session) ->
     ok = echessd_session:del(Session),
@@ -45,38 +65,37 @@ handle_get(?SECTION_DENYGAME, Query, Session)
     end;
 handle_get(_, Query, Session)
   when ?is_logged_in(Session) ->
-    handle_show(Query);
-handle_get(_, Query, _Session) ->
-    case echessd_lang:parse(proplists:get_value("lang", Query)) of
-        {LangID, _} ->
-            echessd_httpd_lib:add_extra_headers(
-              [{"Set-Cookie", "lang=" ++ atom_to_list(LangID)}]),
-            put(language, LangID);
-        _ ->
-            nop
-    end,
-    case get_section(Query) of
+    handle_show(Session, Query);
+handle_get(Section, Query, Session) ->
+    NewSession =
+        case proplists:get_value(?Q_LANG, Query) of
+            undefined ->
+                Session;
+            LangID ->
+                echessd_httpd_lib:add_extra_headers(
+                  [{"Set-Cookie", "lang=" ++ atom_to_list(LangID)}]),
+                Session#session{language = LangID}
+        end,
+    case Section of
         ?SECTION_REG ->
-            put(section, ?SECTION_REG),
             echessd_html:register();
         ?SECTION_GAME ->
-            handle_show(?SECTION_GAME, Query);
+            handle_show(NewSession, Query);
         _ ->
-            put(section, ?SECTION_LOGIN),
             echessd_html:login()
     end.
 
 %% @doc Handle HTTP POST request and return HTML page contents.
--spec handle_post(Section :: echessd_httpd:section(),
-                  Query :: echessd_httpd:http_query(),
-                  Session :: #session{}) -> echessd_httpd:result().
+-spec handle_post(Section :: echessd_query_parser:section(),
+                  Query :: echessd_query_parser:http_query(),
+                  Session :: #session{}) -> result().
 handle_post(?SECTION_LOGIN, Query, Session) ->
     Username = proplists:get_value(?Q_USERNAME, Query),
     Password = proplists:get_value(?Q_PASSWORD, Query),
     case ?is_logged_in(Session) andalso
         Session#session.username == Username of
         true ->
-            handle_show(Query);
+            handle_show(Session, Query);
         _ ->
             ok = echessd_session:del(Session),
             case echessd_user:auth(Username, Password) of
@@ -253,41 +272,30 @@ handle_post(_, _, _) ->
 %% ----------------------------------------------------------------------
 
 %% @doc
--spec handle_show(Query :: echessd_httpd:http_query()) ->
-                         echessd_httpd:result().
-handle_show(Query) ->
-    handle_show(proplists:get_value(?Q_GOTO, Query), Query).
-
-%% @doc
--spec handle_show(SectionID :: echessd_httpd:section(),
+-spec handle_show(Session :: #session{},
                   Query :: echessd_httpd:http_query()) ->
                          echessd_httpd:result().
-handle_show(?SECTION_GAME, Query) ->
-    echessd_html:game(
-      proplists:get_value(?Q_GAME, Query),
-      proplists:get_value(?Q_STEP, Query));
-handle_show(?SECTION_USERS, _Query) ->
-    echessd_html:users();
-handle_show(?SECTION_USER, Query) ->
-    echessd_html:user(proplists:get_value(?Q_NAME, Query));
-handle_show(?SECTION_EDITUSER, _Query) ->
-    echessd_html:edituser();
-handle_show(?SECTION_PASSWD_FORM, _Query) ->
-    echessd_html:passwd();
-handle_show(?SECTION_NEWGAME, _Query) ->
-    echessd_html:newgame();
-handle_show(?SECTION_DRAW_CONFIRM, Query) ->
-    echessd_html:draw_confirm(proplists:get_value(?Q_GAME, Query));
-handle_show(?SECTION_GIVEUP_CONFIRM, Query) ->
-    echessd_html:giveup_confirm(proplists:get_value(?Q_GAME, Query));
-handle_show(_Default, _Query) ->
-    echessd_html:home().
-
-%% @doc Fetch section ID from the query.
--spec get_section(Query :: echessd_httpd:http_query()) ->
-                         Section :: echessd_httpd:section().
-get_section(Query) ->
-    proplists:get_value(?Q_GOTO, Query, ?SECTION_HOME).
+handle_show(Session, Query) ->
+    case proplists:get_value(?Q_GOTO, Query, ?SECTION_HOME) of
+        ?SECTION_GAME ->
+            echessd_html:game(Session, Query);
+        ?SECTION_USERS ->
+            echessd_html:users(Session);
+        ?SECTION_USER ->
+            echessd_html:user(Session, Query);
+        ?SECTION_EDITUSER ->
+            echessd_html:edituser();
+        ?SECTION_PASSWD_FORM ->
+            echessd_html:passwd();
+        ?SECTION_NEWGAME ->
+            echessd_html:newgame(Session, Query);
+        ?SECTION_DRAW_CONFIRM ->
+            echessd_html:draw_confirm(Query);
+        ?SECTION_GIVEUP_CONFIRM ->
+            echessd_html:giveup_confirm(Session, Query);
+        ?SECTION_HOME ->
+            echessd_html:home(Session)
+    end.
 
 %% @doc
 -spec redirect_to_game(GameID :: pos_integer()) -> nonempty_string().

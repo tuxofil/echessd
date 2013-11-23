@@ -64,7 +64,7 @@ dialyze: $(PLT)
 
 $(PLT):
 	dialyzer --build_plt --output_plt $@ \
-		--apps erts inets kernel stdlib crypto compiler
+		--apps erts inets kernel stdlib crypto compiler mnesia
 
 all-tests:
 	$(MAKE) eunit

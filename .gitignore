@@ -12,3 +12,4 @@ erl_crash.dump
 *.app
 echessd
 Emakefile
+.dialyzer_plt

@@ -119,6 +119,8 @@
 -define(Q_EDIT_USERNAME, editusername).
 -define(Q_USERNAME, username).
 -define(Q_PASSWORD, password).
+-define(Q_LANG, lang).
+-define(Q_USER, user).
 
 -define(ALL_Q_KEYS,
         [?Q_GOTO, ?Q_STEP, ?Q_GAME, ?Q_NAME, ?Q_MOVE, ?Q_COMMENT,
@@ -127,7 +129,8 @@
          ?Q_EDIT_NOTIFY, ?Q_EDIT_SHOW_COMMENT, ?Q_EDIT_SHOW_HISTORY,
          ?Q_EDIT_SHOW_IN_LIST, ?Q_EDIT_LANGUAGE, ?Q_EDIT_TIMEZONE,
          ?Q_EDIT_FULLNAME, ?Q_EDIT_PASSWORD0, ?Q_EDIT_PASSWORD1,
-         ?Q_EDIT_PASSWORD2, ?Q_EDIT_USERNAME, ?Q_USERNAME, ?Q_PASSWORD
+         ?Q_EDIT_PASSWORD2, ?Q_EDIT_USERNAME, ?Q_USERNAME, ?Q_PASSWORD,
+         ?Q_LANG, ?Q_USER
         ]).
 
 %% colors

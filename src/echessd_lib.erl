@@ -22,6 +22,7 @@
     strip/2,
     string_to_terms/1,
     list_to_atom/2,
+    list_to_atom/3,
     split4pathNquery/1
    ]).
 
@@ -223,6 +224,18 @@ list_to_atom(String, [Atom | Tail]) ->
             {ok, Atom};
         _ ->
             list_to_atom(String, Tail)
+    end.
+
+%% @doc Same as list_to_atom/2 but return the given default value
+%% on convertion error.
+-spec list_to_atom(String :: string(), Atoms :: [atom()],
+                   DefaultValue :: atom()) -> Atom :: atom().
+list_to_atom(String, Atoms, DefaultValue) ->
+    case list_to_atom(String, Atoms) of
+        {ok, Value} ->
+            Value;
+        error ->
+            DefaultValue
     end.
 
 %% @doc Split the request URI to a Path and a Query strings
