@@ -131,12 +131,10 @@ passwd(Session) ->
      navigation(Session),
      "<br><form method=post>",
      hidden(?Q_GOTO, ?SECTION_PASSWD),
-     gettext(Session, txt_passwd_passw, []) ++ ": " ++
-         "<input name=editpassword0 type=password><br>",
-     gettext(Session, txt_passwd_passw_new, []) ++ ": " ++
-         "<input name=editpassword1 type=password><br>",
-     gettext(Session, txt_passwd_passw_new_confirm, []), ": " ++
-         "<input name=editpassword2 type=password><br>",
+     password(Session, ?Q_EDIT_PASSWORD0, txt_passwd_passw), "<br>",
+     password(Session, ?Q_EDIT_PASSWORD1, txt_passwd_passw_new), "<br>",
+     password(Session, ?Q_EDIT_PASSWORD2, txt_passwd_passw_new_confirm),
+     "<br>",
      submit(Session, txt_passwd_save_button),
      "</form><br>",
      html_page_footer()].
@@ -267,160 +265,228 @@ game(Session, Query) ->
            GameInfo :: echessd_game:info()) ->
                   HTML :: iolist().
 game(Session, Query, GameID, GameInfo) ->
-    Step = proplists:get_value(?Q_STEP, Query),
-    Iam = Session#session.username,
-    GameType = proplists:get_value(type, GameInfo),
     FullHistory = proplists:get_value(moves, GameInfo, []),
     FullHistoryLen = length(FullHistory),
+    Step = proplists:get_value(?Q_STEP, Query),
     History =
         case Step of
             last -> FullHistory;
-            _ -> lists:sublist(FullHistory, Step)
+            _ ->
+                lists:sublist(FullHistory, Step)
         end,
-    HistoryLen = length(History),
-    IsLast = HistoryLen == FullHistoryLen,
     {Board, Captures} =
-        echessd_game:from_scratch(GameType, History),
+        echessd_game:from_scratch(
+          proplists:get_value(type, GameInfo), History),
+    IsMyTurn = is_my_turn(Session, GameInfo),
+    IsLast = Step == last orelse Step >= FullHistoryLen,
+    [html_page_header(
+       Session,
+       if IsMyTurn ->
+               "echessd: " ++ gettext(Session, txt_your_move, []);
+          true ->
+               "echessd: " ++ gettext(Session, txt_game, []) ++ " #" ++
+                   integer_to_list(GameID)
+       end, []),
+     game_navigation(Session, GameID, GameInfo),
+     game_title_message(Session, GameInfo),
+     case user_cfg(Session, show_history) of
+         true ->
+             tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
+                 tr(
+                   [tag(td, ["valign=top"],
+                        chess_table(
+                          Session, GameID, GameInfo, History, IsLast,
+                          Board, IsMyTurn, Captures)),
+                    tag(td, ["valign=top"],
+                        game_history(Step, GameID, FullHistory))]));
+         false ->
+             chess_table(
+               Session, GameID, GameInfo, History, IsLast,
+               Board, IsMyTurn, Captures)
+     end,
+     autorefresh_hook(Session, IsMyTurn, GameID, Step),
+     html_page_footer()].
+
+%% @doc
+-spec need_to_rotate(Session :: #session{},
+                     GameInfo :: echessd_game:info()) -> boolean().
+need_to_rotate(Session, GameInfo) ->
     Players =
         [I || {users, L} <- GameInfo, {_, C} = I <- L,
               lists:member(C, [?black, ?white])],
-    Users = lists:usort([N || {N, _} <- Players]),
-    Opponent =
-        case Users -- [Iam] of
-            [Opponent0 | _] -> Opponent0;
-            _ -> hd(Users)
-        end,
-    IsMyGame = lists:member(Iam, Users),
-    MyColors = [C || {N, C} <- Players, N == Iam],
     TurnColor = echessd_game:turn_color(GameInfo),
     TurnUser = hd([N || {N, C} <- Players, C == TurnColor]),
     WaitColor = hd([?black, ?white] -- [TurnColor]),
     WaitUser = hd([N || {N, C} <- Players, C == WaitColor]),
-    IsRotated =
-        if TurnUser == WaitUser andalso
-           WaitUser == Iam ->
-                TurnColor == ?black;
-           true ->
-                IsMyGame andalso
-                    lists:member(?black, MyColors)
-        end,
+    if TurnUser == WaitUser andalso
+       WaitUser == Session#session.username ->
+            TurnColor == ?black;
+       true ->
+            Users = lists:usort([N || {N, _} <- Players]),
+            IsMyGame = lists:member(Session#session.username, Users),
+            MyColors =
+                [C || {N, C} <- Players, N == Session#session.username],
+            IsMyGame andalso lists:member(?black, MyColors)
+    end.
+
+%% @doc
+-spec game_players(GameInfo :: echessd_game:info()) ->
+                          [{Username :: echessd_user:name(),
+                            Color :: echessd_game:color()}].
+game_players(GameInfo) ->
+    [I || {users, L} <- GameInfo, {_, C} = I <- L,
+          lists:member(C, [?black, ?white])].
+
+%% @doc
+-spec game_player_names(GameInfo :: echessd_game:info()) ->
+                               [echessd_user:name()].
+game_player_names(GameInfo) ->
+    [Username || {Username, _Color} <- game_players(GameInfo)].
+
+%% @doc
+-spec is_my_game(Session :: #session{},
+                 GameInfo :: echessd_game:info()) -> boolean().
+is_my_game(Session, GameInfo) ->
+    lists:member(Session#session.username, game_player_names(GameInfo)).
+
+%% @doc
+-spec is_my_turn(Session :: #session{},
+                 GameInfo :: echessd_game:info()) -> boolean().
+is_my_turn(Session, GameInfo) ->
+    TurnColor = echessd_game:turn_color(GameInfo),
+    TurnUsername =
+        hd([N || {N, C} <- game_players(GameInfo), C == TurnColor]),
+    TurnUsername == Session#session.username andalso
+        proplists:get_value(status, GameInfo, none) == none.
+
+%% @doc
+-spec game_title_message(Session :: #session{},
+                         GameInfo :: echessd_game:info()) ->
+                                HTML :: iolist().
+game_title_message(Session, GameInfo) ->
+    case proplists:get_value(status, GameInfo, none) of
+        checkmate ->
+            Winner = proplists:get_value(winner, GameInfo),
+            h2(gettext(Session, txt_gt_over_checkmate, [userlink(Winner)]));
+        give_up ->
+            Winner = proplists:get_value(winner, GameInfo),
+            h2(gettext(Session, txt_gt_over_giveup, [userlink(Winner)]));
+        {draw, stalemate} ->
+            h2(gettext(Session, txt_gt_over_stalemate, []));
+        {draw, agreement} ->
+            h2(gettext(Session, txt_gt_over_agreement, []));
+        {draw, DrawType} ->
+            h2(gettext(Session, txt_gt_over_draw, [DrawType]));
+        _ ->
+            Users = game_player_names(GameInfo),
+            Opponent =
+                case Users -- [Session#session.username] of
+                    [Opponent0 | _] -> Opponent0;
+                    _ ->
+                        hd(Users)
+                end,
+            IsMyGame = is_my_game(Session, GameInfo),
+            case proplists:get_value(draw_request_from, GameInfo) of
+                Iam when Iam == Session#session.username, IsMyGame ->
+                    warning(Session, txt_gt_youre_drawing, []);
+                Opponent when IsMyGame ->
+                    warning(Session, txt_gt_opponent_drawing,
+                            [userlink(Opponent)]);
+                _ -> ""
+            end
+    end.
+
+%% @doc
+-spec user_cfg(Session :: #session{},
+               UserInfoKey :: echessd_user:info_item_key()) ->
+                      Value :: any().
+user_cfg(Session, UserInfoKey) ->
+    echessd_user:get_value(UserInfoKey, Session#session.userinfo).
+
+%% @doc
+-spec chess_table(Session :: #session{}, GameID :: echessd_game:id(),
+                  GameInfo :: echessd_game:info(),
+                  History :: echessd_game:history(),
+                  IsLast :: boolean(),
+                  Board :: echessd_game:board(),
+                  IsMyTurn :: boolean(),
+                  Captures :: [echessd_game:chessman()]) ->
+                         HTML :: iolist().
+chess_table(Session, GameID, GameInfo, History, IsLast, Board,
+            IsMyTurn, Captures) ->
     {LastPly, Comment} =
         case lists:reverse(History) of
-            [{LastPly0, Meta} | _] ->
-                {LastPly0, proplists:get_value(comment, Meta, "")};
-            [LastPly0 | _] -> {LastPly0, ""};
-            _ -> {undefined, ""}
+            [{LastPlyCoords, PlyInfo} | _] ->
+                {LastPlyCoords, proplists:get_value(comment, PlyInfo, "")};
+            [] ->
+                {undefined, ""}
         end,
-    GameStatus = proplists:get_value(status, GameInfo, none),
-    Winner = proplists:get_value(winner, GameInfo),
-    IsMyTurn = TurnUser == Iam andalso GameStatus == none,
-    Title =
-        if IsMyTurn ->
-                "echessd: " ++ gettext(Session, txt_your_move, []);
-           true ->
-                "echessd: " ++ gettext(Session, txt_game, []) ++ " #" ++
-                    integer_to_list(GameID)
-        end,
-    {GroupedPossibles, ActiveCells} =
+    Hints =
         if IsMyTurn andalso IsLast ->
-                GroupedPossibles0 =
-                    group_possibles(
-                      echessd_game:possibles(GameType, History), []),
-                {GroupedPossibles0,
-                 lists:usort(
-                   lists:append(
-                     [[I1 | L] || {I1, L} <- GroupedPossibles0]))};
-           true -> {[], []}
+                echessd_game:hint(
+                  proplists:get_value(type, GameInfo), History);
+           true -> []
         end,
-    UserInfo =
-        if is_list(Session#session.userinfo) ->
-                Session#session.userinfo;
-           true ->
-                []
-        end,
-    ShowHistory = echessd_user:get_value(show_history, UserInfo),
-    ShowComment = echessd_user:get_value(show_comment, UserInfo),
-    AutoRefresh =
-        (not IsMyTurn) andalso
-        echessd_user:get_value(auto_refresh, UserInfo),
-    AutoRefreshPeriod = echessd_user:get_value(auto_refresh_period, UserInfo),
-    ChessTable =
-        chess_table(
-          GameID, HistoryLen, IsLast, GameType, Board,
-          IsRotated, ActiveCells, LastPly) ++
-        case Comment of
-            [_ | _] when ShowComment ->
-                tag(p, gettext(Session, txt_comment, []) ++ ": " ++ Comment);
-            _ -> ""
-        end ++
-        if IsMyTurn andalso IsLast ->
-                Possibles =
-                    echessd_game:possibles(GameType, History),
-                echessd_log:debug("Possibles: ~9999p", [Possibles]),
-                tag(script, ["src='/res/echessd.js'"], "") ++
-                    tag(script,
-                        js_init(GroupedPossibles,
-                                ActiveCells, LastPly)) ++
-                    "<form method=post>" ++
-                    gettext(Session, txt_move_caption, []) ++ ":&nbsp;"
-                    "<input name=action type=hidden value=move>"
-                    "<input name=game type=hidden value=" ++
-                    integer_to_list(GameID) ++ ">"
-                    "<input name=move type=text size=5 id=edmv>"
-                    "<input type=submit class=btn value='" ++
-                    gettext(Session, txt_move_ok_button, []) ++ "'>"
-                    "<input type=reset class=btn value='" ++
-                    gettext(Session, txt_move_reset_button, []) ++ "' "
-                    "onclick='clr();'><br>" ++
-                    gettext(Session, txt_move_comment_caption, []) ++ ":&nbsp;"
-                    "<input type=text name=comment>"
-                    "</form><br>";
-            true -> ""
-        end ++
-        captures(Captures),
-    [html_page_header(Session, Title, []),
-     game_navigation(Session, GameID, IsMyGame andalso GameStatus == none),
-     case GameStatus of
-         checkmate ->
-             h2(gettext(Session, txt_gt_over_checkmate, [userlink(Winner)]));
-         give_up ->
-             h2(gettext(Session, txt_gt_over_giveup, [userlink(Winner)]));
-         {draw, stalemate} ->
-             h2(gettext(Session, txt_gt_over_stalemate, []));
-         {draw, agreement} ->
-             h2(gettext(Session, txt_gt_over_agreement, []));
-         {draw, DrawType} ->
-             h2(gettext(Session, txt_gt_over_draw, [DrawType]));
-         _ ->
-             case proplists:get_value(
-                    draw_request_from, GameInfo) of
-                 Iam when IsMyGame ->
-                     warning(Session, txt_gt_youre_drawing, []);
-                 Opponent when IsMyGame ->
-                     warning(Session, txt_gt_opponent_drawing,
-                             [userlink(Opponent)]);
-                 _ -> ""
-             end
+    echessd_log:debug("Hints: ~9999p", [Hints]),
+    ActiveCells =
+        lists:usort(
+          lists:append([[[A, B], [C, D]] || [A, B, C, D] <- Hints])),
+    [chess_board(
+       Session, GameID, GameInfo, length(History), IsLast, Board,
+       ActiveCells, LastPly),
+     case {user_cfg(Session, show_comment), Comment} of
+         {true, [_ | _]} ->
+             tag(p, gettext(Session, txt_comment, []) ++ ": " ++ Comment);
+         _ -> ""
      end,
-     if ShowHistory ->
-             tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
-                 tr(
-                   [tag(td, ["valign=top"], ChessTable),
-                    tag(td, ["valign=top"],
-                        game_history(Step, GameID, FullHistory))]));
-        true ->
-             ChessTable
-     end,
-     if AutoRefresh ->
-             Period = integer_to_list(AutoRefreshPeriod * 1000),
-             tag(
-               script,
-               "setTimeout(\"document.location.href='" ++
-                   url([{?Q_GOTO, ?SECTION_GAME}, {?Q_GAME, GameID},
-                        {?Q_STEP, Step}]) ++ "'\"," ++ Period ++ ")");
+     if IsMyTurn andalso IsLast ->
+             move_form(Session, GameID, Hints, ActiveCells, LastPly);
         true -> ""
      end,
-     html_page_footer()].
+     captures(Captures)].
+
+%% @doc Make move form.
+-spec move_form(Session :: #session{}, GameID :: echessd_game:id(),
+                Hints :: [echessd_game:ply_coords()],
+                ActiveCells :: [nonempty_string()],
+                LastPly :: echessd_game:ply_coords()) ->
+                       HTML :: iolist().
+move_form(Session, GameID, Hints, ActiveCells, LastPly) ->
+    [tag(script, ["src='/res/echessd.js'"], ""),
+     tag(script, js_init(Hints, ActiveCells, LastPly)),
+     "<form method=post>",
+     hidden(?Q_GOTO, ?SECTION_MOVE),
+     hidden(?Q_GAME, GameID),
+     gettext(Session, txt_move_caption, []) ++ ":&nbsp;" ++
+         "<input name=move type=text size=5 id=edmv>",
+     submit(Session, txt_move_ok_button),
+     "<input type=reset class=btn value='" ++
+         gettext(Session, txt_move_reset_button, []) ++
+         "' onclick='clr();'><br>",
+     input(Session, ?Q_COMMENT, txt_move_comment_caption, ""),
+     "</form><br>"].
+
+%% @doc
+-spec autorefresh_hook(Session :: #session{},
+                       IsMyTurn :: boolean(),
+                       GameID :: echessd_game:id(),
+                       Step :: echessd_query_parser:step()) ->
+                              HTML :: iolist().
+autorefresh_hook(Session, false, GameID, Step) ->
+    case user_cfg(Session, auto_refresh) of
+        true ->
+            AutoRefreshPeriod = user_cfg(Session, auto_refresh_period),
+            tag(
+              script,
+              ["setTimeout(\"document.location.href='",
+               url([{?Q_GOTO, ?SECTION_GAME}, {?Q_GAME, GameID},
+                    {?Q_STEP, Step}]),
+               "'\",", integer_to_list(AutoRefreshPeriod * 1000), ")"]);
+        false ->
+            ""
+    end;
+autorefresh_hook(_, true, _, _) ->
+    "".
 
 %% @doc Make 'draw confirmation' page.
 -spec draw_confirm(Session :: #session{},
@@ -510,33 +576,36 @@ redirection(Session, URL) ->
 %% ----------------------------------------------------------------------
 
 %% @doc
--spec js_init(Grouped :: list(), ActiveCells :: list(),
-              LastPly :: nonempty_string()) ->
+-spec js_init(Hints :: [echessd_game:ply_coords()],
+              ActiveCells :: [CellCoord :: nonempty_string()],
+              LastPlyCoords :: echessd_game:ply_coords() | undefined) ->
                      HTML :: iolist().
-js_init(Grouped, ActiveCells, LastPly) ->
+js_init(Hints, ActiveCells, LastPlyCoords) ->
+    GroupedHints = group_hints(Hints),
     ["var ACs = [",
      string:join(["'" ++ C ++ "'" || C <- ActiveCells], ","),
      "];\nvar I1s = [",
-     string:join(["'" ++ I1 ++ "'" || {I1, _} <- Grouped], ","),
+     string:join(["'" ++ I1 ++ "'" || {I1, _} <- GroupedHints], ","),
      "];\nvar I2s = [",
      string:join(
        [[$[, string:join([[$', I2, $'] || I2 <- L], ","), $]] ||
-           {_, L} <- Grouped], ","),
+           {_, L} <- GroupedHints], ","),
      "];\nvar LPs = [",
-     case LastPly of
+     case LastPlyCoords of
          [A, B, C, D] ->
              [$', [A, B], "','", [C, D], $'];
          _ -> ""
      end, "];\n"].
 
 %% @doc
--spec group_possibles(Plies :: list(), Acc :: list()) -> FinalAcc :: list().
-group_possibles([], Result) ->
-    Result;
-group_possibles([[A, B, C, D] | Tail], [{[A, B], List} | ResTail]) ->
-    group_possibles(Tail, [{[A, B], [[C, D] | List]} | ResTail]);
-group_possibles([[A, B, C, D] | Tail], Result) ->
-    group_possibles(Tail, [{[A, B], [[C, D]]} | Result]).
+-spec group_hints(PlyCoords :: [echessd_game:ply_coords()]) ->
+                         [{StartCellCoord :: nonempty_string(),
+                           [DestinationCellCoord :: nonempty_string()]}].
+group_hints(PlyCoords) ->
+    StartCells = lists:usort([[A, B] || [A, B | _] <- PlyCoords]),
+    [{StartCell,
+      [[C, D] || [A, B, C, D] <- PlyCoords, [A, B] == StartCell]}
+     || StartCell <- StartCells].
 
 %% @doc
 -spec log_reg_page(Session :: #session{},
@@ -591,21 +660,6 @@ fetch_game(Session, GameID) ->
                Session,
                gettext(Session, txt_game_fetch_error, []) ++ ":~n~p",
                [GameID, Reason])
-    end.
-
-%% @doc
--spec is_my_game(Session :: #session{},
-                 GameInfo :: echessd_game:info()) ->
-                        boolean().
-is_my_game(Session, GameInfo) ->
-    Iam = Session#session.username,
-    Users = proplists:get_value(users, GameInfo, []),
-    case [N || {N, C} <- Users, N == Iam,
-               lists:member(C, [?white, ?black])] of
-        [_ | _] ->
-            true;
-        _ ->
-            false
     end.
 
 %% @doc Make 'user info' table.
@@ -816,34 +870,27 @@ user_unconfirmed_game_(Session, Owner, GameID, GameInfo) ->
                        Options :: list()) ->
                               HtmlPageHeader :: iolist().
 html_page_header(Session, Title, Options) ->
-    UserStyle = Session#session.style,
-    StylesFilename =
-        case [F || {N, _T, F} <- echessd_styles:list(), N == UserStyle] of
-            [Filename0 | _] -> Filename0;
-            _ ->
-                {_N, _T, Filename0} = echessd_lib:default_style(),
-                Filename0
-        end,
-    "<html>\n\n"
-        "<head>\n"
-        "<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>\n"
-        "<meta http-equiv='Content-Style-Type' content='text/css'>\n"
-        "<meta http-equiv='Content-Script-Type' content='text/javascript'>\n"
-        "<title>" ++ Title ++ "</title>\n"
-        "<link rel='stylesheet' href='/res/" ++ StylesFilename ++ "'>\n"
-        "</head>\n\n"
-        "<body>\n\n" ++
-        case [S || {h1, S} <- Options] of
-            [H1 | _] -> h1(H1);
-            _ -> ""
-        end ++
-        case get(error) of
-            undefined -> "";
-            Error ->
-                tag("div", ["class=error"],
-                    pre(gettext(Session, txt_error, []) ++ ": " ++
-                            format_error(Session, Error)))
-        end.
+    {_, StyleFilename} = echessd_styles:get(Session#session.style),
+    ["<html>\n\n"
+     "<head>\n"
+     "<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>\n"
+     "<meta http-equiv='Content-Style-Type' content='text/css'>\n"
+     "<meta http-equiv='Content-Script-Type' content='text/javascript'>\n"
+     "<title>", Title, "</title>\n"
+     "<link rel='stylesheet' href='/res/", StyleFilename, "'>\n"
+     "</head>\n\n"
+     "<body>\n\n",
+     case [S || {h1, S} <- Options] of
+         [H1 | _] -> h1(H1);
+         _ -> ""
+     end,
+     case get(error) of
+         undefined -> "";
+         Error ->
+             tag("div", ["class=error"],
+                 pre(gettext(Session, txt_error, []) ++ ": " ++
+                         format_error(Session, Error)))
+     end].
 
 %% @doc
 -spec html_page_footer() -> HtmlPageFooter :: iolist().
@@ -851,42 +898,42 @@ html_page_footer() ->
     "\n\n</body>\n</html>\n".
 
 %% @doc
--spec h1(String :: string()) -> HTML :: iolist().
+-spec h1(String :: iolist()) -> HTML :: iolist().
 h1(String) ->
     tag(h1, String).
 
 %% @doc
--spec h2(String :: string()) -> HTML :: iolist().
+-spec h2(String :: iolist()) -> HTML :: iolist().
 h2(String) ->
     tag(h2, String).
 
 %% @doc
--spec b(String :: string()) -> HTML :: iolist().
+-spec b(String :: iolist()) -> HTML :: iolist().
 b(String) ->
     tag(b, String).
 
 %% @doc
--spec tt(String :: string()) -> HTML :: iolist().
+-spec tt(String :: iolist()) -> HTML :: iolist().
 tt(String) ->
     tag(tt, String).
 
 %% @doc
--spec td(String :: string()) -> HTML :: iolist().
+-spec td(String :: iolist()) -> HTML :: iolist().
 td(String) ->
     tag(td, String).
 
 %% @doc
--spec tr(String :: string()) -> HTML :: iolist().
+-spec tr(String :: iolist()) -> HTML :: iolist().
 tr(String) ->
     tag(tr, String).
 
 %% @doc
--spec pre(String :: string()) -> HTML :: iolist().
+-spec pre(String :: iolist()) -> HTML :: iolist().
 pre(String) ->
     tag(pre, String).
 
 %% @doc
--spec a(URL :: string(), Caption :: string()) -> HTML :: iolist().
+-spec a(URL :: string(), Caption :: iolist()) -> HTML :: iolist().
 a(URL, Caption) ->
     tag(a, ["href='" ++ URL ++ "'"], Caption).
 
@@ -1021,20 +1068,21 @@ newgame_link(Session, WithUsername) ->
         gettext(Session, txt_new_game_link, [])}]).
 
 %% @doc
--spec chess_table(GameID :: echessd_game:id(),
-                  Step :: non_neg_integer() | last,
+-spec chess_board(Session :: #session{},
+                  GameID :: echessd_game:id(),
+                  GameInfo :: echessd_game:info(),
+                  Step :: echessd_query_parser:step(),
                   IsLast :: boolean(),
-                  GameType :: echessd_game:gametype(),
-                  Board :: any(),
-                  IsRotated :: boolean(),
-                  ActiveCells :: any(),
-                  LastPly :: any()) ->
+                  Board :: echessd_game:board(),
+                  ActiveCells :: [nonempty_string()],
+                  LastPly :: echessd_game:ply_coords()) ->
                          HTML :: iolist().
-chess_table(GameID, Step, IsLast, _GameType, Board,
-            IsRotated, ActiveCells, LastPly) ->
+chess_board(Session, GameID, GameInfo, Step, IsLast, Board,
+            ActiveCells, LastPly) ->
     {ColStep, RowStep} =
-        if IsRotated -> {-1, 1};
-           true -> {1, -1}
+        case need_to_rotate(Session, GameInfo) of
+            true -> {-1, 1};
+            false -> {1, -1}
         end,
     Color =
         fun(C, R) when (C + R) rem 2 == 0 -> "bc";
@@ -1083,39 +1131,37 @@ chess_table(GameID, Step, IsLast, _GameType, Board,
 
 %% @doc
 -spec hist_buttons(GameID :: echessd_game:id(),
-                   Step :: non_neg_integer() | last,
+                   Step :: echessd_query_parser:step(),
                    IsLast :: boolean()) ->
                           HTML :: iolist().
 hist_buttons(GameID, Step, IsLast) ->
     Hiddens =
-        ["<input type=hidden name=goto value=" ++ ?SECTION_GAME ++ ">"
-         "<input type=hidden name=game value=" ++ integer_to_list(GameID) ++ ">"],
+        [hidden(?Q_GOTO, ?SECTION_GAME),
+         hidden(?Q_GAME, GameID)],
     HistBtn =
-        fun(_, _, false) -> "";
-           (Caption, LinkStep0, _Enabled) ->
-                LinkStep =
-                    if is_integer(LinkStep0) -> integer_to_list(LinkStep0);
-                       true -> ""
-                    end,
-                tag(form, ["method=get", "action='/'"],
-                    Hiddens ++
-                        "<input type=hidden name=step value=" ++ LinkStep ++ ">"
-                    "<input type=submit class=hb value='" ++ Caption ++ "'>")
+        fun(_, _, false) ->
+                tag(td, ["class=hbc"], "");
+           (Caption, LinkStep, _Enabled) ->
+                tag(td, ["class=hbc"],
+                    tag(form, ["method=get", "action='/'"],
+                        [Hiddens, hidden(?Q_STEP, LinkStep),
+                         "<input type=submit class=hb value='",
+                         Caption, "'>"]))
         end,
     tag(
       table, ["cellpadding=0", "cellspacing=0", "width='100%'"],
       tr(
-        [tag(td, ["class=hbc"],
-             tag(form, ["method=get", "action='/'"],
-                 Hiddens ++
-                     "<input type=submit class=hb value='&#8635;'>")) |
+        [tag(
+           td, ["class=hbc"],
+           tag(form, ["method=get", "action='/'"],
+               [Hiddens, "<input type=submit class=hb value='&#8635;'>"])) |
          case {Step, IsLast} of
              {0, true} -> [];
              _ ->
-                 [tag(td, ["class=hbc"], HistBtn("&lt;&lt;", 0, Step > 0)),
-                  tag(td, ["class=hbc"], HistBtn("&lt;", Step - 1, Step > 0)),
-                  tag(td, ["class=hbc"], HistBtn("&gt;", Step + 1, not IsLast)),
-                  tag(td, ["class=hbc"], HistBtn("&gt;&gt;", last, not IsLast))]
+                 [HistBtn("&lt;&lt;", 0, Step > 0),
+                  HistBtn("&lt;", Step - 1, Step > 0),
+                  HistBtn("&gt;", Step + 1, not IsLast),
+                  HistBtn("&gt;&gt;", last, not IsLast)]
          end])).
 
 %% @doc
@@ -1127,15 +1173,15 @@ cell(Board, C, R) ->
     element(C, element(8 - R + 1, Board)).
 
 %% @doc
--spec game_history(Step :: non_neg_integer() | last,
+-spec game_history(Step :: echessd_query_parser:step(),
                    GameID :: echessd_game:id(),
-                   History :: any()) ->
+                   History :: echessd_game:history()) ->
                           HTML :: iolist().
 game_history(last, GameID, History) ->
     game_history(length(History), GameID, History);
 game_history(CurStep, GameID, History) ->
     tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
-        game_history(CurStep, 1, integer_to_list(GameID), History)).
+        game_history(CurStep, 1, GameID, History)).
 game_history(CurStep, N, GameID, [PlyW, PlyB | Tail]) ->
     ghc(
       N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW),
@@ -1145,7 +1191,7 @@ game_history(CurStep, N, GameID, [PlyW]) ->
     ghc(N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW), "");
 game_history(_, _, _, _) -> "".
 
-%% @doc
+%% @doc Make a cell for the game history table.
 -spec ghc(N :: any(), StrW :: any(), StrB :: any()) -> HTML :: iolist().
 ghc(N, StrW, StrB) ->
     tr(
@@ -1155,8 +1201,8 @@ ghc(N, StrW, StrB) ->
 
 %% @doc
 -spec game_history_itemlink(GameID :: echessd_game:id(),
-                            CurStep :: non_neg_integer() | last,
-                            Step :: non_neg_integer() | last,
+                            CurStep :: echessd_query_parser:step(),
+                            Step :: echessd_query_parser:step(),
                             Ply :: any()) ->
                                    HTML :: iolist().
 game_history_itemlink(GameID, CurStep, Step, Ply) ->
@@ -1175,9 +1221,9 @@ game_history_itemlink(GameID, CurStep, Step, Ply) ->
     tag(
       a,
       ["title='" ++ Comment ++ "'",
-       "href='/?goto=" ++ ?SECTION_GAME ++
-           "&game=" ++ GameID ++
-           "&step=" ++ integer_to_list(Step) ++ "'"],
+       "href='" ++
+           url([{?Q_GOTO, ?SECTION_GAME},
+                {?Q_GAME, GameID}, {?Q_STEP, Step}]) ++ "'"],
       tt(if CurStep == Step -> b(Coords);
             true -> Coords
          end)) ++
@@ -1194,7 +1240,7 @@ cseq(-1) ->
     lists:seq(8, 1, -1).
 
 %% @doc
--spec inply(Ply :: nonempty_string(),
+-spec inply(Ply :: echessd_game:ply_coords(),
             Cell :: nonempty_string()) ->
                    boolean().
 inply([A, B, _C, _D | _], [A, B]) ->
@@ -1285,19 +1331,22 @@ navigation(_Session) ->
 %% @doc
 -spec game_navigation(Session :: #session{},
                       GameID :: echessd_game:id(),
-                      ShowEndGameLinks :: boolean()) ->
+                      GameInfo :: echessd_game:info()) ->
                              HTML :: iolist().
-game_navigation(Session, GameID, ShowEndGameLinks) ->
-    Links =
-        [{url([{?Q_GOTO, ?SECTION_DRAW_CONFIRM},
-               {?Q_GAME, GameID}]), gettext(Session, txt_req_draw, [])},
-         {url([{?Q_GOTO, ?SECTION_GIVEUP_CONFIRM},
-               {?Q_GAME, GameID}]), gettext(Session, txt_do_giveup, [])}],
+game_navigation(Session, GameID, GameInfo) ->
+    IsMyGame = is_my_game(Session, GameInfo),
+    GameStatus = proplists:get_value(status, GameInfo, none),
     navig_links(
-      case get(username) of
+      case Session#session.username of
           [_ | _] ->
               [{"/", gettext(Session, txt_home, [])}] ++
-                  if ShowEndGameLinks -> Links;
+                  if IsMyGame andalso GameStatus == none ->
+                          [{url([{?Q_GOTO, ?SECTION_DRAW_CONFIRM},
+                                 {?Q_GAME, GameID}]),
+                            gettext(Session, txt_req_draw, [])},
+                           {url([{?Q_GOTO, ?SECTION_GIVEUP_CONFIRM},
+                                 {?Q_GAME, GameID}]),
+                            gettext(Session, txt_do_giveup, [])}];
                      true -> ""
                   end ++
                   [{url([{?Q_GOTO, ?SECTION_EXIT}]),

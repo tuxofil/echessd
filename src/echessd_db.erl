@@ -1,47 +1,65 @@
+%%% @doc
+%%% Interface to the Echessd persistent storage.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 21 Jan 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc Persistent storage interface.
 
 -module(echessd_db).
 
--export([init/0, wait/0,
-         list_users/0,
-         adduser/2,
-         deluser/1,
-         get_user_props/1,
-         set_user_props/2,
-         addgame/1,
-         game_ack/2,
-         game_deny/2,
-         get_game_props/1,
-         set_game_props/2,
-         delgame/1,
-         gameply/3,
-         game_give_up/2,
-         game_request_draw/2,
-         gamerewind/1,
-         gamereset/1,
-         dump_users/0,
-         dump_games/0,
-         import_users/1,
-         import_games/1
-        ]).
+-export(
+   [init/0, wait/0,
+    list_users/0,
+    adduser/2,
+    deluser/1,
+    get_user_props/1,
+    set_user_props/2,
+    addgame/1,
+    game_ack/2,
+    game_deny/2,
+    get_game_props/1,
+    set_game_props/2,
+    delgame/1,
+    gameply/3,
+    game_give_up/2,
+    game_request_draw/2,
+    gamerewind/1,
+    gamereset/1,
+    dump_users/0,
+    dump_games/0,
+    import_users/1,
+    import_games/1
+   ]).
 
 -include("echessd.hrl").
+
+%% database tables
+-define(dbt_users, echessd_dbt_users).
+-define(dbt_games, echessd_dbt_games).
 
 %% db table record
 -record(hrec, {key, val}).
 
 %% ----------------------------------------------------------------------
+%% Type definitions
+%% ----------------------------------------------------------------------
+
+-type transaction() :: fun(() -> Result :: any()).
+
+-type db_table() :: ?dbt_users | ?dbt_games.
+
+-type proplist() :: [{Key :: atom(), Value :: any()}].
+
+-type rec_id() :: echessd_game:id() | echessd_user:name() | counter.
+
+%% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Creates mnesia database from scratch. All previous data if
-%%      such exists will be wiped off.
-%%      Normally this function called from 'init.sh' script only
-%%      once before first server start.
-%% @spec init() -> ok
+%% @doc Create mnesia database from scratch.
+%% All previous data if will be wiped off.
+%% Normally the function is called only once before the first server start.
+-spec init() -> ok.
 init() ->
     stopped = mnesia:stop(),
     ok = mnesia:delete_schema([node()]),
@@ -57,10 +75,10 @@ init() ->
         mnesia:create_table(?dbt_games, DbOpts),
     ok.
 
-%% @doc Waits until all needed database tables becomes available
-%%      or fails if timeout of 10 seconds reaches faster.
-%%      Called at server start from application supervisor init/0.
-%% @spec wait() -> ok
+%% @doc Wait until all database tables become available
+%% or fail if a timeout of 10 seconds elapsed.
+%% Called at the server start from the application supervisor init/0.
+-spec wait() -> ok.
 wait() ->
     case mnesia:wait_for_tables(
            [?dbt_users, ?dbt_games], 10000) of
@@ -75,10 +93,9 @@ wait() ->
             throw(Reason)
     end.
 
-%% @doc Fetch registered users names.
-%% @spec list_users() -> {ok, Users} | {error, Reason}
-%%     Users = [echessd_user:name()],
-%%     Reason = term()
+%% @doc Return a list of all registered user names.
+-spec list_users() -> {ok, Users :: [echessd_user:name()]} |
+                      {error, Reason :: any()}.
 list_users() ->
     transaction(
       fun() ->
@@ -93,11 +110,10 @@ list_users() ->
                 end, [], ?dbt_users)
       end).
 
-%% @doc Adds new user.
-%% @spec adduser(Username, UserInfo) -> ok | {error, Reason}
-%%     Username = echessd_user:name(),
-%%     UserInfo = echessd_user:info(),
-%%     Reason = term()
+%% @doc Add a new user.
+-spec adduser(Username :: echessd_user:name(),
+              UserInfo :: echessd_user:info()) ->
+                     ok | {error, Reason :: any()}.
 adduser(Username, UserInfo) ->
     transaction_ok(
       fun() ->
@@ -109,21 +125,19 @@ adduser(Username, UserInfo) ->
               end
       end).
 
-%% @doc Removes existing user.
-%% @spec deluser(Username) -> ok | {error, Reason}
-%%     Username = echessd_user:name(),
-%%     Reason = term()
+%% @doc Remove the user.
+-spec deluser(Username :: echessd_user:name()) ->
+                     ok | {error, Reason :: any()}.
 deluser(Username) ->
     transaction_ok(
       fun() ->
               mnesia:delete({?dbt_users, Username})
       end).
 
-%% @doc Fetch user properties.
-%% @spec get_user_props(Username) -> {ok, UserInfo} | {error, Reason}
-%%     Username = echessd_user:name(),
-%%     UserInfo = echessd_user:info(),
-%%     Reason = term()
+%% @doc Fetch the user properties.
+-spec get_user_props(Username :: echessd_user:name()) ->
+                            {ok, UserInfo :: echessd_user:info()} |
+                            {error, Reason :: any()}.
 get_user_props(Username) ->
     transaction(
       fun() ->
@@ -131,11 +145,10 @@ get_user_props(Username) ->
                ll_get_props(?dbt_users, Username)]
       end).
 
-%% @doc Set user properties.
-%% @spec set_user_props(Username, UserInfo) -> ok | {error, Reason}
-%%     Username = echessd_user:name(),
-%%     UserInfo = echessd_user:info(),
-%%     Reason = term()
+%% @doc Set the user properties.
+-spec set_user_props(Username :: echessd_user:name(),
+                     UserInfo :: echessd_user:info()) ->
+                            ok | {error, Reason :: any()}.
 set_user_props(Username, UserInfo) ->
     transaction_ok(
       fun() ->
@@ -144,29 +157,22 @@ set_user_props(Username, UserInfo) ->
                 ?dbt_users, Username, OldProps, UserInfo)
       end).
 
-%% @doc Adds new game to database.
-%% @spec addgame(GameInfo) -> {ok, GameID} | {error, Reason}
-%%     GameInfo = echessd_game:info(),
-%%     GameID = echessd_game:id(),
-%%     Reason = term()
+%% @doc Add a new game to the database.
+-spec addgame(GameInfo :: echessd_game:info()) ->
+                     {ok, GameID :: echessd_game:id()} |
+                     {error, Reason :: any()}.
 addgame(GameInfo) ->
     transaction(
       fun() ->
-              GameID =
-                  case mnesia:read({?dbt_games, counter}) of
-                      [HRec] -> HRec#hrec.val;
-                      _ -> 1
-                  end,
-              ll_set_props(?dbt_games, counter, GameID + 1),
+              GameID = generate_game_id(),
               set_game_props_(GameID, GameInfo),
               GameID
       end).
 
 %% @doc Acknowledge the game.
-%% @spec game_ack(GameID, Username) -> ok | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     Username = echessd_user:name(),
-%%     Reason = term()
+-spec game_ack(GameID :: echessd_game:id(),
+               Username :: echessd_user:name()) ->
+                      ok | {error, Reason :: any()}.
 game_ack(GameID, Username) ->
     transaction_ok(
       fun() ->
@@ -196,10 +202,9 @@ game_ack(GameID, Username) ->
       end).
 
 %% @doc Deny not confirmed game.
-%% @spec game_deny(GameID, Username) -> ok | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     Username = echessd_user:name(),
-%%     Reason = term()
+-spec game_deny(GameID :: echessd_game:id(),
+                Username :: echessd_user:name()) ->
+                       ok | {error, Reason :: any()}.
 game_deny(GameID, Username) ->
     transaction_ok(
       fun() ->
@@ -222,35 +227,30 @@ game_deny(GameID, Username) ->
               end
       end).
 
-%% @doc Fetch game properties.
-%% @spec get_game_props(GameID) -> {ok, GameInfo} | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     GameInfo = echessd_game:info(),
-%%     Reason = term()
+%% @doc Fetch the game properties.
+-spec get_game_props(GameID :: echessd_game:id()) ->
+                            {ok, GameInfo :: echessd_game:info()} |
+                            {error, Reason :: any()}.
 get_game_props(GameID) ->
     transaction(
       fun() ->
               ll_get_props(?dbt_games, GameID)
       end).
 
-%% @doc Set game properties.
-%% @spec set_game_props(GameID, GameInfo) -> ok | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     GameInfo = echessd_game:info(),
-%%     Reason = term()
+%% @doc Set the game properties.
+-spec set_game_props(GameID :: echessd_game:id(),
+                     GameInfo :: echessd_game:info()) ->
+                            ok | {error, Reason :: any()}.
 set_game_props(GameID, GameInfo) ->
     transaction_ok(
       fun() ->
               OldInfo = ll_get_props(?dbt_games, GameID),
-              NewInfo =
-                  echessd_lib:proplist_replace(
-                    OldInfo, GameInfo),
+              NewInfo = proplist_update(OldInfo, GameInfo),
               set_game_props_(GameID, NewInfo)
       end).
+
 set_game_props_(GameID, GameInfo) ->
-    Users =
-        [N || {users, L} <- GameInfo,
-              {N, _Role} <- L],
+    Users = [N || {users, L} <- GameInfo, {N, _Role} <- L],
     lists:foreach(
       fun(Username) ->
               UserInfo = ll_get_props(?dbt_users, Username),
@@ -263,10 +263,9 @@ set_game_props_(GameID, GameInfo) ->
       end, Users),
     ll_set_props(?dbt_games, GameID, GameInfo).
 
-%% @doc Remove game from database.
-%% @spec delgame(GameID) -> ok | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     Reason = term()
+%% @doc Remove the game from the database.
+-spec delgame(GameID :: echessd_game:id()) ->
+                     ok | {error, Reason :: any()}.
 delgame(GameID) ->
     transaction_ok(
       fun() ->
@@ -277,6 +276,7 @@ delgame(GameID) ->
                   _ -> ok
               end
       end).
+
 delgame_(GameID, GameInfo) ->
     Users = [N || {users, L} <- GameInfo, {N, _Role} <- L],
     lists:foreach(
@@ -292,13 +292,12 @@ delgame_(GameID, GameInfo) ->
       end, Users),
     mnesia:delete({?dbt_games, GameID}).
 
-%% @doc Makes turn for user.
-%% @spec gameply(GameID, Username, Ply) -> {ok, GameInfo} | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     Username = echessd_user:name(),
-%%     Ply = echessd_game:ply(),
-%%     GameInfo = echessd_game:info(),
-%%     Reason = term()
+%% @doc Make the user turn.
+-spec gameply(GameID :: echessd_game:id(),
+              Username :: echessd_user:name(),
+              Ply :: echessd_game:ply()) ->
+                     {ok, GameInfo :: echessd_game:info()} |
+                     {error, Reason :: any()}.
 gameply(GameID, Username, Ply) ->
     transaction(
       fun() ->
@@ -320,28 +319,24 @@ gameply(GameID, Username, Ply) ->
                       TurnColor = echessd_game:turn_color(GameInfo),
                       GameType = proplists:get_value(type, GameInfo),
                       History = proplists:get_value(moves, GameInfo, []),
-                      {Board, _Captures} =
-                          echessd_game:from_scratch(GameType, History),
-                      case echessd_game:make_ply(
-                             GameType, Board, TurnColor, Ply, History) of
-                          {ok, _NewBoard, NewHistory, GameStatus} ->
-                              {Winner, WinnerColor} =
-                                  case GameStatus of
-                                      checkmate -> {Username, TurnColor};
-                                      _ -> {undefined, undefined}
-                                  end,
-                              NewGameInfo =
-                                  echessd_lib:proplist_replace(
-                                    GameInfo,
-                                    [{moves, NewHistory},
-                                     {status, GameStatus},
-                                     {winner, Winner},
-                                     {winner_color, WinnerColor}]),
-                              ll_set_props(?dbt_games, GameID, NewGameInfo),
-                              NewGameInfo;
-                          {error, Reason} ->
-                              mnesia:abort({wrong_move, Reason})
-                      end;
+                      {ok, _NewBoard, NewHistory, GameStatus} =
+                          echessd_game:move(GameType, History, Ply),
+                      {Winner, WinnerColor} =
+                          case GameStatus of
+                              checkmate ->
+                                  {Username, TurnColor};
+                              _ ->
+                                  {undefined, undefined}
+                          end,
+                      NewGameInfo =
+                          proplist_update(
+                            GameInfo,
+                            [{moves, NewHistory},
+                             {status, GameStatus},
+                             {winner, Winner},
+                             {winner_color, WinnerColor}]),
+                      ll_set_props(?dbt_games, GameID, NewGameInfo),
+                      NewGameInfo;
                   _ ->
                       case lists:member(
                              Username,
@@ -356,11 +351,10 @@ gameply(GameID, Username, Ply) ->
               end
       end).
 
-%% @doc Make user fail the game by giving up.
-%% @spec game_give_up(GameID, Username) -> ok | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     Username = echessd_user:name(),
-%%     Reason = term()
+%% @doc Make the user to fail the game by giving up.
+-spec game_give_up(GameID :: echessd_game:id(),
+                   Username :: echessd_user:name()) ->
+                          ok | {error, Reason :: any()}.
 game_give_up(GameID, Username) ->
     transaction_ok(
       fun() ->
@@ -406,11 +400,10 @@ game_give_up(GameID, Username) ->
               end
       end).
 
-%% @doc Makes draw request.
-%% @spec game_request_draw(GameID, Username) -> ok | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     Username = echessd_user:name(),
-%%     Reason = term()
+%% @doc Make a draw request.
+-spec game_request_draw(GameID :: echessd_game:id(),
+                        Username :: echessd_user:name()) ->
+                               ok | {error, Reason :: any()}.
 game_request_draw(GameID, Username) ->
     transaction_ok(
       fun() ->
@@ -473,10 +466,9 @@ game_request_draw(GameID, Username) ->
               end
       end).
 
-%% @doc Denies last ply for specified game.
-%% @spec gamerewind(GameID) -> ok | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     Reason = term()
+%% @doc Cancel the last ply for the game.
+-spec gamerewind(GameID :: echessd_game:id()) ->
+                        ok | {error, Reason :: any()}.
 gamerewind(GameID) ->
     transaction_ok(
       fun() ->
@@ -490,10 +482,9 @@ gamerewind(GameID) ->
                  {winner_color, undefined}])
       end).
 
-%% @doc Denies all plies for specified game.
-%% @spec gamereset(GameID) -> ok | {error, Reason}
-%%     GameID = echessd_game:id(),
-%%     Reason = term()
+%% @doc Cancel all plies for the game.
+-spec gamereset(GameID :: echessd_game:id()) ->
+                       ok | {error, Reason :: any()}.
 gamereset(GameID) ->
     transaction_ok(
       fun() ->
@@ -505,12 +496,10 @@ gamereset(GameID) ->
                  {winner_color, undefined}])
       end).
 
-%% @doc Return all users data from database.
-%% @spec dump_users() -> {ok, List} | {error, Reason}
-%%     List = [{Username, UserInfo}],
-%%     Username = echessd_user:name(),
-%%     UserInfo = echessd_user:info(),
-%%     Reason = term()
+%% @doc Make a dump of all user accounts from the database.
+-spec dump_users() -> {ok, [{Username :: echessd_user:name(),
+                             UserInfo :: echessd_user:info()}]} |
+                      {error, Reason :: any()}.
 dump_users() ->
     transaction(
       fun() ->
@@ -520,12 +509,10 @@ dump_users() ->
                 end, [], ?dbt_users)
       end).
 
-%% @doc Return all games data from database.
-%% @spec dump_games() -> {ok, List} | {error, Reason}
-%%     List = [{GameID, GameInfo}],
-%%     GameID = echessd_game:id(),
-%%     GameInfo = echessd_game:info(),
-%%     Reason = term()
+%% @doc Make a dump of all games from the database.
+-spec dump_games() -> {ok, [{GameID :: echessd_game:id(),
+                             GameInfo :: echessd_game:info()}]} |
+                      {error, Reason :: any()}.
 dump_games() ->
     transaction(
       fun() ->
@@ -535,14 +522,11 @@ dump_games() ->
                 end, [], ?dbt_games)
       end).
 
-%% @doc Inserts user records directly to database.
-%%      This low level utility function intended only for
-%%      import operations.
-%% @spec import_users(Users) -> ok | {error, Reason}
-%%     Users = [{Username, UserInfo}],
-%%     Username = echessd_user:name(),
-%%     UserInfo = echessd_user:info(),
-%%     Reason = term()
+%% @doc Insert the user accounts directly to the database.
+%% The function intended only for an import operations.
+-spec import_users(Users :: [{Username :: echessd_user:name(),
+                              UserInfo :: echessd_user:info()}]) ->
+                          ok | {error, Reason :: any()}.
 import_users(Users) ->
     transaction_ok(
       fun() ->
@@ -552,14 +536,11 @@ import_users(Users) ->
                 end, Users)
       end).
 
-%% @doc Inserts game records directly to database.
-%%      This low level utility function intended only for
-%%      import operations.
-%% @spec import_games(Games) -> ok | {error, Reason}
-%%     Games = [{GameID, GameInfo}],
-%%     GameID = echessd_game:id(),
-%%     GameInfo = echessd_game:info(),
-%%     Reason = term()
+%% @doc Insert the games directly to the database.
+%% The function intended only for an import operations.
+-spec import_games(Games :: [{GameID :: echessd_game:id(),
+                              GameInfo :: echessd_game:info()}]) ->
+                          ok | {error, Reason :: any()}.
 import_games(Games) ->
     transaction_ok(
       fun() ->
@@ -573,16 +554,40 @@ import_games(Games) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-all_except_last([]) -> [];
-all_except_last([_]) -> [];
-all_except_last([H | Tail]) -> [H | all_except_last(Tail)].
+%% @doc
+-spec proplist_update(Subject :: proplist(), NewData :: proplist()) ->
+                             UpdatedSubject :: proplist().
+proplist_update(Subject, []) ->
+    Subject;
+proplist_update(Subject, [{Key, NewValue} | Tail]) ->
+    proplist_update(
+      [{Key, NewValue} | [I || {K, _} = I <- Subject, K /= Key]],
+      Tail).
 
+%% @doc
+-spec all_except_last(List :: list()) -> NewList :: list().
+all_except_last([]) ->
+    [];
+all_except_last([_Last]) ->
+    [];
+all_except_last([H | Tail]) ->
+    [H | all_except_last(Tail)].
+
+%% @doc
+-spec transaction_ok(Fun :: transaction()) ->
+                            ok | {error, Reason :: any()}.
 transaction_ok(Fun) ->
     case transaction(Fun) of
-        {ok, _} -> ok;
-        Error -> Error
+        {ok, _IgnoredResult} ->
+            ok;
+        {error, _Reason} = Error ->
+            Error
     end.
 
+%% @doc
+-spec transaction(Fun :: transaction()) ->
+                         {ok, Result :: any()} |
+                         {error, Reason :: any()}.
 transaction(Fun) ->
     case mnesia:transaction(Fun) of
         {atomic, Result} ->
@@ -591,11 +596,17 @@ transaction(Fun) ->
             {error, Reason}
     end.
 
+%% @doc
+-spec ll_replace_props(DbTable :: db_table(), RecID :: rec_id(),
+                       OldProps :: proplist(),
+                       Props2Replace :: proplist()) -> ok.
 ll_replace_props(DbTable, RecID, OldProps, Props2Replace) ->
     ll_set_props(
-      DbTable, RecID,
-      echessd_lib:proplist_replace(OldProps, Props2Replace)).
+      DbTable, RecID, proplist_update(OldProps, Props2Replace)).
 
+%% @doc
+-spec ll_get_props(DbTable :: db_table(), RecID :: rec_id()) ->
+                          Value :: proplist().
 ll_get_props(DbTable, RecID) ->
     case mnesia:read({DbTable, RecID}) of
         [HRec] ->
@@ -608,6 +619,9 @@ ll_get_props(DbTable, RecID) ->
             mnesia:abort({no_such_item, RecID})
     end.
 
+%% @doc
+-spec ll_set_props(DbTable :: db_table(), RecID :: rec_id(),
+                   Props :: proplist()) -> ok.
 ll_set_props(DbTable, RecID, Props) ->
     mnesia:write(
       DbTable,
@@ -615,3 +629,17 @@ ll_set_props(DbTable, RecID, Props) ->
             val = Props},
       write).
 
+%% @doc
+-spec generate_game_id() -> echessd_game:id().
+generate_game_id() ->
+    GameID =
+        case mnesia:read({?dbt_games, counter}) of
+            [HRec] ->
+                HRec#hrec.val;
+            _ ->
+                1
+        end,
+    mnesia:write(
+      ?dbt_games, #hrec{key = counter, val = GameID + 1},
+      write),
+    GameID.

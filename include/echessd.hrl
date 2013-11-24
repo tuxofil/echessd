@@ -45,10 +45,6 @@
 
 -define(LOG_LEVELS, [?LOG_ERR, ?LOG_INFO, ?LOG_DEBUG]).
 
-%% database tables
--define(dbt_users, echessd_dbt_users).
--define(dbt_games, echessd_dbt_games).
-
 %% game types
 -define(GAME_CLASSIC, classic).
 -define(GAME_TYPES, [?GAME_CLASSIC]).
@@ -169,7 +165,7 @@
          timezone :: echessd_lib:administrative_offset() | undefined,
          language :: (LanguageID :: atom() | undefined),
          style :: (StyleID :: atom() | undefined),
-         userinfo :: echessd_user:info() | undefined,
+         userinfo = [] :: echessd_user:info(),
          vars = [] :: [{Key :: any(), Value :: any()}]
         }).
 

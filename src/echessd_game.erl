@@ -12,8 +12,8 @@
     ack/2,
     deny/2,
     ply/3,
-    make_ply/5,
-    possibles/2,
+    move/3,
+    hint/2,
     give_up/2,
     request_draw/2,
     getprops/1,
@@ -21,7 +21,7 @@
     turn_color/1,
     turn_color_by_history/1,
     from_scratch/2,
-    can_move/4,
+    can_move/2,
     transpose/2,
     get_creator/1,
     get_watchers/1,
@@ -208,7 +208,7 @@ ply(ID, User, Ply) ->
                 _GameEndedStatus ->
                     ok = echessd_notify:game_end(ID)
             end,
-            echessd_notify:ply(ID, User, LastPly),
+            echessd_notify:game_move(ID, User, LastPly),
             ok;
         {error, Reason} = Error ->
             echessd_log:err(
@@ -220,24 +220,20 @@ ply(ID, User, Ply) ->
 %% @doc Apply user's ply. The function is called only from
 %% 'echessd_db:gameply/3' fun.
 %% @hidden
--spec make_ply(GameType :: gametype(), Board :: board(),
-               TurnColor :: color(), Ply :: ply(),
-               History :: history()) ->
-                      {ok, NewBoard :: board(),
-                       NewHistory :: history(),
-                       GameStatus :: status()} |
-                      {error, Reason :: any()}.
-make_ply(?GAME_CLASSIC, Board, TurnColor, Ply, History) ->
-    echessd_rules_classic:make_ply(
-      Board, TurnColor, Ply, History).
+-spec move(GameType :: gametype(), History :: history(), Ply :: ply()) ->
+                  {ok, NewBoard :: board(),
+                   NewHistory :: history(),
+                   GameStatus :: status()}.
+move(?GAME_CLASSIC, History, Ply) ->
+    echessd_rules_classic:move(History, Ply).
 
 %% @doc Return a list of all available moves.
 %% The function used only for current move highlighting in
 %% the user interface.
--spec possibles(GameType :: gametype(), History :: history()) ->
-                       Plies :: [ply()].
-possibles(?GAME_CLASSIC, History) ->
-    echessd_rules_classic:possibles(History).
+-spec hint(GameType :: gametype(), History :: history()) ->
+                  Plies :: [ply()].
+hint(?GAME_CLASSIC, History) ->
+    echessd_rules_classic:hint(History).
 
 %% @doc Make user fail the game by giving up.
 -spec give_up(ID :: id(), Username :: echessd_user:name()) ->
@@ -308,17 +304,15 @@ turn_color_by_history(History) ->
 from_scratch(GameType, History) ->
     lists:foldl(
       fun(Ply, {Board, Captures}) ->
-              {NewGame, Capture} =
-                  move_chessman(GameType, Board, Ply),
+              {NewGame, Capture} = move_unsafe(GameType, Board, Ply),
               {NewGame, [Capture | Captures]}
       end, {new(GameType), []}, History).
 
 %% @doc Check if valid turn is present for the color.
--spec can_move(GameType :: gametype(), Board :: board(),
-               Color :: color(), History :: history()) ->
+-spec can_move(GameType :: gametype(), History :: history()) ->
                       boolean().
-can_move(?GAME_CLASSIC, Board, Color, History) ->
-    echessd_rules_classic:can_move(Board, Color, History).
+can_move(?GAME_CLASSIC, History) ->
+    echessd_rules_classic:can_move(History).
 
 %% @doc Turn the board at 180 degrees.
 -spec transpose(GameType :: gametype(), Board :: board()) ->
@@ -393,9 +387,9 @@ new(?GAME_CLASSIC) ->
     echessd_rules_classic:new().
 
 %% @doc Move the chessman regarding the rules of the game.
--spec move_chessman(GameType :: gametype(), Board :: board(),
-                    Ply :: ply()) ->
-                           {NewBoard :: board(),
-                            Capture :: chessman() | ?empty}.
-move_chessman(?GAME_CLASSIC, Board, Ply) ->
-    echessd_rules_classic:move_chessman(Board, Ply).
+-spec move_unsafe(GameType :: gametype(), Board :: board(),
+                  Ply :: ply()) ->
+                         {NewBoard :: board(),
+                          Capture :: chessman() | ?empty}.
+move_unsafe(?GAME_CLASSIC, Board, Ply) ->
+    echessd_rules_classic:move_unsafe(Board, Ply).

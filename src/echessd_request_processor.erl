@@ -97,15 +97,16 @@ handle_post(?SECTION_LOGIN, Query, Session) ->
         true ->
             handle_show(Session, Query);
         _ ->
-            ok = echessd_session:del(Session),
             case echessd_user:auth(Username, Password) of
                 {ok, _UserInfo} ->
-                    SID = echessd_session:mk(Username),
-                    echessd_session:read([{"sid", SID}]),
+                    ok = echessd_session:save(
+                           Session#session{username = Username}),
+                    NewSession = echessd_session:get(Session#session.id),
+                    SID = NewSession#session.id,
                     echessd_log:debug(
                       "session ~9999p created for user ~9999p",
                       [SID, Username]),
-                    StrLangID = atom_to_list(Session#session.language),
+                    StrLangID = atom_to_list(NewSession#session.language),
                     echessd_httpd_lib:add_extra_headers(
                       [{"Set-Cookie", "sid=" ++ SID},
                        {"Set-Cookie", "lang=" ++ StrLangID}]),
@@ -192,10 +193,8 @@ handle_post(?SECTION_SAVEUSER, Query, Session)
          {show_history, ShowHistory},
          {show_comment, ShowComment},
          {show_in_list, ShowInList}],
-    case echessd_user:setprops(
-           Session#session.username, NewUserInfo) of
+    case echessd_user:setprops(Session#session.username, NewUserInfo) of
         ok ->
-            echessd_session:read([{"sid", Session#session.id}]),
             {redirect, "/"};
         {error, Reason} ->
             geterr(Session, txt_err_save_user, Reason)

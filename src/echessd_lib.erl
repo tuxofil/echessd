@@ -9,7 +9,6 @@
 
 -export(
    [ip2str/1,
-    proplist_replace/2,
     timestamp/1,
     timestamp/2,
     random_elem/1,
@@ -45,16 +44,6 @@
 -spec ip2str(inet:ip4_address()) -> nonempty_string().
 ip2str({A, B, C, D}) ->
     io_lib:format("~B.~B.~B.~B", [A, B, C, D]).
-
-%% @doc Replace items in proplist.
--spec proplist_replace(PropList :: [proplists:property()],
-                       NewValues :: [proplists:property()]) ->
-                              NewPropList :: [proplists:property()].
-proplist_replace(PropList, NewValues) ->
-    lists:foldl(
-      fun({Key, _V} = Item, Acc) ->
-              [Item | [I || {K, _} = I <- Acc, K /= Key]]
-      end, PropList, NewValues).
 
 %% @doc Format time as text.
 -spec timestamp(erlang:timestamp()) -> nonempty_string().

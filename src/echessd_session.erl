@@ -46,20 +46,19 @@ new(Username) ->
     }.
 
 %% @doc Fetch session data.
--spec get(SID :: id()) ->
-                 {ok, Session :: #session{}} | undefined.
+-spec get(SID :: id()) -> Session :: #session{}.
 get(SID) ->
     case ets:lookup(?MODULE, SID) of
         [Session] ->
-            {ok, fill_session(Session)};
+            fill_session(Session);
         [] ->
-            undefined
+            new(undefined)
     end.
 
 %% @doc Save the session.
 -spec save(Session :: #session{}) -> ok.
 save(Session) ->
-    true = ets:insert(?MODULE, Session#session{userinfo = undefined}),
+    true = ets:insert(?MODULE, Session#session{userinfo = []}),
     ok.
 
 %% @doc Remove the session (logout user).
@@ -75,13 +74,15 @@ del(Session) when is_record(Session, session) ->
 -spec from_cookies(Cookies :: echessd_httpd:cookies()) ->
                           Session :: #session{}.
 from_cookies(Cookies) ->
-    case echessd_session:get(proplists:get_value("sid", Cookies)) of
-        {ok, Session} ->
+    Session = echessd_session:get(proplists:get_value("sid", Cookies)),
+    case Session#session.username of
+        [_ | _] ->
+            %% authenticated
             Session;
         undefined ->
+            %% Not authenticated. Read settings from the cookies:
             StrLangID = proplists:get_value("lang", Cookies),
             StrStyleID = proplists:get_value("style", Cookies),
-            Session = new(undefined),
             Session#session{
               language = echessd_lang:parse(StrLangID),
               style = echessd_styles:parse(StrStyleID)

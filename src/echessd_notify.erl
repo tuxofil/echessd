@@ -1,29 +1,36 @@
+%%% @doc
+%%% Gameplay notification tools.
+
 %%% @author Aleksey Morarash <aleksey.morarash@gmail.com>
 %%% @since 18 Feb 2012
 %%% @copyright 2012, Aleksey Morarash
-%%% @doc gameplay notifications tools.
 
 -module(echessd_notify).
 
 -export(
-   [ply/3,
-    game_add/1,
+   [game_add/1,
     game_ack/1,
+    game_move/3,
     game_end/1
    ]).
 
 -include("echessd.hrl").
 
 %% ----------------------------------------------------------------------
+%% Type definitions
+%% ----------------------------------------------------------------------
+
+-type message_generator() :: any().
+
+%% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Dispatches notifications about ply of Username in game GameID.
-%% @spec ply(GameID, Username, Ply) -> ok
-%%     GameID = echessd_game:id(),
-%%     Username = echessd_user:name(),
-%%     Ply = echessd_game:ply()
-ply(GameID, Username, Ply) ->
+%% @doc Dispatch notifications for the move.
+-spec game_move(GameID :: echessd_game:id(),
+                Username :: echessd_user:name(),
+                Ply :: echessd_game:ply()) -> ok.
+game_move(GameID, Username, Ply) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Watchers =
         lists:usort(
@@ -53,9 +60,8 @@ ply(GameID, Username, Ply) ->
               end
       end, Watchers -- [Username]).
 
-%% @doc Dispatches notifications about game creation.
-%% @spec game_add(GameID) -> ok
-%%     GameID = echessd_game:id()
+%% @doc Dispatch notifications for a game creation.
+-spec game_add(GameID :: echessd_game:id()) -> ok.
 game_add(GameID) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Creator = echessd_game:get_creator(GameInfo),
@@ -70,9 +76,8 @@ game_add(GameID) ->
                 [Creator, localize_color(Color, Lang)])
       end, Watchers -- [Creator]).
 
-%% @doc Dispatches notifications about game acknowledge.
-%% @spec game_ack(GameID) -> ok
-%%     GameID = echessd_game:id()
+%% @doc Dispatch notifications for a game acknowledge.
+-spec game_ack(GameID :: echessd_game:id()) -> ok.
 game_ack(GameID) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Creator = echessd_game:get_creator(GameInfo),
@@ -90,9 +95,8 @@ game_ack(GameID) ->
                  Opponent, localize_color(OpponentColor, Lang)])
       end, Watchers -- [Opponent]).
 
-%% @doc Dispatches notifications about game end.
-%% @spec game_end(GameID) -> ok
-%%     GameID = echessd_game:id()
+%% @doc Dispatch notifications for the game end.
+-spec game_end(GameID :: echessd_game:id()) -> ok.
 game_end(GameID) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
     Watchers =
@@ -157,17 +161,27 @@ game_end(GameID) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
+%% @doc
+-spec do_notifies(MessageGenerator :: message_generator(),
+                  Usernames :: [echessd_user:name()]) -> ok.
 do_notifies(MessageGenerator, Usernames) ->
     lists:foreach(
       fun(Username) ->
               do_notify(MessageGenerator, Username)
       end, Usernames).
 
+%% @doc
+-spec do_notify(MessageGenerator :: message_generator(),
+                Username :: echessd_user:name()) -> ok.
 do_notify(MessageGenerator, Username) ->
     spawn(
       fun() ->
               do_notify_(MessageGenerator, Username)
       end), ok.
+
+%% @doc
+-spec do_notify_(MessageGenerator :: message_generator(),
+                 Username :: echessd_user:name()) -> ok.
 do_notify_(MessageGenerator, Username) ->
     case fetch_xmpp_requisites() of
         {ok, XmppUser, XmppServer, XmppPassword} ->
@@ -182,12 +196,7 @@ do_notify_(MessageGenerator, Username) ->
                                 [_ | _] = Message ->
                                     do_notify(
                                       JabberID, Message,
-                                      XmppUser, XmppServer, XmppPassword);
-                                Other ->
-                                    echessd_log:err(
-                                      "~w: failed to format notification - "
-                                      "bad string: ~99999p",
-                                      [?MODULE, Other])
+                                      XmppUser, XmppServer, XmppPassword)
                             catch
                                 Type:Reason ->
                                     echessd_log:err(
@@ -206,64 +215,62 @@ do_notify_(MessageGenerator, Username) ->
         _ -> ok
     end.
 
+%% @doc
+-spec do_notify(JID :: nonempty_string(), Message :: nonempty_string(),
+                XmppUser :: nonempty_string(),
+                XmppServer :: nonempty_string(),
+                XmppPassword :: string()) -> ok.
 do_notify(JID, Message, XmppUser, XmppServer, XmppPassword) ->
-    try
-        Cmd =
-            lists:flatten(
-              io_lib:format(
-                "echo \"~s\" | sendxmpp -u \"~s\" -j \"~s\" "
-                "-p \"~s\" \"~s\"",
-                [escape_quotes(Message),
-                 escape_quotes(XmppUser),
-                 escape_quotes(XmppServer),
-                 escape_quotes(XmppPassword),
-                 escape_quotes(JID)])),
-        echessd_log:debug("NOTIFYING: ~s", [Cmd]),
-        Result = os:cmd(Cmd),
-        echessd_log:debug("NOTIFY RESULT: ~s", [Result]),
-        ok
-    catch
-        Type:Reason ->
-            echessd_log:err(
-              "~w: failed to format notify cmd: ~99999p",
-              [?MODULE, {Type, Reason, erlang:get_stacktrace()}]),
-            ok
-    end.
+    StdoutData =
+        os:cmd(
+          io_lib:format(
+            "echo \"~s\" | sendxmpp -u \"~s\" -j \"~s\" -p \"~s\" \"~s\"",
+            [escape_quotes(Message),
+             escape_quotes(XmppUser),
+             escape_quotes(XmppServer),
+             escape_quotes(XmppPassword),
+             escape_quotes(JID)])),
+    echessd_log:debug("NOTIFY RESULT: ~s", [StdoutData]).
 
-escape_quotes([]) -> [];
-escape_quotes([C | Tail]) ->
-    case lists:member(C, "\"$`!") of
-        true ->
-            [$\\, C | escape_quotes(Tail)];
-        _ ->
-            [C | escape_quotes(Tail)]
-    end.
+%% @doc
+-spec escape_quotes(String :: string()) -> Escaped :: string().
+escape_quotes(String) ->
+    lists:flatmap(
+      fun(Char) ->
+              case lists:member(Char, [$", $$, $`, $!]) of
+                  true ->
+                      [$\\, Char];
+                  false ->
+                      [Char]
+              end
+      end, String).
 
-gettext(StrID, Lang) -> echessd_lib:gettext(StrID, Lang).
+%% @doc
+-spec gettext(TextID :: atom(), LangID :: atom()) -> string().
+gettext(TextID, LangID) ->
+    echessd_lang:gettext(TextID, LangID).
 
-localize_color(?white, Lang) ->
-    gettext(txt_notif_color_white, Lang);
-localize_color(?black, Lang) ->
-    gettext(txt_notif_color_black, Lang);
-localize_color(_, _) -> "".
+%% @doc
+-spec localize_color(Color :: echessd_game:color(), LangID :: atom()) ->
+                            string().
+localize_color(?white, LangID) ->
+    gettext(txt_notif_color_white, LangID);
+localize_color(?black, LangID) ->
+    gettext(txt_notif_color_black, LangID).
 
-%% @doc Fetches XMPP account requisites, if permitted.
-%% @spec fetch_xmpp_requisites() ->
-%%         {ok, XmppUser, XmppServer, XmppPassword} | undefined
-%%     XmppUser = string(),
-%%     XmppServer = string(),
-%%     XmppPassword = string()
+%% @doc Fetch XMPP account requisites, if permitted.
+-spec fetch_xmpp_requisites() -> {ok,
+                                  XmppUser :: nonempty_string(),
+                                  XmppServer :: nonempty_string(),
+                                  XmppPassword :: string()} |
+                                 undefined.
 fetch_xmpp_requisites() ->
-    case echessd_cfg:get(?CFG_XMPP_ENABLED) of
-        true ->
-            XmppUser = echessd_cfg:get(?CFG_XMPP_USER),
-            XmppServer = echessd_cfg:get(?CFG_XMPP_SERVER),
-            case {XmppUser, XmppServer} of
-                {[_ | _], [_ | _]} ->
-                    XmppPassword = echessd_cfg:get(?CFG_XMPP_PASSWORD),
-                    {ok, XmppUser, XmppServer, XmppPassword};
-                _ -> undefined
-            end;
-        _ -> undefined
+    case {echessd_cfg:get(?CFG_XMPP_ENABLED),
+          echessd_cfg:get(?CFG_XMPP_USER),
+          echessd_cfg:get(?CFG_XMPP_SERVER),
+          echessd_cfg:get(?CFG_XMPP_PASSWORD)} of
+        {true, [_ | _] = User, [_ | _] = Server, Password} ->
+            {ok, User, Server, Password};
+        _ ->
+            undefined
     end.
-

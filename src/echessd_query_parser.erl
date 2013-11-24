@@ -20,14 +20,15 @@
    [http_query/0,
     http_query_item/0,
     http_query_key/0,
-    section/0
+    section/0,
+    step/0
    ]).
 
 -type http_query() :: [http_query_item()].
 
 -type http_query_item() ::
         {?Q_GOTO, section()} |
-        {?Q_STEP, non_neg_integer() | last} |
+        {?Q_STEP, step()} |
         {?Q_GAME, pos_integer()} |
         {?Q_NAME, nonempty_string()} |
         {?Q_MOVE, nonempty_string()} |
@@ -74,6 +75,8 @@
         ?SECTION_SAVEUSER | ?SECTION_PASSWD_FORM | ?SECTION_PASSWD |
         ?SECTION_DRAW_CONFIRM | ?SECTION_DRAW | ?SECTION_GIVEUP_CONFIRM |
         ?SECTION_GIVEUP.
+
+-type step() :: non_neg_integer() | last.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -125,7 +128,7 @@ encode(?Q_EDIT_TIMEZONE, Offset) ->
 encode(_QueryKey, QueryValue) when is_list(QueryValue) ->
     QueryValue;
 encode(_QueryKey, QueryValue) ->
-    io_lib:format("~w", QueryValue).
+    io_lib:format("~w", [QueryValue]).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
