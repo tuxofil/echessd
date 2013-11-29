@@ -18,6 +18,8 @@
 
 -include("echessd.hrl").
 
+-define(null, '*null').
+
 %% ----------------------------------------------------------------------
 %% Type definitions
 %% ----------------------------------------------------------------------
@@ -68,9 +70,9 @@ new() ->
                    GameStatus :: echessd_game:final_status()}.
 move(History, {PlyCoords, PlyInfo} = Ply) ->
     {Board, Color} = restore_board_and_next_color(History),
-    {SrcIndex, DstIndex, PlyCoordsTail} = ply_dec(Ply),
-    {Color, _ChessmanType} = Chessman = getcell(Board, SrcIndex),
-    case getcell(Board, DstIndex) of
+    {SrcCoord, DstCoord, PlyCoordsTail} = ply_dec(Ply),
+    {Color, _ChessmanType} = Chessman = getcell(Board, SrcCoord),
+    case getcell(Board, DstCoord) of
         {Color, _} ->
             throw(friendly_fire);
         {_, ?king} ->
@@ -78,9 +80,9 @@ move(History, {PlyCoords, PlyInfo} = Ply) ->
         _ -> ok
     end,
     true = lists:member(
-             DstIndex, hint_for_cell_unsafe(Board, SrcIndex, History)),
+             DstCoord, hint_for_cell_unsafe(Board, SrcCoord, History)),
     {ok, NewBoard, Capture} =
-        move_safe(Board, SrcIndex, DstIndex, PlyCoordsTail, History),
+        move_safe(Board, SrcCoord, DstCoord, PlyCoordsTail, History),
     NewHistory = History ++ [Ply],
     Status = status(NewBoard, not_color(Color), NewHistory),
     Notation =
@@ -161,15 +163,15 @@ transpose(Board) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc
+%% @doc Just change chessman locations on the chess board.
 -spec move_chessman(Board :: board(),
-                    SrcIndex :: coord(), DstIndex :: coord(),
+                    SrcCoord :: coord(), DstCoord :: coord(),
                     SrcEntry :: echessd_game:entry(),
                     DstEntry :: echessd_game:entry()) ->
                            {NewBoard :: board(),
                             Capture :: echessd_game:entry()}.
-move_chessman(Board, SrcIndex, DstIndex, SrcEntry, DstEntry) ->
-    {setcell(setcell(Board, SrcIndex, ?empty), DstIndex, SrcEntry),
+move_chessman(Board, SrcCoord, DstCoord, SrcEntry, DstEntry) ->
+    {setcell(setcell(Board, SrcCoord, ?empty), DstCoord, SrcEntry),
      DstEntry}.
 
 %% @doc Return game status.
@@ -181,8 +183,8 @@ status(Board, Color, History) ->
         true ->
             alive;
         false ->
-            KingIndex = whereis_the_king(History, Color),
-            case is_cell_attacked(Board, KingIndex, not_color(Color)) of
+            KingCoord = whereis_the_king(History, Color),
+            case is_cell_attacked(Board, KingCoord, not_color(Color)) of
                 false ->
                     draw_stalemate;
                 _ ->
@@ -190,7 +192,8 @@ status(Board, Color, History) ->
             end
     end.
 
-%% @doc
+%% @doc Return chess board with chessmans in their current positions and the
+%% color of the next move.
 -spec restore_board_and_next_color(History :: echessd_game:history()) ->
                                           {Board :: board(),
                                            Color :: echessd_game:color()}.
@@ -202,16 +205,16 @@ restore_board_and_next_color(History) ->
      next_color(History)}.
 
 %% @doc Helper for the move_unsafe/2 fun.
--spec move_unsafe(Board :: board(), SrcIndex :: coord(),
-                  DstIndex :: coord(), Tail :: string()) ->
+-spec move_unsafe(Board :: board(), SrcCoord :: coord(),
+                  DstCoord :: coord(), Tail :: string()) ->
                          {NewBoard :: board(),
                           Capture :: echessd_game:entry()}.
 move_unsafe(Board, I1, I2, Tail) ->
     {MyColor, _SrcChessmanType} = F1 = getcell(Board, I1),
     F2 = getcell(Board, I2),
     case is_en_passant_simple(Board, I1, I2, F1, F2) of
-        {ok, EnemyPawnIndex, EnemyPawn} ->
-            Board2 = setcell(Board, EnemyPawnIndex, ?empty),
+        {ok, EnemyPawnCoord, EnemyPawn} ->
+            Board2 = setcell(Board, EnemyPawnCoord, ?empty),
             {Board3, ?empty} = move_chessman(Board2, I1, I2, F1, F2),
             {Board3, EnemyPawn};
         _ ->
@@ -231,25 +234,27 @@ move_unsafe(Board, I1, I2, Tail) ->
             end
     end.
 
-%% @doc
--spec is_valid(Board :: board(), SrcIndex :: coord(),
-               DstIndex :: coord(), History :: echessd_game:history()) ->
+%% @doc Check if the ply is correct or not (according to *ALL*
+%% chess rules).
+-spec is_valid(Board :: board(), SrcCoord :: coord(),
+               DstCoord :: coord(), History :: echessd_game:history()) ->
                       boolean().
-is_valid(Board, SrcIndex, DstIndex, History) ->
+is_valid(Board, SrcCoord, DstCoord, History) ->
     try
         {ok, _NewBoard, _Capture} =
-            move_safe(Board, SrcIndex, DstIndex, [], History),
+            move_safe(Board, SrcCoord, DstCoord, [], History),
         true
-    catch _:_ ->
+    catch
+        _:_ ->
             false
     end.
 
-%% @doc
+%% @doc Return a list of all valid chess board cell coordinates.
 -spec all_cells() -> [coord()].
 all_cells() ->
     [{C, R} || C <- lists:seq(1, 8), R <- lists:seq(1, 8)].
 
-%% @doc
+%% @doc Return a color for the next move.
 -spec next_color(History :: echessd_game:history()) ->
                         echessd_game:color().
 next_color(History) when length(History) rem 2 == 0 ->
@@ -257,26 +262,25 @@ next_color(History) when length(History) rem 2 == 0 ->
 next_color(_) ->
     ?black.
 
--define(null, '*null').
-
-%% @doc
--spec move_safe(Board :: board(), SrcIndex :: coord(), DstIndex :: coord(),
+%% @doc Make the next ply according to *ALL* chess rules.
+-spec move_safe(Board :: board(), SrcCoord :: coord(), DstCoord :: coord(),
                 Tail :: string(), History :: echessd_game:history()) ->
                        {ok, NewBoard :: board(),
                         Capture :: echessd_game:entry()}.
-move_safe(Board, I1, I2, Tail, History) ->
-    {Color, ChessmanType} = getcell(Board, I1),
-    {NewBoard, Capture} = move_unsafe(Board, I1, I2, Tail),
-    KingIndex =
+move_safe(Board, SrcCoord, DstCoord, Tail, History) ->
+    {Color, ChessmanType} = getcell(Board, SrcCoord),
+    {NewBoard, Capture} = move_unsafe(Board, SrcCoord, DstCoord, Tail),
+    KingCoord =
         if ChessmanType == ?king ->
-                I2;
+                DstCoord;
            true ->
                 whereis_the_king(History, Color)
         end,
-    false = is_cell_attacked(NewBoard, KingIndex, not_color(Color)),
+    false = is_cell_attacked(NewBoard, KingCoord, not_color(Color)),
     {ok, NewBoard, Capture}.
 
 %% @doc Return a list of possible moves from the cell.
+%% The result is not been checked to avoid new or existing checks.
 -spec hint_for_cell_unsafe(Board :: board(), CellCoord :: coord(),
                            History :: echessd_game:history()) ->
                                   [coord()].
@@ -294,7 +298,7 @@ hint_for_cell_unsafe(Board, CellCoord, History) ->
 
 %% @doc
 -spec hint_for_chessman_type(
-        Board :: board(), Index :: coord(),
+        Board :: board(), Coord :: coord(),
         Color :: echessd_game:color(),
         ChessmanType :: echessd_game:chessman_type(),
         History :: echessd_game:history()) ->
@@ -314,8 +318,8 @@ hint_for_chessman_type(B, I, C, ?pawn, History) ->
     case getcell(B, F1) of
         ?empty ->
             [F1] ++
-                case ind_row(I) of
-                    StartRow ->
+                case I of
+                    {_, StartRow} ->
                         case getcell(B, F2) of
                             ?empty -> [F2];
                             _ -> []
@@ -480,7 +484,7 @@ is_have_been_moved(History, Coord) ->
       end, History).
 
 %% @doc
--spec is_castling(SrcIndex :: coord(), DstIndex :: coord(),
+-spec is_castling(SrcCoord :: coord(), DstCoord :: coord(),
                   SrcChessman :: echessd_game:chessman(),
                   DstChessman :: echessd_game:entry()) ->
                          {ok, RookPlyCoords :: echessd_game:ply_coords()} |
@@ -505,7 +509,7 @@ is_castling(_, _, _, _) ->
 %% ----------------------------------------------------------------------
 %% chess notation
 
-%% @doc
+%% @doc Generate chess notation string for the ply.
 -spec notation(Chessman :: echessd_game:chessman(),
                Ply :: echessd_game:ply(),
                Capture :: echessd_game:entry(), NewBoard :: board(),
@@ -513,7 +517,7 @@ is_castling(_, _, _, _) ->
                History :: echessd_game:history()) ->
                       ChessNotation :: nonempty_string().
 notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
-    {SrcIndex, DstIndex, _Tail} = ply_dec(Ply),
+    {SrcCoord, DstCoord, _Tail} = ply_dec(Ply),
     {Color, ChessmanType} = Chessman,
     {PlyCoords, _PlyInfo} = Ply,
     lists:flatten(
@@ -523,11 +527,11 @@ notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
            {?bking, "e8g8" ++ _} -> "0-0";
            {?bking, "e8c8" ++ _} -> "0-0-0";
            _ ->
-               {_, NewChessmanType} = getcell(NewBoard, DstIndex),
+               {_, NewChessmanType} = getcell(NewBoard, DstCoord),
                [chessman_type_to_notation(ChessmanType),
-                ind_enc(SrcIndex),
+                ind_enc(SrcCoord),
                 if_then_else(Capture == ?empty, "-", "x"),
-                ind_enc(DstIndex),
+                ind_enc(DstCoord),
                 if ChessmanType == ?pawn andalso
                    NewChessmanType /= ?pawn ->
                         chessman_type_to_notation(NewChessmanType);
@@ -537,9 +541,9 @@ notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
        case GameStatus of
            alive ->
                EnemyColor = not_color(Color),
-               EnemyKingIndex = whereis_the_king(History, EnemyColor),
+               EnemyKingCoord = whereis_the_king(History, EnemyColor),
                case cell_attackers_count(
-                      NewBoard, EnemyKingIndex, EnemyColor) of
+                      NewBoard, EnemyKingCoord, EnemyColor) of
                    0 -> "";
                    1 -> "+";
                    2 -> "++"
@@ -550,7 +554,7 @@ notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
                "="
        end]).
 
-%% @doc
+%% @doc Encode the chessman type to a string used by chess notation.
 -spec chessman_type_to_notation(echessd_game:chessman_type()) ->
                                        string().
 chessman_type_to_notation(?king) ->
@@ -586,19 +590,19 @@ is_en_passant(_, _) ->
 
 %% @doc
 -spec is_en_passant_simple(Board :: board(),
-                           Index1 :: coord(), Index2 :: coord(),
+                           SrcCoord :: coord(), DstCoord :: coord(),
                            SrcChessman :: echessd_game:entry(),
                            DstChessman :: echessd_game:entry()) ->
-                                  {ok, EnemyPawnIndex :: coord(),
+                                  {ok, EnemyPawnCoord :: coord(),
                                    EnemyPawn :: echessd_game:chessman()} |
                                   false.
 is_en_passant_simple(Board, {IC1, IR1}, {IC2, _IR2},
                      {C, ?pawn}, ?empty) when abs(IC2 - IC1) == 1 ->
-    EnemyPawnIndex = {IC2, IR1},
+    EnemyPawnCoord = {IC2, IR1},
     EnemyPawn = {not_color(C), ?pawn},
-    case getcell(Board, EnemyPawnIndex) == EnemyPawn of
+    case getcell(Board, EnemyPawnCoord) == EnemyPawn of
         true ->
-            {ok, EnemyPawnIndex, EnemyPawn};
+            {ok, EnemyPawnCoord, EnemyPawn};
         false ->
             false
     end;
@@ -609,19 +613,20 @@ is_en_passant_simple(_, _, _, _, _) ->
 %% low level tools
 %% ----------------------------------------------------------------------
 
-%% @doc
--spec is_promotion(SrcIndex :: coord(), Chessman :: echessd_game:entry(),
+%% @doc Check if the chessman must be promoted or not.
+-spec is_promotion(Coord :: coord(), Chessman :: echessd_game:entry(),
                    PlyCoordsTail :: string()) ->
-                          {ok, ChessmanType :: echessd_game:chessman_type()} |
+                          {ok, NewChessmanType :: echessd_game:chessman_type()} |
                           false.
-is_promotion({_IC2, 1 = _IR2} = _I2, ?bpawn = _SrcChm, PlyCoordsTail) ->
+is_promotion({_IC2, 1 = _IR2} = _I2, ?bpawn, PlyCoordsTail) ->
     {ok, promotion_dec(PlyCoordsTail)};
-is_promotion({_IC2, 8 = _IR2} = _I2, ?wpawn = _SrcChm, PlyCoordsTail) ->
+is_promotion({_IC2, 8 = _IR2} = _I2, ?wpawn, PlyCoordsTail) ->
     {ok, promotion_dec(PlyCoordsTail)};
 is_promotion(_, _, _) ->
     false.
 
-%% @doc
+%% @doc Return the coordinates if the cell is empty or settled by
+%% the enemy. In other cases return ?null.
 -spec is_empty_or_enemy(Board :: board(), MyColor :: echessd_game:color(),
                         Coord :: coord()) ->
                                (Coord :: coord()) | ?null.
@@ -629,138 +634,140 @@ is_empty_or_enemy(Board, MyColor, Coord) ->
     case getcell(Board, Coord) of
         ?empty ->
             Coord;
-        {Color, _} when Color /= MyColor ->
+        {EnemyColor, _} when EnemyColor /= MyColor ->
             Coord;
         _ ->
             ?null
     end.
 
-%% @doc
+%% @doc Search free cells in the given direction until enemy chessman
+%% or board end found. When the enemy chessman found the enemy
+%% coordinates will also be returned.
 -spec free_cells_until_enemy(Board :: board(),
                              MyColor :: echessd_game:color(),
                              Start :: coord(),
-                             Step :: step()) ->
+                             Direction :: step()) ->
                                     [FreeCell :: coord()].
-free_cells_until_enemy(Board, MyColor, Start, Step) ->
-    case ind_inc(Start, Step) of
+free_cells_until_enemy(Board, MyColor, Start, Direction) ->
+    case getcell(Board, NextCoord = ind_inc(Start, Direction)) of
         ?null ->
             [];
-        Crd ->
-            case getcell(Board, Crd) of
-                ?empty ->
-                    [Crd |
-                     free_cells_until_enemy(
-                       Board, MyColor, Crd, Step)];
-                {MyColor, _} ->
-                    [];
-                _ ->
-                    [Crd]
-            end
+        ?empty ->
+            [NextCoord |
+             free_cells_until_enemy(Board, MyColor, NextCoord, Direction)];
+        {MyColor, _} ->
+            [];
+        _ ->
+            [NextCoord]
     end.
 
-%% @doc
+%% @doc Check if the cell is attacked by the enemy or not.
 -spec is_cell_attacked(Board :: board(), CellCoord :: coord(),
                        EnemyColor :: echessd_game:color()) ->
                               boolean().
 is_cell_attacked(Board, CellCoord, EnemyColor) ->
-    cell_attackers_count(Board, CellCoord, not_color(EnemyColor)) > 0.
+    cell_attackers_count(Board, CellCoord, EnemyColor) > 0.
 
-%% @doc
--spec cell_attackers_count(Board :: board(), Index :: coord(),
-                           MyColor :: echessd_game:color()) -> 0..2.
-cell_attackers_count(Board, Index, Color) ->
-    EnemyColor = not_color(Color),
-    AttackingKnights = attacking_knights(Board, Index, EnemyColor),
+%% @doc Return the number of enemy chessmans attacking the board cell.
+%% The maximum value which can be returned is 2 for optimization
+%% reasons.
+-spec cell_attackers_count(Board :: board(), Coord :: coord(),
+                           EnemyColor :: echessd_game:color()) -> 0..2.
+cell_attackers_count(Board, Coord, EnemyColor) ->
+    AttackingKnights = attacking_knights(Board, Coord, EnemyColor),
     SearchDirections =
         [{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
          {0, 1}, {1, -1}, {1, 0}, {1, 1}],
     cell_attackers_loop(
-      Board, Index, EnemyColor, SearchDirections, AttackingKnights).
+      Board, Coord, EnemyColor, SearchDirections, AttackingKnights).
 
-%% @doc
--spec cell_attackers_loop(Board :: board(), Index :: coord(),
+%% @doc Helper for the cell_attackers_count/3 fun.
+-spec cell_attackers_loop(Board :: board(), Coord :: coord(),
                           EnemyColor :: echessd_game:color(),
                           SearchDirections :: [step()],
                           Found :: non_neg_integer()) ->
                                  0..2.
-cell_attackers_loop(_Board, _Index, _EnemyColor, _SearchDirections, Found)
+cell_attackers_loop(_Board, _Coord, _EnemyColor, _SearchDirections, Found)
   when Found >= 2 ->
     2;
-cell_attackers_loop(_Board, _Index, _EnemyColor, [], Found) ->
+cell_attackers_loop(_Board, _Coord, _EnemyColor, [], Found) ->
     Found;
-cell_attackers_loop(Board, Index, EnemyColor, [SearchDirection | Tail],
+cell_attackers_loop(Board, Coord, EnemyColor, [SearchDirection | Tail],
                     Found) ->
     {DC, DR} = SearchDirection,
-    case find_enemy(Board, Index, SearchDirection, EnemyColor) of
+    case find_enemy(Board, Coord, SearchDirection, EnemyColor) of
         {?pawn, 1} when EnemyColor == ?black, abs(DC) == 1, DR == 1 ->
-            cell_attackers_loop(Board, Index, EnemyColor, Tail, Found + 1);
+            cell_attackers_loop(Board, Coord, EnemyColor, Tail, Found + 1);
         {?pawn, 1} when EnemyColor == ?white, abs(DC) == 1, DR == -1 ->
-            cell_attackers_loop(Board, Index, EnemyColor, Tail, Found + 1);
+            cell_attackers_loop(Board, Coord, EnemyColor, Tail, Found + 1);
         {?king, 1} ->
-            cell_attackers_loop(Board, Index, EnemyColor, Tail, Found + 1);
+            cell_attackers_loop(Board, Coord, EnemyColor, Tail, Found + 1);
         {?queen, _} ->
-            cell_attackers_loop(Board, Index, EnemyColor, Tail, Found + 1);
+            cell_attackers_loop(Board, Coord, EnemyColor, Tail, Found + 1);
         {?bishop, _} when abs(DC) == abs(DR) ->
-            cell_attackers_loop(Board, Index, EnemyColor, Tail, Found + 1);
+            cell_attackers_loop(Board, Coord, EnemyColor, Tail, Found + 1);
         {?rook, _} when abs(DC) /= abs(DR) ->
-            cell_attackers_loop(Board, Index, EnemyColor, Tail, Found + 1);
+            cell_attackers_loop(Board, Coord, EnemyColor, Tail, Found + 1);
         _ ->
-            cell_attackers_loop(Board, Index, EnemyColor, Tail, Found)
+            cell_attackers_loop(Board, Coord, EnemyColor, Tail, Found)
     end.
 
-%% @doc
--spec attacking_knights(Board :: board(), Index :: coord(),
+%% @doc Return the number of enemy knights attacking the board cell.
+%% The maximum value which can be returned is 2 for optimization
+%% reasons.
+-spec attacking_knights(Board :: board(), Coord :: coord(),
                         EnemyColor :: echessd_game:color()) -> 0..2.
-attacking_knights(Board, Index, EnemyColor) ->
+attacking_knights(Board, Coord, EnemyColor) ->
     attacking_knights_loop(
-      Board, Index, knight_steps(), EnemyColor, _Found = 0).
+      Board, Coord, knight_steps(), EnemyColor, _Found = 0).
 
-%% @doc
+%% @doc Return a list of available Knight moves.
 -spec knight_steps() -> [step()].
 knight_steps() ->
     [{1, 2}, {-1, 2}, {1, -2}, {-1, -2},
      {2, 1}, {-2, 1}, {2, -1}, {-2, -1}].
 
-%% @doc
--spec attacking_knights_loop(Board :: board(), Index :: coord(),
+%% @doc Helper for the attacking_knights/3 fun.
+-spec attacking_knights_loop(Board :: board(), Coord :: coord(),
                              KnightSteps :: [step()],
                              EnemyColor :: echessd_game:color(),
                              Found :: 0..2) -> 0..2.
-attacking_knights_loop(_Board, _Index, [], _EnemyColor, Found) ->
+attacking_knights_loop(_Board, _Coord, [], _EnemyColor, Found) ->
     Found;
-attacking_knights_loop(Board, Index, [Step | Tail], EnemyColor, Found) ->
-    case getcell(Board, ind_inc(Index, Step)) of
+attacking_knights_loop(Board, Coord, [Step | Tail], EnemyColor, Found) ->
+    case getcell(Board, ind_inc(Coord, Step)) of
         {EnemyColor, ?knight} when Found >= 1 ->
             2;
         {EnemyColor, ?knight} ->
-            attacking_knights_loop(Board, Index, Tail, EnemyColor, Found + 1);
+            attacking_knights_loop(Board, Coord, Tail, EnemyColor, Found + 1);
         _ ->
-            attacking_knights_loop(Board, Index, Tail, EnemyColor, Found)
+            attacking_knights_loop(Board, Coord, Tail, EnemyColor, Found)
     end.
 
-%% @doc
--spec find_enemy(Board :: board(), Index :: coord(), Step :: step(),
+%% @doc Search the enemy chessman starting from the coordinates
+%% with the direction.
+-spec find_enemy(Board :: board(), Coord :: coord(), Step :: step(),
                  EnemyColor :: echessd_game:color()) ->
                         {EnemyChessmanType :: echessd_game:chessman_type(),
                          Distance :: pos_integer()} |
                         undefined.
-find_enemy(Board, I, Step, EnemyColor) ->
-    find_enemy(Board, I, Step, EnemyColor, _Distance = 1).
+find_enemy(Board, Coord, Step, EnemyColor) ->
+    find_enemy(Board, Coord, Step, EnemyColor, _Distance = 1).
 
-%% @doc
--spec find_enemy(Board :: board(), Index :: coord(), Direction :: step(),
+%% @doc Helper for the find_enemy/4 fun.
+-spec find_enemy(Board :: board(), Coord :: coord(), Direction :: step(),
                  EnemyColor :: echessd_game:color(),
                  Distance :: pos_integer()) ->
                         {EnemyChessmanType :: echessd_game:chessman_type(),
                          Distance :: pos_integer()} |
                         undefined.
-find_enemy(Board, Index, Direction, EnemyColor, Distance) ->
-    Index2 = ind_inc(Index, Direction),
-    case getcell(Board, Index2) of
+find_enemy(Board, Coord, Direction, EnemyColor, Distance) ->
+    NextCoord = ind_inc(Coord, Direction),
+    case getcell(Board, NextCoord) of
         {EnemyColor, ChessmanType} ->
             {ChessmanType, Distance};
         ?empty ->
-            find_enemy(Board, Index2, Direction, EnemyColor, Distance + 1);
+            find_enemy(Board, NextCoord, Direction, EnemyColor, Distance + 1);
         _ ->
             %% board end reached or
             %% friendly chessman found
@@ -774,7 +781,7 @@ find_enemy(Board, Index, Direction, EnemyColor, Distance) ->
 whereis_the_king(History, Color) ->
     whereis_the_king_(History, king_start_coord(Color)).
 
-%% @doc
+%% @doc Helper for the whereis_the_king/2 fun.
 -spec whereis_the_king_(History :: echessd_game:history(),
                         KingCoord :: coord()) ->
                                FinalKingCoord :: coord().
@@ -784,11 +791,11 @@ whereis_the_king_([Ply | Tail], Coord) ->
     case ply_dec(Ply) of
         {Coord, NewCoord, _Tail} ->
             whereis_the_king_(Tail, NewCoord);
-        {_SrcIndex, _DstIndex, _Tail} ->
+        {_SrcCoord, _DstCoord, _Tail} ->
             whereis_the_king_(Tail, Coord)
     end.
 
-%% @doc
+%% @doc Return the contents of the board cell.
 -spec getcell(Board :: board(), Coord :: coord()) ->
                   (Entry :: echessd_game:entry()) | ?null.
 getcell(Board, {C, R})
@@ -798,7 +805,8 @@ getcell(Board, {C, R})
 getcell(_, _) ->
     ?null.
 
-%% @doc
+%% @doc Settle the board cell with the chessman (or clear the
+%% board cell if NewEntry is set to ?empty).
 -spec setcell(Board :: board(), Coord :: coord(),
               NewEntry :: echessd_game:entry()) ->
                      NewBoard :: board().
@@ -807,20 +815,23 @@ setcell(Board, {C, R}, NewEntry) ->
     NewRow = setelement(C, Row, NewEntry),
     setelement(9 - R, Board, NewRow).
 
-%% @doc
+%% @doc Decode ply structure to the numeric coordinates of
+%% the start cell, the destination cell and extra string which
+%% will be used on pawn promotion.
 -spec ply_dec(Ply :: echessd_game:ply()) ->
-                     {SrcIndex :: coord(), DstIndex :: coord(),
+                     {SrcCoord :: coord(), DstCoord :: coord(),
                       PlyCoordsTail :: string()}.
 ply_dec({[A, B, C, D | PlyCoordsTail], _PlyInfo})
   when is_integer(A), is_integer(B), is_integer(C), is_integer(D) ->
     {{_, _} = ind_dec(A, B), {_, _} = ind_dec(C, D), PlyCoordsTail}.
 
-%% @doc
+%% @doc Decode human readable cell coordinates to numeric,
+%% e.g. "a1" -> {1,1}; "h8" -> {8,8}.
 -spec ind_dec(HalfPly :: nonempty_string()) -> Coord :: coord().
 ind_dec([C, R]) ->
     ind_dec(C, R).
 
-%% @doc
+%% @doc Helper for the ind_dec/1 fun.
 -spec ind_dec(BoardLetter :: 97..104, %% $a..$h
               BoardNumber :: 49..56   %% $1..$8
                              ) -> (Coord :: coord()) | ?null.
@@ -833,12 +844,15 @@ ind_dec(C, R) ->
             ?null
     end.
 
-%% @doc
+%% @doc Encode the cell coordinates to human-readable form,
+%% e.g. {1,1} -> "a1"; {8,8} -> "h8"
 -spec ind_enc(Coord :: coord()) -> HalfPly :: nonempty_string().
 ind_enc({C, R}) ->
     [$a + C - 1, $1 + R - 1].
 
-%% @doc
+%% @doc Increment the cell coordinates with the step.
+%% The function return new coordinates or ?null if result
+%% is out of valid coordinates range (out of the chess board).
 -spec ind_inc(Coord :: coord(), Step :: step()) ->
                      (NewCoord :: coord()) | ?null.
 ind_inc({C, R}, {CS, RS}) ->
@@ -850,12 +864,8 @@ ind_inc({C, R}, {CS, RS}) ->
             ?null
     end.
 
-%% @doc
--spec ind_row(Coord :: coord()) -> RowIndex :: 1..8.
-ind_row({_, R}) ->
-    R.
-
-%% @doc
+%% @doc Check if the numeric coordinates is valid chess
+%% board coordinates or not.
 -spec ind_ok(coord() | any()) -> boolean().
 ind_ok({C, R})
   when C >= 1 andalso C =< 8 andalso
@@ -864,13 +874,14 @@ ind_ok({C, R})
 ind_ok(_) ->
     false.
 
-%% @doc
+%% @doc Invert the player color.
 -spec not_color(MyColor :: echessd_game:color()) ->
                        OpponentColor :: echessd_game:color().
 not_color(MyColor) ->
     hd([?white, ?black] -- [MyColor]).
 
-%% @doc
+%% @doc Decode extra string from the ply structure to
+%% chessman type. The function used on a pawn promotion.
 -spec promotion_dec(PlyTail :: string()) -> promotion_chessman_type().
 promotion_dec([$r | _]) -> ?rook;
 promotion_dec([$k | _]) -> ?knight;
@@ -880,7 +891,7 @@ promotion_dec([$b | _]) -> ?bishop;
 promotion_dec([$q | _]) -> ?queen;
 promotion_dec([]) -> ?queen.
 
-%% @doc
+%% @doc Syntax sugar like (expr)?true:false.
 -spec if_then_else(Expression :: boolean(),
                    OnTrue :: any(), OnFalse :: any()) -> any().
 if_then_else(true, OnTrue, _OnFalse) ->
