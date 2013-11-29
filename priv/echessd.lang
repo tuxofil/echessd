@@ -301,11 +301,6 @@
   {ru, "Вы не можете так походить. "},
   {ua, "Ви не можете так ходити. "}]}.
 
-{text, txt_king_in_check,
- [{en, "Your King is in check!"},
-  {ru, "Шах королю!"},
-  {ua, "Шах королю!"}]}.
-
 {text, txt_move_caption,
  [{en, "Move"},
   {ru, "Ход"},

@@ -22,23 +22,24 @@
 %% Type definitions
 %% ----------------------------------------------------------------------
 
--type entry() :: echessd_game:chessman() | ?empty.
-
 -type board() ::
-        {{entry(),entry(),entry(),entry(),entry(),entry(),entry(),entry()},
-         {entry(),entry(),entry(),entry(),entry(),entry(),entry(),entry()},
-         {entry(),entry(),entry(),entry(),entry(),entry(),entry(),entry()},
-         {entry(),entry(),entry(),entry(),entry(),entry(),entry(),entry()},
-         {entry(),entry(),entry(),entry(),entry(),entry(),entry(),entry()},
-         {entry(),entry(),entry(),entry(),entry(),entry(),entry(),entry()},
-         {entry(),entry(),entry(),entry(),entry(),entry(),entry(),entry()},
-         {entry(),entry(),entry(),entry(),entry(),entry(),entry(),entry()}}.
+        {board_row(), board_row(), board_row(), board_row(),
+         board_row(), board_row(), board_row(), board_row()}.
+
+-type board_row() ::
+        {echessd_game:entry(), echessd_game:entry(),
+         echessd_game:entry(), echessd_game:entry(),
+         echessd_game:entry(), echessd_game:entry(),
+         echessd_game:entry(), echessd_game:entry()}.
 
 -type coord() ::
         {Column :: 1..8, Row :: 1..8}.
 
 -type step() ::
         {ColumnDelta :: -2..2, RowDelta :: -2..2}.
+
+-type promotion_chessman_type() ::
+        ?rook | ?knight | ?bishop | ?queen.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -64,7 +65,7 @@ new() ->
 -spec move(History :: echessd_game:history(), Ply :: echessd_game:ply()) ->
                   {ok, NewBoard :: board(),
                    NewHistory :: echessd_game:history(),
-                   GameStatus :: echessd_game:status()}.
+                   GameStatus :: echessd_game:final_status()}.
 move(History, {PlyCoords, PlyInfo} = Ply) ->
     {Board, Color} = restore_board_and_next_color(History),
     {SrcIndex, DstIndex, PlyCoordsTail} = ply_dec(Ply),
@@ -118,7 +119,8 @@ hint(History) ->
 -spec move_unsafe(Board :: board(),
                   Ply :: echessd_game:ply() |
                          echessd_game:ply_coords()) ->
-                         {NewBoard :: board(), Capture :: entry()}.
+                         {NewBoard :: board(),
+                          Capture :: echessd_game:entry()}.
 move_unsafe(Board, Ply) ->
     {I1, I2, Tail} = ply_dec(Ply),
     move_unsafe(Board, I1, I2, Tail).
@@ -162,8 +164,10 @@ transpose(Board) ->
 %% @doc
 -spec move_chessman(Board :: board(),
                     SrcIndex :: coord(), DstIndex :: coord(),
-                    SrcEntry :: entry(), DstEntry :: entry()) ->
-                           {NewBoard :: board(), Capture :: entry()}.
+                    SrcEntry :: echessd_game:entry(),
+                    DstEntry :: echessd_game:entry()) ->
+                           {NewBoard :: board(),
+                            Capture :: echessd_game:entry()}.
 move_chessman(Board, SrcIndex, DstIndex, SrcEntry, DstEntry) ->
     {setcell(setcell(Board, SrcIndex, ?empty), DstIndex, SrcEntry),
      DstEntry}.
@@ -175,12 +179,12 @@ move_chessman(Board, SrcIndex, DstIndex, SrcEntry, DstEntry) ->
 status(Board, Color, History) ->
     case can_move(Board, Color, History) of
         true ->
-            none;
+            alive;
         false ->
             KingIndex = whereis_the_king(History, Color),
             case is_cell_attacked(Board, KingIndex, not_color(Color)) of
                 false ->
-                    {draw, stalemate};
+                    draw_stalemate;
                 _ ->
                     checkmate
             end
@@ -200,7 +204,8 @@ restore_board_and_next_color(History) ->
 %% @doc Helper for the move_unsafe/2 fun.
 -spec move_unsafe(Board :: board(), SrcIndex :: coord(),
                   DstIndex :: coord(), Tail :: string()) ->
-                         {NewBoard :: board(), Capture :: entry()}.
+                         {NewBoard :: board(),
+                          Capture :: echessd_game:entry()}.
 move_unsafe(Board, I1, I2, Tail) ->
     {MyColor, _SrcChessmanType} = F1 = getcell(Board, I1),
     F2 = getcell(Board, I2),
@@ -257,7 +262,8 @@ next_color(_) ->
 %% @doc
 -spec move_safe(Board :: board(), SrcIndex :: coord(), DstIndex :: coord(),
                 Tail :: string(), History :: echessd_game:history()) ->
-                       {ok, NewBoard :: board(), Capture :: entry()}.
+                       {ok, NewBoard :: board(),
+                        Capture :: echessd_game:entry()}.
 move_safe(Board, I1, I2, Tail, History) ->
     {Color, ChessmanType} = getcell(Board, I1),
     {NewBoard, Capture} = move_unsafe(Board, I1, I2, Tail),
@@ -279,19 +285,21 @@ hint_for_cell_unsafe(Board, CellCoord, History) ->
         {Color, ChessmanType} ->
             lists:usort(
               lists:flatten(
-                possible_(Board, CellCoord, Color, ChessmanType, History)))
+                hint_for_chessman_type(
+                  Board, CellCoord, Color, ChessmanType, History)))
                 -- [?null];
         ?empty ->
             []
     end.
 
 %% @doc
--spec possible_(Board :: board(), Index :: coord(),
-                Color :: echessd_game:color(),
-                ChessmanType :: echessd_game:chessman_type(),
-                History :: echessd_game:history()) ->
-                       [coord()].
-possible_(B, I, C, ?pawn, History) ->
+-spec hint_for_chessman_type(
+        Board :: board(), Index :: coord(),
+        Color :: echessd_game:color(),
+        ChessmanType :: echessd_game:chessman_type(),
+        History :: echessd_game:history()) ->
+                                    [coord()].
+hint_for_chessman_type(B, I, C, ?pawn, History) ->
     {StartRow, Direction} =
         if C == ?white -> {2, 1};
            true -> {7, -1}
@@ -344,23 +352,23 @@ possible_(B, I, C, ?pawn, History) ->
                 end;
             _ -> []
         end;
-possible_(B, I, C, ?rook, _History) ->
+hint_for_chessman_type(B, I, C, ?rook, _History) ->
     [free_cells_until_enemy(B, C, I, {0, 1}),
      free_cells_until_enemy(B, C, I, {0, -1}),
      free_cells_until_enemy(B, C, I, {1, 0}),
      free_cells_until_enemy(B, C, I, {-1, 0})];
-possible_(B, I, C, ?bishop, _History) ->
+hint_for_chessman_type(B, I, C, ?bishop, _History) ->
     [free_cells_until_enemy(B, C, I, {-1, -1}),
      free_cells_until_enemy(B, C, I, {1, -1}),
      free_cells_until_enemy(B, C, I, {-1, 1}),
      free_cells_until_enemy(B, C, I, {1, 1})];
-possible_(B, I, C, ?queen, History) ->
-    [possible_(B, I, C, ?bishop, History),
-     possible_(B, I, C, ?rook, History)];
-possible_(B, I, C, ?knight, _History) ->
+hint_for_chessman_type(B, I, C, ?queen, History) ->
+    [hint_for_chessman_type(B, I, C, ?bishop, History),
+     hint_for_chessman_type(B, I, C, ?rook, History)];
+hint_for_chessman_type(B, I, C, ?knight, _History) ->
     [is_empty_or_enemy(B, C, ind_inc(I, Step)) ||
         Step <- knight_steps()];
-possible_(B, I, C, ?king, History) ->
+hint_for_chessman_type(B, I, C, ?king, History) ->
     [is_empty_or_enemy(B, C, ind_inc(I, {-1, -1})),
      is_empty_or_enemy(B, C, ind_inc(I, {-1, 0})),
      is_empty_or_enemy(B, C, ind_inc(I, {-1, 1})),
@@ -474,7 +482,7 @@ is_have_been_moved(History, Coord) ->
 %% @doc
 -spec is_castling(SrcIndex :: coord(), DstIndex :: coord(),
                   SrcChessman :: echessd_game:chessman(),
-                  DstChessman :: entry()) ->
+                  DstChessman :: echessd_game:entry()) ->
                          {ok, RookPlyCoords :: echessd_game:ply_coords()} |
                          false.
 is_castling({IC1, IR}, {IC2, IR}, {C, ?king}, ?empty)
@@ -500,7 +508,7 @@ is_castling(_, _, _, _) ->
 %% @doc
 -spec notation(Chessman :: echessd_game:chessman(),
                Ply :: echessd_game:ply(),
-               Capture :: entry(), NewBoard :: board(),
+               Capture :: echessd_game:entry(), NewBoard :: board(),
                GameStatus :: echessd_game:status(),
                History :: echessd_game:history()) ->
                       ChessNotation :: nonempty_string().
@@ -527,7 +535,7 @@ notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
                 end]
        end,
        case GameStatus of
-           none ->
+           alive ->
                EnemyColor = not_color(Color),
                EnemyKingIndex = whereis_the_king(History, EnemyColor),
                case cell_attackers_count(
@@ -538,7 +546,7 @@ notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
                end;
            checkmate ->
                "#";
-           {draw, stalemate} ->
+           draw_stalemate ->
                "="
        end]).
 
@@ -579,9 +587,11 @@ is_en_passant(_, _) ->
 %% @doc
 -spec is_en_passant_simple(Board :: board(),
                            Index1 :: coord(), Index2 :: coord(),
-                           SrcChessman :: entry(),
-                           DstChessman :: entry()) ->
-                                  boolean().
+                           SrcChessman :: echessd_game:entry(),
+                           DstChessman :: echessd_game:entry()) ->
+                                  {ok, EnemyPawnIndex :: coord(),
+                                   EnemyPawn :: echessd_game:chessman()} |
+                                  false.
 is_en_passant_simple(Board, {IC1, IR1}, {IC2, _IR2},
                      {C, ?pawn}, ?empty) when abs(IC2 - IC1) == 1 ->
     EnemyPawnIndex = {IC2, IR1},
@@ -600,7 +610,7 @@ is_en_passant_simple(_, _, _, _, _) ->
 %% ----------------------------------------------------------------------
 
 %% @doc
--spec is_promotion(SrcIndex :: coord(), Chessman :: entry(),
+-spec is_promotion(SrcIndex :: coord(), Chessman :: echessd_game:entry(),
                    PlyCoordsTail :: string()) ->
                           {ok, ChessmanType :: echessd_game:chessman_type()} |
                           false.
@@ -731,16 +741,18 @@ attacking_knights_loop(Board, Index, [Step | Tail], EnemyColor, Found) ->
 %% @doc
 -spec find_enemy(Board :: board(), Index :: coord(), Step :: step(),
                  EnemyColor :: echessd_game:color()) ->
-                        (EnemyChessman :: echessd_game:chessman()) |
+                        {EnemyChessmanType :: echessd_game:chessman_type(),
+                         Distance :: pos_integer()} |
                         undefined.
 find_enemy(Board, I, Step, EnemyColor) ->
-    find_enemy(Board, I, Step, EnemyColor, 1).
+    find_enemy(Board, I, Step, EnemyColor, _Distance = 1).
 
 %% @doc
 -spec find_enemy(Board :: board(), Index :: coord(), Direction :: step(),
                  EnemyColor :: echessd_game:color(),
                  Distance :: pos_integer()) ->
-                        (EnemyChessman :: echessd_game:chessman()) |
+                        {EnemyChessmanType :: echessd_game:chessman_type(),
+                         Distance :: pos_integer()} |
                         undefined.
 find_enemy(Board, Index, Direction, EnemyColor, Distance) ->
     Index2 = ind_inc(Index, Direction),
@@ -778,7 +790,7 @@ whereis_the_king_([Ply | Tail], Coord) ->
 
 %% @doc
 -spec getcell(Board :: board(), Coord :: coord()) ->
-                  (Entry :: entry()) | ?null.
+                  (Entry :: echessd_game:entry()) | ?null.
 getcell(Board, {C, R})
   when R >= 1 andalso R =< 8 andalso
        C >= 1 andalso C =< 8 ->
@@ -787,7 +799,8 @@ getcell(_, _) ->
     ?null.
 
 %% @doc
--spec setcell(Board :: board(), Coord :: coord(), NewEntry :: entry()) ->
+-spec setcell(Board :: board(), Coord :: coord(),
+              NewEntry :: echessd_game:entry()) ->
                      NewBoard :: board().
 setcell(Board, {C, R}, NewEntry) ->
     Row = element(9 - R, Board),
@@ -858,8 +871,7 @@ not_color(MyColor) ->
     hd([?white, ?black] -- [MyColor]).
 
 %% @doc
--spec promotion_dec(PlyTail :: string()) ->
-                           echessd_game:chessman_type().
+-spec promotion_dec(PlyTail :: string()) -> promotion_chessman_type().
 promotion_dec([$r | _]) -> ?rook;
 promotion_dec([$k | _]) -> ?knight;
 promotion_dec([$s | _]) -> ?knight;

@@ -672,8 +672,7 @@ user_info(Session, Username, UserInfo) ->
         tr(
           string:join(
             [tr(td(b(K ++ ":&nbsp;")) ++ td(V)) ||
-                {K, V} <- user_info_cells(Session, Username, UserInfo)]
-            , "\n"))).
+                {K, V} <- user_info_cells(Session, Username, UserInfo)], "\n"))).
 
 %% @doc Return the cells for the 'user info' table.
 -spec user_info_cells(Session :: #session{},
@@ -1135,16 +1134,15 @@ chess_board(Session, GameID, GameInfo, Step, IsLast, Board,
                    IsLast :: boolean()) ->
                           HTML :: iolist().
 hist_buttons(GameID, Step, IsLast) ->
-    Hiddens =
-        [hidden(?Q_GOTO, ?SECTION_GAME),
-         hidden(?Q_GAME, GameID)],
     HistBtn =
         fun(_, _, false) ->
                 tag(td, ["class=hbc"], "");
            (Caption, LinkStep, _Enabled) ->
                 tag(td, ["class=hbc"],
-                    tag(form, ["method=get", "action='/'"],
-                        [Hiddens, hidden(?Q_STEP, LinkStep),
+                    tag(form, ["method=get"],
+                        [hidden(?Q_GOTO, ?SECTION_GAME),
+                         hidden(?Q_GAME, GameID),
+                         hidden(?Q_STEP, LinkStep),
                          "<input type=submit class=hb value='",
                          Caption, "'>"]))
         end,
@@ -1153,8 +1151,10 @@ hist_buttons(GameID, Step, IsLast) ->
       tr(
         [tag(
            td, ["class=hbc"],
-           tag(form, ["method=get", "action='/'"],
-               [Hiddens, "<input type=submit class=hb value='&#8635;'>"])) |
+           tag(form, ["method=get"],
+               [hidden(?Q_GOTO, ?SECTION_GAME),
+                hidden(?Q_GAME, GameID),
+                "<input type=submit class=hb value='&#8635;'>"])) |
          case {Step, IsLast} of
              {0, true} -> [];
              _ ->
@@ -1165,10 +1165,9 @@ hist_buttons(GameID, Step, IsLast) ->
          end])).
 
 %% @doc
--spec cell(Board :: any(),
-           C :: any(),
-           R :: any()) ->
-                  any().
+-spec cell(Board :: echessd_game:board(),
+           Column :: 1..8, Row :: 1..8) ->
+                  Entry :: echessd_game:entry().
 cell(Board, C, R) ->
     element(C, element(8 - R + 1, Board)).
 
@@ -1181,56 +1180,67 @@ game_history(last, GameID, History) ->
     game_history(length(History), GameID, History);
 game_history(CurStep, GameID, History) ->
     tag(table, ["cellpadding=0", "cellspacing=0", "border=0"],
-        game_history(CurStep, 1, GameID, History)).
-game_history(CurStep, N, GameID, [PlyW, PlyB | Tail]) ->
-    ghc(
-      N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW),
-      game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 2, PlyB)) ++
-        game_history(CurStep, N + 1, GameID, Tail);
-game_history(CurStep, N, GameID, [PlyW]) ->
-    ghc(N, game_history_itemlink(GameID, CurStep, (N - 1) * 2 + 1, PlyW), "");
-game_history(_, _, _, _) -> "".
+        game_history(CurStep, _No = 1, GameID, History)).
 
-%% @doc Make a cell for the game history table.
--spec ghc(N :: any(), StrW :: any(), StrB :: any()) -> HTML :: iolist().
-ghc(N, StrW, StrB) ->
+%% @doc
+-spec game_history(CurStep :: non_neg_integer(),
+                   No :: pos_integer(), GameID :: echessd_game:id(),
+                   History :: echessd_game:history()) ->
+                          HTML :: iolist().
+game_history(CurStep, No, GameID, [PlyWhite, PlyBlack | HistoryTail]) ->
+    [game_history_row(
+       No,
+       game_history_itemlink(GameID, CurStep, (No - 1) * 2 + 1, PlyWhite),
+       game_history_itemlink(GameID, CurStep, (No - 1) * 2 + 2, PlyBlack)),
+     game_history(CurStep, No + 1, GameID, HistoryTail)];
+game_history(CurStep, No, GameID, [PlyWhite]) ->
+    game_history_row(
+      No,
+      game_history_itemlink(GameID, CurStep, (No - 1) * 2 + 1, PlyWhite),
+      "");
+game_history(_CurStep, _No, _GameID, []) ->
+    "".
+
+%% @doc Make a row for the game history table.
+-spec game_history_row(No :: pos_integer(),
+                       WhitePlyLink :: iolist(), BlackPlyLink :: iolist()) ->
+                              HTML :: iolist().
+game_history_row(No, WhitePlyLink, BlackPlyLink) ->
     tr(
-      [tag(td, ["valign=bottom"], tt(integer_to_list(N) ++ ".&nbsp;")),
-       tag(td, ["valign=bottom"], StrW), td("&nbsp;"),
-       tag(td, ["valign=bottom"], StrB)]).
+      [tag(td, ["valign=bottom"], tt([integer_to_list(No), ".&nbsp;"])),
+       tag(td, ["valign=bottom"], WhitePlyLink),
+       td("&nbsp;"),
+       tag(td, ["valign=bottom"], BlackPlyLink)]).
 
 %% @doc
 -spec game_history_itemlink(GameID :: echessd_game:id(),
                             CurStep :: echessd_query_parser:step(),
                             Step :: echessd_query_parser:step(),
-                            Ply :: any()) ->
+                            Ply :: echessd_game:ply()) ->
                                    HTML :: iolist().
-game_history_itemlink(GameID, CurStep, Step, Ply) ->
-    {Coords, Comment} =
-        case Ply of
-            {Coords0, Meta} ->
-                {echessd_lib:escape_html_entities(
-                   case proplists:get_value(notation, Meta) of
-                       [_ | _] = Notation -> Notation;
-                       _ -> Coords0
-                   end),
-                 echessd_lib:escape_html_entities(
-                   proplists:get_value(comment, Meta, ""))};
-            _ -> {Ply, ""}
-        end,
+game_history_itemlink(GameID, CurStep, Step, {_PlyCoords, PlyInfo}) ->
+    Caption =
+        echessd_lib:escape_html_entities(
+          proplists:get_value(notation, PlyInfo)),
+    Comment =
+        echessd_lib:escape_html_entities(
+          proplists:get_value(comment, PlyInfo, "")),
     tag(
       a,
       ["title='" ++ Comment ++ "'",
        "href='" ++
            url([{?Q_GOTO, ?SECTION_GAME},
                 {?Q_GAME, GameID}, {?Q_STEP, Step}]) ++ "'"],
-      tt(if CurStep == Step -> b(Coords);
-            true -> Coords
-         end)) ++
-        case Comment of
-            [_ | _] -> tag(sup, "*");
-            _ -> ""
-        end.
+      [tt(if CurStep == Step ->
+                  b(Caption);
+             true ->
+                  Caption
+          end),
+       case Comment of
+           [_ | _] ->
+               tag(sup, "*");
+           _ -> ""
+       end]).
 
 %% @doc
 -spec cseq(Direction :: 1 | -1) -> [1..8].
@@ -1251,7 +1261,7 @@ inply(_, _) ->
     false.
 
 %% @doc
--spec captures(Captures :: list()) -> HTML :: iolist().
+-spec captures(Captures :: [echessd_game:chessman()]) -> HTML :: iolist().
 captures([_ | _] = Captures) ->
     tag("table", ["cellpadding=0", "cellspacing=0"],
         case [chessman_(F) || {?black, _} = F <- Captures] of
@@ -1359,23 +1369,10 @@ game_navigation(Session, GameID, GameInfo) ->
 %% @doc
 -spec format_error(Session :: #session{},
                    Error :: {error, Reason :: any()} |
-                            {wrong_move, Reason :: any()} |
                             any()) ->
                           PlainErrorMessage :: iolist().
 format_error(Session, {error, Reason}) ->
     format_error(Session, Reason);
-format_error(Session, {wrong_move, Reason}) ->
-    gettext(Session, txt_badmove, []) ++
-        case Reason of
-            check ->
-                gettext(Session, txt_king_in_check, []);
-            badmove ->
-                "";
-            friendly_fire ->
-                "";
-            _ ->
-                format_error(Session, Reason)
-        end;
 format_error(_Session, Term) ->
     io_lib:format("~120p", [Term]).
 

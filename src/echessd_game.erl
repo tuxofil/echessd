@@ -48,7 +48,9 @@
     id/0,
     chessman_type/0,
     chessman/0,
-    status/0
+    entry/0,
+    status/0,
+    final_status/0
    ]).
 
 -type gametype() :: ?GAME_CLASSIC.
@@ -75,10 +77,10 @@
         {acknowledged, boolean()}.
 
 -type status() ::
-        none | checkmate |
-        {draw, stalemate} |
-        {draw, agreement} |
-        give_up.
+        alive | checkmate | draw_stalemate.
+
+-type final_status() ::
+        status() | give_up | draw_agreement.
 
 -type color() :: ?white | ?black.
 %% Color of the player. There is no place for latinos, amigo ;)
@@ -109,6 +111,8 @@
 -type chessman() :: {color(), chessman_type()}.
 %% Chessman format definition.
 
+-type entry() :: chessman() | ?empty.
+
 %% ----------------------------------------------------------------------
 %% API functions
 %% ----------------------------------------------------------------------
@@ -124,7 +128,7 @@ add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
         [{type, GameType},
          {time, now()},
          {creator, Owner},
-         {status, none},
+         {status, alive},
          {acknowledged, Owner == Opponent},
          {users,
           [{Owner, OwnerColor},
@@ -204,7 +208,7 @@ ply(ID, User, Ply) ->
                 lists:reverse(
                   proplists:get_value(moves, Info)),
             case proplists:get_value(status, Info) of
-                none -> nop;
+                alive -> nop;
                 _GameEndedStatus ->
                     ok = echessd_notify:game_end(ID)
             end,
@@ -223,7 +227,7 @@ ply(ID, User, Ply) ->
 -spec move(GameType :: gametype(), History :: history(), Ply :: ply()) ->
                   {ok, NewBoard :: board(),
                    NewHistory :: history(),
-                   GameStatus :: status()}.
+                   GameStatus :: final_status()}.
 move(?GAME_CLASSIC, History, Ply) ->
     echessd_rules_classic:move(History, Ply).
 

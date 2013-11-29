@@ -273,7 +273,7 @@ handle_post(_, _, Session) ->
 %% @doc
 -spec handle_show(Session :: #session{},
                   Query :: echessd_query_parser:http_query()) ->
-                         echessd_request_processor:result().
+                         HTML :: iolist().
 handle_show(Session, Query) ->
     case proplists:get_value(?Q_GOTO, Query, ?SECTION_HOME) of
         ?SECTION_GAME ->

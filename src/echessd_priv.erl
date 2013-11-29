@@ -181,6 +181,6 @@ in_priv(RelPath) ->
     filename:join(priv_dir(), RelPath).
 
 %% @doc Return the absolute path for the 'priv' directory.
--spec priv_dir() -> PrivDirPath :: file:filename().
+-spec priv_dir() -> PrivDirPath :: nonempty_string().
 priv_dir() ->
     [_ | _] = code:lib_dir(echessd, priv).
