@@ -103,7 +103,7 @@ game_end(GameID) ->
         lists:usort(
           echessd_game:get_watchers(GameInfo)),
     case proplists:get_value(status, GameInfo) of
-        none -> ok;
+        alive -> ok;
         give_up ->
             Winner =
                 proplists:get_value(winner, GameInfo),
@@ -138,7 +138,7 @@ game_end(GameID) ->
                          Winner, localize_color(WinnerColor, Lang),
                          Looser, localize_color(LooserColor, Lang)])
               end, Watchers -- [Winner]);
-        {draw, _} ->
+        Draw when Draw == draw_stalemate; Draw == draw_agreement ->
             Creator =
                 echessd_game:get_creator(GameInfo),
             CreatorColor =

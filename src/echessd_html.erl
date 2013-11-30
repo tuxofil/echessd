@@ -361,14 +361,14 @@ is_my_turn(Session, GameInfo) ->
     TurnUsername =
         hd([N || {N, C} <- game_players(GameInfo), C == TurnColor]),
     TurnUsername == Session#session.username andalso
-        proplists:get_value(status, GameInfo, none) == none.
+        proplists:get_value(status, GameInfo, alive) == alive.
 
 %% @doc
 -spec game_title_message(Session :: #session{},
                          GameInfo :: echessd_game:info()) ->
                                 HTML :: iolist().
 game_title_message(Session, GameInfo) ->
-    case proplists:get_value(status, GameInfo, none) of
+    case proplists:get_value(status, GameInfo, alive) of
         checkmate ->
             Winner = proplists:get_value(winner, GameInfo),
             h2(gettext(Session, txt_gt_over_checkmate, [userlink(Winner)]));
@@ -1357,12 +1357,12 @@ navigation(_Session) ->
                              HTML :: iolist().
 game_navigation(Session, GameID, GameInfo) ->
     IsMyGame = is_my_game(Session, GameInfo),
-    GameStatus = proplists:get_value(status, GameInfo, none),
+    GameStatus = proplists:get_value(status, GameInfo, alive),
     navig_links(
       case Session#session.username of
           [_ | _] ->
               [{"/", gettext(Session, txt_home, [])}] ++
-                  if IsMyGame andalso GameStatus == none ->
+                  if IsMyGame andalso GameStatus == alive ->
                           [{url([{?Q_GOTO, ?SECTION_DRAW_CONFIRM},
                                  {?Q_GAME, GameID}]),
                             gettext(Session, txt_req_draw, [])},

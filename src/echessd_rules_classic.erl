@@ -538,7 +538,7 @@ notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
                EnemyColor = not_color(Color),
                EnemyKingCoord = whereis_the_king(History, EnemyColor),
                case cell_attackers_count(
-                      NewBoard, EnemyKingCoord, EnemyColor) of
+                      NewBoard, EnemyKingCoord, Color) of
                    0 -> "";
                    1 -> "+";
                    2 -> "++"

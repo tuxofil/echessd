@@ -310,7 +310,7 @@ gameply(GameID, Username, Ply) ->
               %% check if such user exists
               _UserInfo = ll_get_props(?dbt_users, Username),
               case proplists:get_value(status, GameInfo) of
-                  none -> nop;
+                  alive -> nop;
                   _ ->
                       mnesia:abort(game_ended)
               end,
@@ -388,7 +388,7 @@ game_give_up(GameID, Username) ->
               [Winner | _] =
                   [N || {N, C} <- Players, C == WinnerColor],
               case proplists:get_value(status, GameInfo) of
-                  none ->
+                  alive ->
                       ll_replace_props(
                         ?dbt_games, GameID, GameInfo,
                         [{status, give_up},
@@ -435,7 +435,7 @@ game_request_draw(GameID, Username) ->
                   end,
               [Opponent | _] = [N || {N, C} <- Players, C /= MyColor],
               case proplists:get_value(status, GameInfo) of
-                  none ->
+                  alive ->
                       OldDrawRequest =
                           proplists:get_value(
                             draw_request_from, GameInfo),
@@ -477,7 +477,7 @@ gamerewind(GameID) ->
               NewHistory = all_except_last(History),
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
-                [{moves, NewHistory}, {status, none},
+                [{moves, NewHistory}, {status, alive},
                  {winner, undefined},
                  {winner_color, undefined}])
       end).
@@ -491,7 +491,7 @@ gamereset(GameID) ->
               GameInfo = ll_get_props(?dbt_games, GameID),
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
-                [{moves, []}, {status, none},
+                [{moves, []}, {status, alive},
                  {winner, undefined},
                  {winner_color, undefined}])
       end).
