@@ -147,7 +147,7 @@ fill_session(Session) when Session#session.username /= undefined ->
     case echessd_user:getprops(Session#session.username) of
         {ok, UserInfo} ->
             Session#session{
-              userinfo = UserInfo,
+              userinfo = filter_userinfo(UserInfo),
               timezone = echessd_user:get_value(timezone, UserInfo),
               language = echessd_user:get_value(language, UserInfo),
               style    = echessd_user:get_value(style, UserInfo)
@@ -158,3 +158,10 @@ fill_session(Session) when Session#session.username /= undefined ->
     end;
 fill_session(Session) ->
     Session.
+
+%% @doc Filter out sensitive information from the user info term.
+-spec filter_userinfo(UserInfo :: echessd_user:info()) ->
+                             FilteredUserInfo :: echessd_user:info().
+filter_userinfo(UserInfo) ->
+    [InfoItem || {InfoItemKey, _Value} = InfoItem <- UserInfo,
+                 InfoItemKey /= password].

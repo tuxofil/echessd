@@ -11,7 +11,7 @@
 
 -include("echessd.hrl").
 
--define(is_logged_in(Session), Session#session.username /= undefined).
+-define(is_logged_in(Session), (Session#session.username /= undefined)).
 
 %% ----------------------------------------------------------------------
 %% Type definitions

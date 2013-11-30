@@ -96,7 +96,7 @@ parse(ModData) ->
                 try
                     %% handle shortcut http://host/$GAME_ID
                     "/" ++ StrGameID = Path,
-                    GameID = parse_query_value(?Q_GAME, StrGameID),
+                    {ok, GameID} = parse_query_value(?Q_GAME, StrGameID),
                     "/?" ++ Str = encode([{?Q_GOTO, ?SECTION_GAME},
                                           {?Q_GAME, GameID}]),
                     Str

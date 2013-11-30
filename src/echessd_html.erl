@@ -103,7 +103,10 @@ edituser(Session) ->
      select(Session, ?Q_EDIT_LANGUAGE, txt_predit_lang,
             Session#session.language, echessd_lang:list()), "<br>",
      select(Session, ?Q_EDIT_STYLE, txt_style,
-            Session#session.style, echessd_styles:list()), "<br>",
+            Session#session.style,
+            [{StyleID, gettext(Session, StyleCaptionTextID, [])} ||
+                {StyleID, StyleCaptionTextID} <- echessd_styles:list()]),
+     "<br>",
      input(Session, ?Q_EDIT_JID, txt_jid,
            echessd_user:get_value(jid, UserInfo)) ++ " (" ++
          gettext(Session, txt_rnu_optional, []) ++ ")<br>",
@@ -613,15 +616,15 @@ group_hints(PlyCoords) ->
                    Title :: string(),
                    HtmlPagePayload :: iolist()) -> HtmlPage :: iolist().
 log_reg_page(Session, Section, Title, Content) ->
-    html_page_header(Session, Title, []) ++
-        navig_links(
-          lists:map(
-            fun(LangID) ->
-                    {echessd_query_parser:encode(
-                       [{?Q_GOTO, Section}, {?Q_LANG, LangID}]), LangID}
-            end, [LangID || {LangID, _} <- echessd_lang:list()])) ++
-        h1(Title) ++ Content ++
-        html_page_footer().
+    [html_page_header(Session, Title, []),
+     navig_links(
+       lists:map(
+         fun(LangID) ->
+                 {echessd_query_parser:encode(
+                    [{?Q_GOTO, Section}, {?Q_LANG, LangID}]),
+                  echessd_query_parser:encode(?Q_LANG, LangID)}
+         end, [LangID || {LangID, _} <- echessd_lang:list()])),
+     h1(Title), Content, html_page_footer()].
 
 %% @doc
 -spec fetch_game(Session :: #session{},
@@ -696,7 +699,7 @@ user_info_cells(Session, Username, UserInfo) ->
                 case echessd_user:get_value(Key, UserInfo) of
                     Value when ?is_now(Value) ->
                         echessd_lib:timestamp(
-                          Value, get(timezone));
+                          Value, Session#session.timezone);
                     _ -> gettext(Session, txt_unknown, [])
                 end}];
          (timezone = Key) ->
@@ -788,47 +791,48 @@ user_game_(Session, Owner, GameID, GameInfo) ->
                    lists:member(C, [?white, ?black])],
     UniquePlayerNames = lists:usort([N || {N, _} <- GamePlayers]),
     IsTest = length(UniquePlayerNames) == 1,
-    "* " ++ gamelink(GameID) ++
-        if IsTest ->
-                " " ++ gettext(Session, txt_test_game, []);
-           true ->
-                Color = proplists:get_value(Owner, GamePlayers),
-                Opponent = hd(UniquePlayerNames -- [Owner]),
-                OpponentColor = proplists:get_value(Opponent, GamePlayers),
-                " " ++ chessman({Color, ?king}) ++ " " ++
-                    gettext(Session, txt_vs, []) ++
-                    " " ++ userlink(Opponent) ++ " " ++
-                    chessman({OpponentColor, ?king})
-        end ++
-        case proplists:get_value(status, GameInfo) of
-            none ->
-                case get(username) == echessd_game:who_must_turn(GameInfo) of
-                    true when not IsTest ->
-                        " !!!";
-                    _ ->
-                        ""
-                end;
-            checkmate when IsTest ->
-                " - " ++ gettext(Session, txt_checkmate, []);
-            checkmate ->
-                case proplists:get_value(winner, GameInfo) of
-                    Owner ->
-                        " - " ++ gettext(Session, txt_win, []);
-                    _ ->
-                        " - " ++ gettext(Session, txt_loose, [])
-                end;
-            give_up when IsTest ->
-                " - " ++ gettext(Session, txt_gived_up, []);
-            give_up ->
-                case proplists:get_value(winner, GameInfo) of
-                    Owner ->
-                        " - " ++ gettext(Session, txt_win_giveup, []);
-                    _ ->
-                        " - " ++ gettext(Session, txt_loose_giveup, [])
-                end;
-            {draw, _} ->
-                " - " ++ gettext(Session, txt_draw, [])
-        end.
+    ["* ", gamelink(GameID),
+     if IsTest ->
+             [$\s, gettext(Session, txt_test_game, [])];
+        true ->
+             Color = proplists:get_value(Owner, GamePlayers),
+             Opponent = hd(UniquePlayerNames -- [Owner]),
+             OpponentColor = proplists:get_value(Opponent, GamePlayers),
+             [$\s, chessman({Color, ?king}), $\s,
+              gettext(Session, txt_vs, []),
+              $\s, userlink(Opponent), $\s,
+              chessman({OpponentColor, ?king})]
+     end,
+     case proplists:get_value(status, GameInfo) of
+         alive ->
+             case Session#session.username ==
+                 echessd_game:who_must_turn(GameInfo) of
+                 true when not IsTest ->
+                     " !!!";
+                 _ ->
+                     ""
+             end;
+         checkmate when IsTest ->
+             [" - ", gettext(Session, txt_checkmate, [])];
+         checkmate ->
+             case proplists:get_value(winner, GameInfo) of
+                 Owner ->
+                     [" - ", gettext(Session, txt_win, [])];
+                 _ ->
+                     [" - ", gettext(Session, txt_loose, [])]
+             end;
+         give_up when IsTest ->
+             [" - ", gettext(Session, txt_gived_up, [])];
+         give_up ->
+             case proplists:get_value(winner, GameInfo) of
+                 Owner ->
+                     [" - ", gettext(Session, txt_win_giveup, [])];
+                 _ ->
+                     [" - ", gettext(Session, txt_loose_giveup, [])]
+             end;
+         Draw when Draw == draw_stalemate; Draw == draw_aggreement ->
+             [" - ", gettext(Session, txt_draw, [])]
+     end].
 
 %% @doc
 -spec user_unconfirmed_game_(Session :: #session{},
@@ -1304,28 +1308,35 @@ chessman_(?bbishop) -> 9821;
 chessman_(?bknight) -> 9822;
 chessman_(?bpawn  ) -> 9823.
 
+%% @equiv navig_links(List, [])
 %% @doc
--spec navig_links(List :: list()) -> HTML :: iolist().
+-spec navig_links(List :: [{URL :: string(),
+                            Caption :: nonempty_string()}]) ->
+                         HTML :: iolist().
 navig_links(List) ->
     navig_links(List, []).
 
 %% @doc
--spec navig_links(List :: list(), Options :: list()) -> HTML :: iolist().
+-spec navig_links(List :: [{URL :: string(),
+                            Caption :: nonempty_string()}],
+                  Options :: [{prepend, HTML :: iolist()}]) ->
+                         HTML :: iolist().
 navig_links(List, Options) ->
     tag("div", ["class=navig"],
-        proplists:get_value(prepend, Options, "") ++
-            case List of
-                [_ | _] ->
-                    "[&nbsp;" ++
-                        string:join(
-                          lists:map(
-                            fun({[_ | _] = URL, [_ | _] = Caption}) ->
-                                    a(URL, Caption);
-                               ({_, [_ | _] = Caption}) -> Caption
-                            end, List), "&nbsp;|&nbsp;") ++
-                        "&nbsp;]";
-                _ -> ""
-            end).
+        [proplists:get_value(prepend, Options, ""),
+         case List of
+             [_ | _] ->
+                 ["[&nbsp;",
+                  string:join(
+                    lists:map(
+                      fun({[_ | _] = URL, [_ | _] = Caption}) ->
+                              a(URL, Caption);
+                         ({_, [_ | _] = Caption}) ->
+                              Caption
+                      end, List), "&nbsp;|&nbsp;"),
+                  "&nbsp;]"];
+             _ -> ""
+         end]).
 
 %% @doc
 -spec navigation(Session :: #session{}) -> HTML :: iolist().

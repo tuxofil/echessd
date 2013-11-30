@@ -292,7 +292,7 @@ check_property_({created, V}) when ?is_now(V) ->
 check_property_({games, V}) ->
     true = lists:all(fun(I) when is_integer(I), I > 0 -> true end, V),
     V;
-check_property_({fullname, [_ | _] = V}) ->
+check_property_({fullname, V}) ->
     true = is_string(V),
     lists:sublist(V, 70);
 check_property_({timezone, V}) ->
@@ -307,7 +307,7 @@ check_property_({show_history, V}) when is_boolean(V) ->
     V;
 check_property_({show_comment, V}) when is_boolean(V) ->
     V;
-check_property_({show_notify, V}) when is_boolean(V) ->
+check_property_({notify, V}) when is_boolean(V) ->
     V;
 check_property_({auto_refresh, V}) when is_boolean(V) ->
     V;
