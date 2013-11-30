@@ -243,6 +243,7 @@ newgame(Session, Query) ->
                      {?white, gettext(Session, txt_ng_color_white, [])},
                      {?black, gettext(Session, txt_ng_color_black, [])}])
      end,
+     "<br>",
      checkbox(Session, "prv", ?Q_PRIVATE, txt_ng_private, false), "<br>",
      submit(Session, txt_ng_ok_button),
      "</form>",
@@ -270,7 +271,7 @@ game(Session, Query) ->
 game(Session, Query, GameID, GameInfo) ->
     FullHistory = proplists:get_value(moves, GameInfo, []),
     FullHistoryLen = length(FullHistory),
-    Step = proplists:get_value(?Q_STEP, Query),
+    Step = proplists:get_value(?Q_STEP, Query, last),
     History =
         case Step of
             last -> FullHistory;
@@ -749,7 +750,7 @@ user_games(Session, Username, UserInfo, ShowNotAcknowledged) ->
     {NotEnded, Ended} =
         lists:partition(
           fun({_GameID, GameInfo}) ->
-                  proplists:get_value(status, GameInfo) == none
+                  proplists:get_value(status, GameInfo) == alive
           end, Confirmed),
     case NotEnded of
         [_ | _] ->
@@ -1067,7 +1068,7 @@ gamelink(GameID) ->
                           HTML :: iolist().
 newgame_link(Session, WithUsername) ->
     navig_links(
-      [{url([{?Q_GOTO, ?SECTION_GAME}, {?Q_USER, WithUsername}]),
+      [{url([{?Q_GOTO, ?SECTION_NEWGAME}, {?Q_USER, WithUsername}]),
         gettext(Session, txt_new_game_link, [])}]).
 
 %% @doc
