@@ -59,7 +59,7 @@ main(Args) ->
     end,
     ConfigPath = proplists:get_value(config, ParsedArgs),
     Config = echessd_config_parser:read(ConfigPath),
-    InstanceID = proplists:get_value(?CFG_CONFIG_PATH, Config),
+    InstanceID = proplists:get_value(?CFG_INSTANCE_ID, Config),
     Cookie     = proplists:get_value(?CFG_COOKIE, Config),
     MnesiaDir  = proplists:get_value(?CFG_DB_PATH, Config),
     case proplists:is_defined(init, ParsedArgs) of
