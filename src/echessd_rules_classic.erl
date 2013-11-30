@@ -296,92 +296,87 @@ hint_for_cell_unsafe(Board, CellCoord, History) ->
             []
     end.
 
+-type coord_deep_list() :: [coord() | ?null | coord_deep_list()].
+
 %% @doc
 -spec hint_for_chessman_type(
         Board :: board(), Coord :: coord(),
         Color :: echessd_game:color(),
         ChessmanType :: echessd_game:chessman_type(),
-        History :: echessd_game:history()) ->
-                                    [coord()].
-hint_for_chessman_type(B, I, C, ?pawn, History) ->
+        History :: echessd_game:history()) -> coord_deep_list().
+hint_for_chessman_type(Board, Coord, Color, ?pawn, History) ->
     {StartRow, Direction} =
-        if C == ?white -> {2, 1};
+        if Color == ?white -> {2, 1};
            true -> {7, -1}
         end,
-    F1 = ind_inc(I, {0, Direction}),
-    F2 = ind_inc(I, {0, Direction * 2}),
-    FL = ind_inc(I, {-1, Direction}),
-    FR = ind_inc(I, {1, Direction}),
-    EnPassL = ind_inc(I, {-1, 0}),
-    EnPassR = ind_inc(I, {1, 0}),
-    OppPawn = {not_color(C), ?pawn},
-    case getcell(B, F1) of
-        ?empty ->
-            [F1] ++
-                case I of
-                    {_, StartRow} ->
-                        case getcell(B, F2) of
-                            ?empty -> [F2];
-                            _ -> []
-                        end;
-                    _ -> []
-                end;
-        _ -> []
-    end ++
-        case getcell(B, FL) of
-            {C, _} -> [];
-            {_, _} -> [FL];
-            _ -> []
-        end ++
-        case getcell(B, FR) of
-            {C, _} -> [];
-            {_, _} -> [FR];
-            _ -> []
-        end ++
-        case getcell(B, EnPassL) of
-            OppPawn ->
-                case is_en_passant(History, EnPassL) of
-                    true ->
-                        [ind_inc(I, {-1, Direction})];
-                    _ -> []
-                end;
-            _ -> []
-        end ++
-        case getcell(B, EnPassR) of
-            OppPawn ->
-                case is_en_passant(History, EnPassR) of
-                    true ->
-                        [ind_inc(I, {1, Direction})];
-                    _ -> []
-                end;
-            _ -> []
-        end;
-hint_for_chessman_type(B, I, C, ?rook, _History) ->
-    [free_cells_until_enemy(B, C, I, {0, 1}),
-     free_cells_until_enemy(B, C, I, {0, -1}),
-     free_cells_until_enemy(B, C, I, {1, 0}),
-     free_cells_until_enemy(B, C, I, {-1, 0})];
-hint_for_chessman_type(B, I, C, ?bishop, _History) ->
-    [free_cells_until_enemy(B, C, I, {-1, -1}),
-     free_cells_until_enemy(B, C, I, {1, -1}),
-     free_cells_until_enemy(B, C, I, {-1, 1}),
-     free_cells_until_enemy(B, C, I, {1, 1})];
-hint_for_chessman_type(B, I, C, ?queen, History) ->
-    [hint_for_chessman_type(B, I, C, ?bishop, History),
-     hint_for_chessman_type(B, I, C, ?rook, History)];
-hint_for_chessman_type(B, I, C, ?knight, _History) ->
-    [is_empty_or_enemy(B, C, ind_inc(I, Step)) ||
+    EnemyPawn = {not_color(Color), ?pawn},
+    [case getcell(Board, F1 = ind_inc(Coord, {0, Direction})) of
+         ?empty ->
+             [F1,
+              case Coord of
+                  {_, StartRow} ->
+                      case getcell(Board, F2 = ind_inc(Coord, {0, Direction * 2})) of
+                          ?empty -> F2;
+                          _ -> []
+                      end;
+                  _ -> []
+              end];
+         _ -> []
+     end,
+     case getcell(Board, FL = ind_inc(Coord, {-1, Direction})) of
+         {Color, _} -> [];
+         {_, _} -> FL;
+         _ -> []
+     end,
+     case getcell(Board, FR = ind_inc(Coord, {1, Direction})) of
+         {Color, _} -> [];
+         {_, _} -> FR;
+         _ -> []
+     end,
+     case getcell(Board, EnPassL = ind_inc(Coord, {-1, 0})) of
+         EnemyPawn ->
+             case is_en_passant(History, EnPassL) of
+                 true ->
+                     ind_inc(Coord, {-1, Direction});
+                 _ -> []
+             end;
+         _ -> []
+     end,
+     case getcell(Board, EnPassR = ind_inc(Coord, {1, 0})) of
+         EnemyPawn ->
+             case is_en_passant(History, EnPassR) of
+                 true ->
+                     ind_inc(Coord, {1, Direction});
+                 _ -> []
+             end;
+         _ -> []
+     end];
+hint_for_chessman_type(Board, Coord, Color, ?rook, _History) ->
+    [free_cells_until_enemy(Board, Color, Coord, {0, 1}),
+     free_cells_until_enemy(Board, Color, Coord, {0, -1}),
+     free_cells_until_enemy(Board, Color, Coord, {1, 0}),
+     free_cells_until_enemy(Board, Color, Coord, {-1, 0})];
+hint_for_chessman_type(Board, Coord, Color, ?bishop, _History) ->
+    [free_cells_until_enemy(Board, Color, Coord, {-1, -1}),
+     free_cells_until_enemy(Board, Color, Coord, {1, -1}),
+     free_cells_until_enemy(Board, Color, Coord, {-1, 1}),
+     free_cells_until_enemy(Board, Color, Coord, {1, 1})];
+hint_for_chessman_type(Board, Coord, Color, ?queen, History) ->
+    [hint_for_chessman_type(Board, Coord, Color, ?bishop, History),
+     hint_for_chessman_type(Board, Coord, Color, ?rook, History)];
+hint_for_chessman_type(Board, Coord, Color, ?knight, _History) ->
+    [is_empty_or_enemy(Board, Color, ind_inc(Coord, Step)) ||
         Step <- knight_steps()];
-hint_for_chessman_type(B, I, C, ?king, History) ->
-    [is_empty_or_enemy(B, C, ind_inc(I, {-1, -1})),
-     is_empty_or_enemy(B, C, ind_inc(I, {-1, 0})),
-     is_empty_or_enemy(B, C, ind_inc(I, {-1, 1})),
-     is_empty_or_enemy(B, C, ind_inc(I, {0, -1})),
-     is_empty_or_enemy(B, C, ind_inc(I, {0, 1})),
-     is_empty_or_enemy(B, C, ind_inc(I, {1, -1})),
-     is_empty_or_enemy(B, C, ind_inc(I, {1, 0})),
-     is_empty_or_enemy(B, C, ind_inc(I, {1, 1}))] ++
-        available_castlings(B, C, History).
+hint_for_chessman_type(Board, Coord, Color, ?king, History) ->
+    [is_empty_or_enemy(Board, Color, ind_inc(Coord, {-1, -1})),
+     is_empty_or_enemy(Board, Color, ind_inc(Coord, {-1, 0})),
+     is_empty_or_enemy(Board, Color, ind_inc(Coord, {-1, 1})),
+     is_empty_or_enemy(Board, Color, ind_inc(Coord, {0, -1})),
+     is_empty_or_enemy(Board, Color, ind_inc(Coord, {0, 1})),
+     is_empty_or_enemy(Board, Color, ind_inc(Coord, {1, -1})),
+     is_empty_or_enemy(Board, Color, ind_inc(Coord, {1, 0})),
+     is_empty_or_enemy(Board, Color, ind_inc(Coord, {1, 1})),
+     available_castlings(Board, Color, History)].
 
 %% ----------------------------------------------------------------------
 %% castlings
