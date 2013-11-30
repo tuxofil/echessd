@@ -23,6 +23,7 @@
 -define(CFG_XMPP_PASSWORD, xmpp_password).
 -define(CFG_SHOW_ABOUT, show_about).
 -define(CFG_SHOW_COPYRIGHTS, show_copyrights).
+-define(CFG_DB_PATH, db_path).
 -define(CFG_MIME_TYPES, mime_types).
 -define(CFG_INSTANCE_ID, instance_id).
 -define(CFG_COOKIE, cookie).
@@ -34,7 +35,7 @@
                ?CFG_XMPP_PASSWORD, ?CFG_XMPP_ENABLED,
                ?CFG_SHOW_ABOUT, ?CFG_SHOW_COPYRIGHTS,
                ?CFG_MIME_TYPES, ?CFG_INSTANCE_ID,
-               ?CFG_COOKIE]).
+               ?CFG_COOKIE, ?CFG_DB_PATH]).
 
 -define(CFG_CONFIG_PATH, config_path).
 

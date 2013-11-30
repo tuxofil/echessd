@@ -44,9 +44,10 @@ main(Args) ->
     _IgnoredStdout = os:cmd("epmd -address 127.0.0.1 -daemon"),
     %% parse and process command line arguments
     ParsedArgs = parse_args(Args),
-    case [O || O <- [hup, ping, stop], lists:member(O, ParsedArgs)] of
+    case [O || O <- [hup, ping, stop, init], lists:member(O, ParsedArgs)] of
         [_, _ | _] ->
-            err("--hup, --ping, --stop options are mutually exclusive", []);
+            err("--hup, --ping, --stop, --init options are"
+                " mutually exclusive", []);
         _ ->
             nop
     end,
@@ -59,7 +60,14 @@ main(Args) ->
     ConfigPath = proplists:get_value(config, ParsedArgs),
     Config = echessd_config_parser:read(ConfigPath),
     InstanceID = proplists:get_value(?CFG_CONFIG_PATH, Config),
-    Cookie = proplists:get_value(?CFG_COOKIE, Config),
+    Cookie     = proplists:get_value(?CFG_COOKIE, Config),
+    MnesiaDir  = proplists:get_value(?CFG_DB_PATH, Config),
+    case proplists:is_defined(init, ParsedArgs) of
+        true ->
+            do_init(InstanceID, MnesiaDir);
+        false ->
+            nop
+    end,
     case proplists:is_defined(hup, ParsedArgs) of
         true ->
             do_hup(InstanceID, Cookie);
@@ -79,6 +87,15 @@ main(Args) ->
             nop
     end,
     ok = start_net_kernel(InstanceID, Cookie),
+    ok = application:load(mnesia),
+    ok = application:set_env(mnesia, dir, MnesiaDir),
+    case is_db_present(MnesiaDir) of
+        true ->
+            ok = application:start(mnesia);
+        false ->
+            %% autocreate mnesia database
+            ok = echessd_db:init()
+    end,
     ok = application:load(?MODULE),
     ok = application:set_env(?MODULE, ?CFG_CONFIG_PATH, ConfigPath),
     ok = application:start(?MODULE, permanent),
@@ -204,6 +221,16 @@ do_stop(InstanceID, Cookie) ->
             err("Echessd is not alive", [])
     end.
 
+%% @doc Initialize the Echessd database.
+-spec do_init(InstanceID :: atom(), MnesiaDir :: nonempty_string()) ->
+                     no_return().
+do_init(InstanceID, MnesiaDir) ->
+    ok = start_net_kernel(InstanceID, _Cookie = no_matter),
+    ok = application:load(mnesia),
+    ok = application:set_env(mnesia, dir, MnesiaDir),
+    ok = echessd_db:init(),
+    halt(0).
+
 %% @doc
 -spec start_net_kernel(NodeShortName :: atom(), Cookie :: atom()) ->
                               ok | no_return().
@@ -236,6 +263,8 @@ parse_args(["--ping" | Tail], Acc) ->
     parse_args(Tail, [ping | Acc]);
 parse_args(["--stop" | Tail], Acc) ->
     parse_args(Tail, [stop | Acc]);
+parse_args(["--init" | Tail], Acc) ->
+    parse_args(Tail, [init | Acc]);
 parse_args(["--", ConfigFilePath], Acc) ->
     [{config, ConfigFilePath} | Acc];
 parse_args(["-" ++ _ = Option | _Tail], _Acc) ->
@@ -267,8 +296,11 @@ usage() ->
       "  ~s --ping /path/to/config~n"
       "\tCheck if the Echessd Server instance is alive or not;~n"
       "  ~s --stop /path/to/config~n"
-      "\tTell the Echessd Server to terminate.~n",
-      [version(), N, N, N, N, N]),
+      "\tTell the Echessd Server to terminate;~n"
+      "  ~s --init /path/to/config~n"
+      "\tInitialize the Echessd database. "
+      "Warning: all existing data will be lost!~n",
+      [version(), N, N, N, N, N, N]),
     halt().
 
 %% @doc Return Echessd version.
@@ -282,3 +314,19 @@ version() ->
     end,
     {ok, Version} = application:get_key(?MODULE, vsn),
     Version.
+
+%% @doc Return false if configured location for mnesia database
+%% is not exist or does not contain any files.
+-spec is_db_present(MnesiaDir :: nonempty_string()) ->
+                           boolean().
+is_db_present(MnesiaDir) ->
+    case filelib:is_dir(MnesiaDir) of
+        true ->
+            lists:all(
+              fun(MandatoryFile) ->
+                      filelib:is_file(
+                        filename:join(MnesiaDir, MandatoryFile))
+              end, ["LATEST.LOG", "schema.DAT"]);
+        false ->
+            false
+    end.

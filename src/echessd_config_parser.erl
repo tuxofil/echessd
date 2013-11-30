@@ -40,14 +40,15 @@
         {?CFG_SHOW_COPYRIGHTS, ShowCopyrights :: boolean()} |
         {?CFG_MIME_TYPES, MimeTypesFilePath :: file:filename()} |
         {?CFG_INSTANCE_ID, InstanceID :: atom()} |
-        {?CFG_COOKIE, Cookie :: atom()}.
+        {?CFG_COOKIE, Cookie :: atom()} |
+        {?CFG_DB_PATH, DatabasePath :: nonempty_string()}.
 
 -type config_key() ::
         ?CFG_LOGLEVEL | ?CFG_LOGFILE | ?CFG_BIND_ADDR | ?CFG_BIND_PORT |
         ?CFG_DEF_LANG | ?CFG_DEF_STYLE | ?CFG_XMPP_USER | ?CFG_XMPP_SERVER |
         ?CFG_XMPP_PASSWORD | ?CFG_XMPP_ENABLED | ?CFG_SHOW_ABOUT |
         ?CFG_SHOW_COPYRIGHTS | ?CFG_MIME_TYPES | ?CFG_INSTANCE_ID |
-        ?CFG_COOKIE.
+        ?CFG_COOKIE | ?CFG_DB_PATH.
 
 -type loglevel() :: ?LOG_ERR | ?LOG_INFO | ?LOG_DEBUG.
 
@@ -91,7 +92,9 @@ default(?CFG_MIME_TYPES) ->
 default(?CFG_INSTANCE_ID) ->
     echessd;
 default(?CFG_COOKIE) ->
-    echessd.
+    echessd;
+default(?CFG_DB_PATH) ->
+    "./echessd-database/".
 
 %% ----------------------------------------------------------------------
 %% Internal functions
@@ -143,7 +146,8 @@ parse_kv({LineNo, StrKey, StrValue}) ->
 %% configuration items.
 -spec add_defaults(Config :: config()) -> FinalConfig :: config().
 add_defaults(Config) ->
-    [proplists:get_value(Key, Config, default(Key)) || Key <- ?CFGS].
+    [{Key, proplists:get_value(Key, Config, default(Key))} ||
+        Key <- ?CFGS].
 
 %% @equiv preparse(String, [{comment_chars, "#%!"}])
 %% @doc Make preparse of key-value configuration file.
@@ -243,7 +247,7 @@ split_to_key_value_([C | Tail], Key) ->
                          {ok, Value :: any()} | error.
 parse_value(Key, StrValue) ->
     try
-        parse_value_(Key, StrValue)
+        {ok, parse_value_(Key, StrValue)}
     catch
         _:_ ->
             error
@@ -294,7 +298,9 @@ parse_value_(?CFG_MIME_TYPES, String) ->
 parse_value_(?CFG_INSTANCE_ID, String) ->
     list_to_atom(String);
 parse_value_(?CFG_COOKIE, String) ->
-    list_to_atom(String).
+    list_to_atom(String);
+parse_value_(?CFG_DB_PATH, String) ->
+    String.
 
 %% @doc
 -spec parse_boolean(String :: string()) -> {ok, boolean()} | error.

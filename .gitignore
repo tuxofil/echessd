@@ -13,3 +13,4 @@ erl_crash.dump
 echessd
 Emakefile
 .dialyzer_plt
+echessd-database
