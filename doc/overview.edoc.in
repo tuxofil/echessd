@@ -9,7 +9,7 @@
 
 @author Aleksey Morarash <aleksey.morarash@gmail.com>
 @copyright 2012 Aleksey Morarash
-@version 0.1.0
+@version {{VERSION}}
 @title Welcome to echessd - Internet chess server
 @doc == Contents ==
 
@@ -28,7 +28,6 @@
    <li>{@section Security considerations}</li>
    <li>{@section Configuration file format}</li>
    <li>{@section Server architecture}</li>
-   <li>{@section TODO list}</li>
   </ol>
  </li>
 </ol>
@@ -218,8 +217,6 @@ echessd application supervision tree:
      arbitrary
  connection handler
 </tt></pre><hr/>
-
-=== TODO list ===
 
 <pre>
 - time limitation for moves;
