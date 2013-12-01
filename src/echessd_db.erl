@@ -27,8 +27,10 @@
     gamereset/1,
     dump_users/0,
     dump_games/0,
+    dump/0,
     import_users/1,
-    import_games/1
+    import_games/1,
+    load/1
    ]).
 
 -include("echessd.hrl").
@@ -51,6 +53,12 @@
 -type proplist() :: [{Key :: atom(), Value :: any()}].
 
 -type rec_id() :: echessd_game:id() | echessd_user:name() | counter.
+
+-type dump_item() ::
+        {user, UserName :: echessd_user:name(),
+         UserInfo :: echessd_user:info()} |
+        {game, GameID :: echessd_game:id(),
+         GameInfo :: echessd_game:info()}.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -522,6 +530,14 @@ dump_games() ->
                 end, [], ?dbt_games)
       end).
 
+%% @doc Make a dump of all users and games from the database.
+-spec dump() -> Dump :: [dump_item()].
+dump() ->
+    {ok, UserDump} = dump_users(),
+    {ok, GameDump} = dump_games(),
+    [{user, UserName, UserInfo} || {UserName, UserInfo} <- UserDump] ++
+        [{game, GameID, GameInfo} || {GameID, GameInfo} <- GameDump].
+
 %% @doc Insert the user accounts directly to the database.
 %% The function intended only for an import operations.
 -spec import_users(Users :: [{Username :: echessd_user:name(),
@@ -549,6 +565,14 @@ import_games(Games) ->
                         ll_set_props(?dbt_games, GameID, GameInfo)
                 end, Games)
       end).
+
+%% @doc Initialize the database from the dump.
+-spec load(list()) -> ok.
+load(Dump) ->
+    ok = init(),
+    ok = wait(),
+    ok = import_users([{N, I} || {user, N, I} <- Dump]),
+    ok = import_games([{N, I} || {game, N, I} <- Dump]).
 
 %% ----------------------------------------------------------------------
 %% Internal functions

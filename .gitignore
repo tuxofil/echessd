@@ -14,3 +14,4 @@ echessd
 Emakefile
 .dialyzer_plt
 echessd-database
+*.dump

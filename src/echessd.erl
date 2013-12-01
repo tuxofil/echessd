@@ -7,11 +7,8 @@
 
 -module(echessd).
 
--export(
-   [main/1,
-    export_database/1,
-    import_database/1
-   ]).
+%% API exports
+-export([main/1]).
 
 -include("echessd.hrl").
 
@@ -23,7 +20,7 @@
 
 -type parsed_arg() ::
         sasl | hup | ping | init | stop |
-        export | import | {config, file:filename()}.
+        dump | load | {config, file:filename()}.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -42,56 +39,28 @@ main(Args) ->
     end,
     %% bind Erlang port mapper only to loopback network interface
     _IgnoredStdout = os:cmd("epmd -address 127.0.0.1 -daemon"),
-    %% parse and process command line arguments
+    %% parse command line arguments
     ParsedArgs = parse_args(Args),
-    case [O || O <- [hup, ping, stop, init], lists:member(O, ParsedArgs)] of
-        [_, _ | _] ->
-            err("--hup, --ping, --stop, --init options are"
-                " mutually exclusive", []);
-        _ ->
-            nop
-    end,
     case proplists:is_defined(sasl, ParsedArgs) of
         true ->
             ok = application:start(sasl, permanent);
         false ->
             nop
     end,
+    %% read and parse configuration file
     ConfigPath = proplists:get_value(config, ParsedArgs),
     Config = echessd_config_parser:read(ConfigPath),
     InstanceID = proplists:get_value(?CFG_INSTANCE_ID, Config),
     Cookie     = proplists:get_value(?CFG_COOKIE, Config),
     MnesiaDir  = proplists:get_value(?CFG_DB_PATH, Config),
-    case proplists:is_defined(init, ParsedArgs) of
-        true ->
-            do_init(InstanceID, MnesiaDir);
-        false ->
-            nop
-    end,
-    case proplists:is_defined(hup, ParsedArgs) of
-        true ->
-            do_hup(InstanceID, Cookie);
-        false ->
-            nop
-    end,
-    case proplists:is_defined(ping, ParsedArgs) of
-        true ->
-            do_ping(InstanceID, Cookie);
-        false ->
-            nop
-    end,
-    case proplists:is_defined(stop, ParsedArgs) of
-        true ->
-            do_stop(InstanceID, Cookie);
-        false ->
-            nop
-    end,
+    %% process command line arguments
+    ok = handle_cmd_args(ParsedArgs, InstanceID, Cookie, MnesiaDir),
     ok = start_net_kernel(InstanceID, Cookie),
     ok = application:load(mnesia),
     ok = application:set_env(mnesia, dir, MnesiaDir),
     case is_db_present(MnesiaDir) of
         true ->
-            ok = application:start(mnesia);
+            ok = application:start(mnesia, permanent);
         false ->
             %% autocreate mnesia database
             ok = echessd_db:init()
@@ -105,79 +74,46 @@ main(Args) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc Saves all database contents to a file.
-%% @spec export_database(Filename) -> ok | {error, Reason}
-%%     Filename = string(),
-%%     Reason = term()
-export_database(Filename) ->
-    case echessd_db:dump_users() of
-        {ok, UsersData} ->
-            case echessd_db:dump_games() of
-                {ok, GamesData} ->
-                    Terms =
-                        [{user, K, V} || {K, V} <- UsersData] ++
-                        [{game, K, V} || {K, V} <- GamesData],
-                    Timestamp = echessd_lib:timestamp(now()),
-                    _Ignored = application:load(?MODULE),
-                    AppVersion =
-                        case application:get_key(?MODULE, vsn) of
-                            {ok, [_ | _] = Version} ->
-                                " v." ++ Version;
-                            _ -> ""
-                        end,
-                    echessd_lib:unconsult(
-                      Filename,
-                      "echessd" ++ AppVersion ++ " database dump\n" ++
-                          Timestamp,
-                      Terms);
-                Error -> Error
-            end;
-        Error -> Error
-    end.
+%% @doc Handle command line arguments (options) one by one.
+-spec handle_cmd_args(ParsedArgs :: parsed_args(),
+                      InstanceID :: atom(),
+                      Cookie :: atom(),
+                      MnesiaDir :: nonempty_string()) ->
+                             ok | no_return().
+handle_cmd_args(ParsedArgs, InstanceID, Cookie, MnesiaDir) ->
+    case [O || O <- [hup, ping, stop, init, dump, load],
+               proplists:is_defined(O, ParsedArgs)] of
+        [_, _ | _] ->
+            err("--hup, --ping, --stop, --init, --dump and --load "
+                "options are mutually exclusive", []);
+        _ ->
+            nop
+    end,
+    lists:foreach(
+      fun(ParsedArg) ->
+              handle_cmd_arg(ParsedArg, InstanceID, Cookie, MnesiaDir)
+      end, ParsedArgs).
 
-%% @doc Fetches datum from specified file and initiates local
-%%      database with them. All previous data will be wiped!
-%% @spec import_database(Filename) -> ok | {error, Reason}
-%%     Filename = string(),
-%%     Reason = term()
-import_database(Filename) ->
-    case file:consult(Filename) of
-        {ok, Terms} ->
-            case parse_imported(Terms) of
-                {ok, Users, Games} ->
-                    ok = echessd_db:init(),
-                    ok = echessd_db:wait(),
-                    case echessd_db:import_users(Users) of
-                        ok ->
-                            echessd_db:import_games(Games);
-                        Error -> Error
-                    end;
-                Error -> Error
-            end;
-        Error -> Error
-    end.
-
-%% ----------------------------------------------------------------------
-%% Internal functions
-%% ----------------------------------------------------------------------
-
-parse_imported(Terms) ->
-    try parse_imported_(Terms)
-    catch
-        _:{error, _Reason} = Error ->
-            Error;
-        Type:Reason ->
-            {error, {Type, Reason, erlang:get_stacktrace()}}
-    end.
-parse_imported_(Terms) ->
-    lists:foldl(
-      fun({user, Username, UserInfo}, {ok, Users, Games}) ->
-              {ok, [{Username, UserInfo} | Users], Games};
-         ({game, GameID, GameInfo}, {ok, Users, Games}) ->
-              {ok, Users, [{GameID, GameInfo} | Games]};
-         (Other, _Acc) ->
-              throw({error, {unknown_import_item, Other}})
-      end, {ok, [], []}, Terms).
+%% @doc Helper for the handle_cmd_args/1 fun.
+-spec handle_cmd_arg(ParsedArg :: parsed_arg(),
+                     InstanceID :: atom(),
+                     Cookie :: atom(),
+                     MnesiaDir :: nonempty_string()) ->
+                            ok | no_return().
+handle_cmd_arg(init, InstanceID, _Cookie, MnesiaDir) ->
+    do_init(InstanceID, MnesiaDir);
+handle_cmd_arg(hup, InstanceID, Cookie, _MnesiaDir) ->
+    do_hup(InstanceID, Cookie);
+handle_cmd_arg(ping, InstanceID, Cookie, _MnesiaDir) ->
+    do_ping(InstanceID, Cookie);
+handle_cmd_arg(stop, InstanceID, Cookie, _MnesiaDir) ->
+    do_stop(InstanceID, Cookie);
+handle_cmd_arg({dump, DumpFilePath}, InstanceID, Cookie, _MnesiaDir) ->
+    do_dump(InstanceID, Cookie, DumpFilePath);
+handle_cmd_arg({load, DumpFilePath}, InstanceID, Cookie, _MnesiaDir) ->
+    do_load(InstanceID, Cookie, DumpFilePath);
+handle_cmd_arg(_ParsedArg, _InstanceID, _Cookie, _MnesiaDir) ->
+    ok.
 
 %% @doc Send reconfig signal to the Echessd Server.
 -spec do_hup(InstanceID :: atom(), Cookie :: atom()) -> no_return().
@@ -231,6 +167,39 @@ do_init(InstanceID, MnesiaDir) ->
     ok = echessd_db:init(),
     halt(0).
 
+%% @doc Make a dump of the Echessd database to a file.
+-spec do_dump(InstanceID :: atom(), Cookie :: atom(),
+              DumpFilePath :: nonempty_string()) -> no_return().
+do_dump(InstanceID, Cookie, DumpFilePath) ->
+    MyID = list_to_atom(atom_to_list(InstanceID) ++ "_dumper"),
+    ok = start_net_kernel(MyID, Cookie),
+    case net_adm:ping(ServerNode = node_fullname(InstanceID)) of
+        pong ->
+            ok = echessd_lib:unconsult(
+                   DumpFilePath,
+                   ["echessd v.", version(), " database dump\n",
+                    echessd_lib:timestamp(now())],
+                   rpc:call(ServerNode, echessd_db, dump, [])),
+            halt(0);
+        pang ->
+            err("Echessd is not alive", [])
+    end.
+
+%% @doc Initialize the database from the dump file.
+-spec do_load(InstanceID :: atom(), Cookie :: atom(),
+              DumpFilePath :: nonempty_string()) -> no_return().
+do_load(InstanceID, Cookie, DumpFilePath) ->
+    MyID = list_to_atom(atom_to_list(InstanceID) ++ "_loader"),
+    ok = start_net_kernel(MyID, Cookie),
+    case net_adm:ping(ServerNode = node_fullname(InstanceID)) of
+        pong ->
+            {ok, Dump} = file:consult(DumpFilePath),
+            ok = rpc:call(ServerNode, echessd_db, load, [Dump]),
+            halt(0);
+        pang ->
+            err("Echessd is not alive", [])
+    end.
+
 %% @doc
 -spec start_net_kernel(NodeShortName :: atom(), Cookie :: atom()) ->
                               ok | no_return().
@@ -265,6 +234,14 @@ parse_args(["--stop" | Tail], Acc) ->
     parse_args(Tail, [stop | Acc]);
 parse_args(["--init" | Tail], Acc) ->
     parse_args(Tail, [init | Acc]);
+parse_args(["--dump", [_ | _] = DumpFilePath | Tail], Acc) ->
+    parse_args(Tail, [{dump, DumpFilePath} | Acc]);
+parse_args(["--dump", _ | _Tail], _Acc) ->
+    err("--dump option assumes non empty value", []);
+parse_args(["--load", [_ | _] = DumpFilePath | Tail], Acc) ->
+    parse_args(Tail, [{load, DumpFilePath} | Acc]);
+parse_args(["--load", _ | _Tail], _Acc) ->
+    err("--load option assumes non empty value", []);
 parse_args(["--", ConfigFilePath], Acc) ->
     [{config, ConfigFilePath} | Acc];
 parse_args(["-" ++ _ = Option | _Tail], _Acc) ->
@@ -299,8 +276,13 @@ usage() ->
       "\tTell the Echessd Server to terminate;~n"
       "  ~s --init /path/to/config~n"
       "\tInitialize the Echessd database. "
-      "Warning: all existing data will be lost!~n",
-      [version(), N, N, N, N, N, N]),
+      "Warning: all existing data will be lost!~n"
+      "  ~s --dump DumpFilePath /path/to/config~n"
+      "\tCreate a dump of the database to a file;~n"
+      "  ~s --load DumpFilePath /path/to/config~n"
+      "\tRead the dump file and initialize the database with the "
+      "dump data.~n\tWarning: all existing data will be lost!~n",
+      [version(), N, N, N, N, N, N, N, N]),
     halt().
 
 %% @doc Return Echessd version.

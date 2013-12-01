@@ -89,7 +89,7 @@ random_elem([_ | _] = List) ->
 %% The file then can be read by file:consult/1,
 %% resulting the same Erlang terms.
 -spec unconsult(Filename :: file:filename(),
-                Comment :: string(),
+                Comment :: iolist(),
                 Terms :: list()) ->
                        ok | {error, Reason :: any()}.
 unconsult(Filename, Comment, Terms) ->

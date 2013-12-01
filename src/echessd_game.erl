@@ -205,8 +205,7 @@ ply(ID, User, Ply) ->
               "game ~9999p: user ~9999p moved ~9999p",
               [ID, User, Coords]),
             [LastPly | _] =
-                lists:reverse(
-                  proplists:get_value(moves, Info)),
+                lists:reverse(proplists:get_value(moves, Info)),
             case proplists:get_value(status, Info) of
                 alive -> nop;
                 _GameEndedStatus ->
