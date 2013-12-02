@@ -31,7 +31,7 @@
 -type info_item() ::
         {login, name()} |
         {password, ((ClearPassword :: nonempty_string()) |
-                    (PasswordHash :: binary()))} |
+                    (PasswordHash :: encrypted_password()))} |
         {created, erlang:timestamp()} |
         {fullname, string()} |
         {timezone, echessd_lib:administrative_offset()} |
@@ -45,6 +45,16 @@
         {style, StyleID :: atom()} |
         {jid, string()} |
         {games, [echessd_game:id()]}.
+
+-type encrypted_password() ::
+        legacy_sha1_encrypted_password() |
+        {Algo :: password_encryption_algo(),
+         Salt :: binary(),
+         EncryptedPassword :: binary()}.
+
+-type password_encryption_algo() :: sha.
+
+-type legacy_sha1_encrypted_password() :: binary().
 
 -type info_item_key() ::
         password | created | login | fullname | timezone |
@@ -105,22 +115,19 @@ del(Name) ->
     end.
 
 %% @doc Authenticate the user. Return user properties on success.
--spec auth(Name :: name(),
-           Password :: (PlainPassword :: nonempty_string()) |
-                       (PasswordHash :: binary())) ->
+-spec auth(Name :: name(), ClearPassword :: nonempty_string()) ->
                   {ok, Info :: info()} | {error, Reason :: any()}.
-auth(Name, Password) when is_list(Password) ->
-    auth(Name, crypto:sha(Password));
-auth(Name, Password) when is_binary(Password) ->
+auth(Name, ClearPassword) ->
     case getprops(Name) of
         {ok, Info} = Ok ->
-            case get_value(password, Info) of
-                Password ->
+            case compare_password(
+                   get_value(password, Info), ClearPassword) of
+                true ->
                     echessd_log:info(
                       "user ~9999p authenticated",
                       [Name]),
                     Ok;
-                _ ->
+                false ->
                     Reason = password_incorrect,
                     echessd_log:err(
                       "user ~9999p authentication failed: ~9999p",
@@ -133,6 +140,17 @@ auth(Name, Password) when is_binary(Password) ->
               [Name, Reason]),
             Error
     end.
+
+%% @doc
+-spec compare_password(Encrypted :: encrypted_password(),
+                       ClearPassword :: nonempty_string()) ->
+                              boolean().
+compare_password(Encrypted, ClearPassword)
+ when is_binary(Encrypted) ->
+    %% legacy encrypted password
+    Encrypted == crypto:sha(ClearPassword);
+compare_password({sha, Salt, Encrypted}, ClearPassword) ->
+    Encrypted == crypto:sha([Salt, ClearPassword]).
 
 %% @doc Fetch the user properties from the database.
 -spec getprops(Name :: name()) ->
@@ -284,9 +302,13 @@ check_property(Term) ->
 -spec check_property_(InfoItem :: info_item()) -> Value :: any().
 check_property_({password, V}) when is_binary(V) ->
     V;
+check_property_({password, {Algo, Salt, Encrypted} = V})
+  when is_atom(Algo), is_binary(Salt), is_binary(Encrypted) ->
+    V;
 check_property_({password, V}) when is_list(V) ->
     true = is_string(V),
-    crypto:sha(V);
+    Salt = crypto:rand_bytes(4),
+    {sha, Salt, crypto:sha([Salt, V])};
 check_property_({created, V}) when ?is_now(V) ->
     V;
 check_property_({games, V}) ->
