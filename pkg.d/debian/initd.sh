@@ -15,7 +15,7 @@
 # Do NOT "set -e"
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
-PATH=/usr/sbin
+PATH=/usr/sbin:/usr/bin
 DESC="Internet Chess Server"
 NAME=echessd
 DAEMON=/usr/sbin/$NAME
