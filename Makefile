@@ -2,7 +2,8 @@ APP = echessd
 
 VERSION = $(shell cat version)
 
-.PHONY: all compile doc clean eunit dialyze all-tests install uninstall
+.PHONY: all compile doc clean eunit dialyze all-tests \
+    debian-install debian-uninstall
 
 all: $(APP)
 
@@ -79,13 +80,16 @@ clean:
 ## ----------------------------------------------------------------------
 ## installation/deinstallation section
 
-install:
+debian-install:
 	install -m 755 -d $(DESTDIR)/etc
 	install -m 644 echessd.conf $(DESTDIR)/etc
+	install -m 755 -d $(DESTDIR)/etc/init.d
+	install -m 755 pkg.d/debian/initd.sh $(DESTDIR)/etc/init.d/echessd
 	install -m 755 -d $(DESTDIR)/usr/sbin
 	install -m 755 echessd $(DESTDIR)/usr/sbin
 	install -m 755 -d $(DESTDIR)/var/lib/echessd
 	install -m 755 -d $(DESTDIR)/var/log/echessd
 
-uninstall:
-	rm -rf -- $(DESTDIR)/etc/echessd.conf $(DESTDIR)/usr/sbin/echessd
+debian-uninstall:
+	rm -rf -- $(DESTDIR)/etc/echessd.conf $(DESTDIR)/usr/sbin/echessd \
+	    $(DESTDIR)/etc/init.d/echessd
