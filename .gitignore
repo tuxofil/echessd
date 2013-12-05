@@ -15,3 +15,4 @@ Emakefile
 .dialyzer_plt
 echessd-database
 *.dump
+doc/overview.edoc
