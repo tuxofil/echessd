@@ -88,6 +88,7 @@ debian-install:
 	install -m 755 -d $(DESTDIR)/usr/sbin
 	install -m 755 echessd $(DESTDIR)/usr/sbin
 	install -m 755 -d $(DESTDIR)/var/lib/echessd
+	install -m 755 -d $(DESTDIR)/var/run/echessd
 	install -m 755 -d $(DESTDIR)/var/log/echessd
 
 debian-uninstall:

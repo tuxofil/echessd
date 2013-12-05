@@ -15,12 +15,12 @@
 # Do NOT "set -e"
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
-PATH=/usr/sbin:/usr/bin
+PATH=/usr/sbin:/usr/bin:/bin:/sbin
 DESC="Internet Chess Server"
 NAME=echessd
 DAEMON=/usr/sbin/$NAME
 CONFIG="/etc/echessd.conf"
-PIDFILE=/var/run/$NAME.pid
+PIDFILE=/var/run/echessd/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
 # Exit if the package is not installed
@@ -37,7 +37,7 @@ do_start(){
     #   0 if daemon has been started
     #   1 if daemon was already running
     #   2 if daemon could not be started
-    $DAEMON --ping $CONFIG && return 1
+    $DAEMON --ping $CONFIG > /dev/null && return 1
     start-stop-daemon --quiet --start --background --make-pidfile \
         --pidfile $PIDFILE --user $NAME --chuid $NAME \
         --exec $DAEMON -- $CONFIG || return 2
