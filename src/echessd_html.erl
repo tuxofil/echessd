@@ -831,7 +831,7 @@ user_game_(Session, Owner, GameID, GameInfo) ->
                  _ ->
                      [" - ", gettext(Session, txt_loose_giveup, [])]
              end;
-         Draw when Draw == draw_stalemate; Draw == draw_aggreement ->
+         Draw when Draw == draw_stalemate; Draw == draw_agreement ->
              [" - ", gettext(Session, txt_draw, [])]
      end].
 
