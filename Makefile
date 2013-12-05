@@ -3,7 +3,7 @@ APP = echessd
 VERSION = $(shell cat version)
 
 .PHONY: all compile doc clean eunit dialyze all-tests \
-    debian-install debian-uninstall
+    debian-install debian-chown debian-uninstall
 
 all: $(APP)
 
@@ -92,8 +92,18 @@ debian-install:
 	install -m 755 -d $(DESTDIR)/var/run/echessd
 	install -m 755 -d $(DESTDIR)/var/log/echessd
 
+debian-chown:
+	getent passwd echessd || \
+	    adduser --system --group --no-create-home echessd
+	chown root:echessd $(DESTDIR)/etc/echessd.conf
+	chmod 0640 $(DESTDIR)/etc/echessd.conf
+	chown -R echessd: $(DESTDIR)/var/lib/echessd
+	chown -R echessd: $(DESTDIR)/var/run/echessd
+	chown -R echessd: $(DESTDIR)/var/log/echessd
+
 debian-uninstall:
 	rm -rf -- $(DESTDIR)/etc/echessd.conf \
 	    $(DESTDIR)/usr/sbin/echessd \
 	    $(DESTDIR)/usr/sbin/echessd-wrapper \
-	    $(DESTDIR)/etc/init.d/echessd
+	    $(DESTDIR)/etc/init.d/echessd \
+	    $(DESTDIR)/var/run/echessd
