@@ -87,10 +87,13 @@ debian-install:
 	install -m 755 pkg.d/debian/initd.sh $(DESTDIR)/etc/init.d/echessd
 	install -m 755 -d $(DESTDIR)/usr/sbin
 	install -m 755 echessd $(DESTDIR)/usr/sbin
+	install -m 755 pkg.d/wrapper.sh $(DESTDIR)/usr/sbin/echessd-wrapper
 	install -m 755 -d $(DESTDIR)/var/lib/echessd
 	install -m 755 -d $(DESTDIR)/var/run/echessd
 	install -m 755 -d $(DESTDIR)/var/log/echessd
 
 debian-uninstall:
-	rm -rf -- $(DESTDIR)/etc/echessd.conf $(DESTDIR)/usr/sbin/echessd \
+	rm -rf -- $(DESTDIR)/etc/echessd.conf \
+	    $(DESTDIR)/usr/sbin/echessd \
+	    $(DESTDIR)/usr/sbin/echessd-wrapper \
 	    $(DESTDIR)/etc/init.d/echessd

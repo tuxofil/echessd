@@ -40,7 +40,7 @@ do_start(){
     $DAEMON --ping $CONFIG > /dev/null && return 1
     start-stop-daemon --quiet --start --background --make-pidfile \
         --pidfile $PIDFILE --user $NAME --chuid $NAME \
-        --exec $DAEMON -- $CONFIG || return 2
+        --exec $DAEMON-wrapper -- $CONFIG || return 2
 }
 
 #
