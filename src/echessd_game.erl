@@ -234,7 +234,7 @@ move(?GAME_CLASSIC, History, Ply) ->
 %% The function used only for current move highlighting in
 %% the user interface.
 -spec hint(GameType :: gametype(), History :: history()) ->
-                  Plies :: [ply()].
+                  Plies :: [ply_coords()].
 hint(?GAME_CLASSIC, History) ->
     echessd_rules_classic:hint(History).
 
