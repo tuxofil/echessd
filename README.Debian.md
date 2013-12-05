@@ -1,4 +1,19 @@
-# Installing on a Debian box
+# Debian notes
+
+## Runtime dependencies
+
+* erlang
+* erlang-inets
+* erlang-mnesia
+
+## Build dependencies
+
+* make
+* erlang
+* erlang-inets
+* erlang-edoc (needed for 'html' makefile target)
+
+## Installing/Uninstalling system-wide
 
     $ sudo make debian-install
 
