@@ -12,6 +12,7 @@
  8. Play
  9. Server administration
  10. Security
+ 11. Reporting bugs
 
 ### 1. Summary
 
@@ -128,6 +129,18 @@ Important note: the server must be stopped while database initialisation.
    execute ANY code with privileges of _Echessd_ Server process;
 3. As issue of the 2, you should change the 'cookie' string to
    something long and random which will be hard to guess.
+
+### 11. Reporting bugs
+
+_Echessd_ is a young project and I'm sure there is a lot of bugs
+and inconsistencies. On the other hand, _Echessd_ is not such
+big project to support mailing list or bug tracker. So, in the
+case of bug you can:
+
+ - submit an email to me with subject "echessd: ....";
+ - if you're [GitHub](https://github.com/) user, create an issue on a
+   [project's page](https://github.com/tuxofil/echessd/issues/new);
+ - fork, patch and create a pull request.
 
 -----------------------------------------------------------------
 Aleksey Morarash <aleksey.morarash@gmail.com>, 2013
