@@ -99,6 +99,8 @@ To initialize the database (all data will be destroyed):
 
     $ ./echessd --init /path/to/echessd.conf
 
+Important note: the server must be stopped while database initialisation.
+
 ### 9. Security
 
 1. Do not run the _Echessd_ with superuser privileges;
