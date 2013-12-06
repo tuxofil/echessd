@@ -26,6 +26,7 @@
  <li>{@section Developers info}
   <ol>
    <li>{@section Supervision tree}</li>
+   <li>{@section HTTP request processing}</li>
   </ol>
  </li>
 </ol>
@@ -142,3 +143,7 @@ Important note: the server must be stopped while database initialisation.
 === Supervision tree ===
 
 <img src="figure_1.png" />
+
+=== HTTP request processing ===
+
+<img src="figure_2.png" />

@@ -1,0 +1,168 @@
+digraph G{
+  label = "HTTP request processing graph";
+  rankdir = TB;
+
+  Browser[
+    shape = box, style = rounded,
+    label = "User's Web Browser\n(e.g. Firefox)"
+  ];
+
+  subgraph cluster_echessd{
+    style = filled;
+    color = grey;
+    label = "Echessd Erlang Application";
+    labelloc = b;
+    WebServer[
+      shape = box, style = rounded,
+      label = "WWW Server\n(echessd_httpd)"
+    ];
+    RequestProcessor[
+      shape = box, style = rounded,
+      label = "HTTP Request Processor.\nHandles GET and POST\nfor dynamic pages\n(echessd_request_processor)"
+    ];
+    HtmlGenerator[
+      shape = box, style = rounded,
+      label = "HTML Generation Library\n(echessd_html)"
+    ];
+    MimeTypeDatabase[
+      shape = box, style = rounded,
+      label = "MIME Type Database\n(echessd_mime_types)"
+    ];
+    LangDatabase[
+      shape = box, style = rounded,
+      label = "Internationalisation\nDatabase\n(echessd_lang)"
+    ];
+    StyleDatabase[
+      shape = box, style = rounded,
+      label = "CSS Style\nDatabase\n(echessd_styles)"
+    ];
+    PrivFS[
+      shape = box, style = rounded,
+      label = "Priv Virtual\nFilesystem\n(echessd_priv)"
+    ];
+    UserDatabaseApi[
+      shape = box, style = rounded,
+      label = "User Database API\n(echessd_user)"
+    ];
+    GameDatabaseApi[
+      shape = box, style = rounded,
+      label = "Game Database API\n(echessd_game)"
+    ];
+    SessionDatabase[
+      shape = box, style = rounded,
+      label = "HTTP Session\nDatabase\n(echessd_session)"
+    ];
+    DatabaseApi[
+      shape = box, style = rounded,
+      label = "Mnesia API\n(echessd_db)"
+    ];
+    StaticResources[
+      shape = folder,
+      label = "Internal\nStatic Resources\n(*.css, *.ico etc)"
+    ];
+    Logger[
+      shape = box, style = rounded,
+      label = "Logger\n(echessd_log)"
+    ];
+    ConfigurationDatabase[
+      shape = box, style = rounded,
+      label = "Configuration\nDatabase\n(echessd_cfg)"
+    ];
+    ConfigurationParser[
+      shape = box, style = rounded,
+      label = "Configuration\nParser\n(echessd_config_parser)"
+    ];
+    NotificationApi[
+      shape = box, style = rounded,
+      label = "Notification API\n(echessd_notify)"
+    ];
+  };
+
+  ConfigurationFile[
+    shape = folder,
+    label = "Echessd\nConfiguration File\n(echessd.conf)"
+  ];
+
+  LogFile[
+    shape = folder,
+    label = "Echessd\nLog File\n(echessd.log)"
+  ];
+
+  MimeTypesFile[
+    shape = folder,
+    label = "MIME Type\nDatabase\n(/etc/mime.types)"
+  ];
+
+  Mnesia[
+    shape = box, style = rounded,
+    label = "Mnesia\nErlang\nApplication"
+  ];
+
+  SendXMPP[
+    shape = box, style = rounded,
+    label = "sendxmpp"
+  ];
+
+  Browser -> WebServer[
+    label = "HTTP"
+  ];
+  WebServer -> MimeTypeDatabase -> MimeTypesFile;
+  WebServer -> PrivFS -> StaticResources;
+  WebServer -> RequestProcessor;
+  RequestProcessor -> HtmlGenerator;
+  RequestProcessor -> UserDatabaseApi -> DatabaseApi;
+  RequestProcessor -> GameDatabaseApi -> DatabaseApi;
+  GameDatabaseApi -> NotificationApi -> SendXMPP;
+  RequestProcessor -> SessionDatabase;
+  DatabaseApi -> Mnesia;
+  HtmlGenerator -> LangDatabase;
+  HtmlGenerator -> StyleDatabase;
+
+  // logging streams
+  Logger -> LogFile;
+  WebServer -> Logger[
+    style = dotted, color = blue
+  ];
+  RequestProcessor -> Logger[
+    style = dotted, color = blue
+  ];
+  UserDatabaseApi -> Logger[
+    style = dotted, color = blue
+  ];
+  GameDatabaseApi -> Logger[
+    style = dotted, color = blue
+  ];
+  LangDatabase -> Logger[
+    style = dotted, color = blue
+  ];
+  ConfigurationParser -> Logger[
+    style = dotted, color = blue
+  ];
+  NotificationApi -> Logger[
+    style = dotted, color = blue
+  ];
+
+  // configuration streams
+  ConfigurationDatabase -> ConfigurationParser -> ConfigurationFile;
+  LangDatabase -> ConfigurationDatabase[
+    style = dotted, color = red
+  ];
+  StyleDatabase -> ConfigurationDatabase[
+    style = dotted, color = red
+  ];
+  MimeTypeDatabase -> ConfigurationDatabase[
+    style = dotted, color = red
+  ];
+  HtmlGenerator -> ConfigurationDatabase[
+    style = dotted, color = red
+  ];
+  UserDatabaseApi -> ConfigurationDatabase[
+    style = dotted, color = red
+  ];
+  WebServer -> ConfigurationDatabase[
+    style = dotted, color = red
+  ];
+  NotificationApi -> ConfigurationDatabase[
+    style = dotted, color = red
+  ];
+}
