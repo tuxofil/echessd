@@ -9,9 +9,14 @@
 ## Build dependencies
 
 * make
+* zip
 * erlang
 * erlang-inets
-* erlang-edoc (needed for 'html' makefile target)
+
+To build HTML documentation you also have to install:
+
+* erlang-edoc
+* graphviz
 
 ## Installing/Uninstalling system-wide
 
