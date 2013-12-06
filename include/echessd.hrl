@@ -80,14 +80,6 @@
          ?SECTION_DRAW_CONFIRM, ?SECTION_DRAW, ?SECTION_GIVEUP_CONFIRM,
          ?SECTION_GIVEUP]).
 
--define(SECTIONS,
-        [?SECTION_HOME, ?SECTION_GAME,
-         ?SECTION_USERS, ?SECTION_USER,
-         ?SECTION_NEWGAME,
-         ?SECTION_EDITUSER, ?SECTION_DRAW_CONFIRM,
-         ?SECTION_GIVEUP_CONFIRM, ?SECTION_PASSWD_FORM
-        ]).
-
 %% http query keys
 -define(Q_GOTO, goto).
 -define(Q_STEP, step).
