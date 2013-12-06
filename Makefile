@@ -45,10 +45,15 @@ $(APP): compile
 	rm -f -- $(APP).zip
 	chmod 755 $(APP)
 
+FIGURES = $(patsubst %.dot, %.png, $(wildcard doc/*.dot))
+
 EDOC_OPTS = {application, $(APP)}, {preprocess, true}
-html:
+html: $(FIGURES)
 	sed "s/{{VERSION}}/$(VERSION)/" doc/overview.edoc.in > doc/overview.edoc
 	erl -noinput -eval 'edoc:application($(APP),".",[$(EDOC_OPTS)]),halt()'
+
+%.png: %.dot
+	dot -T png $< > $@
 
 eunit:
 	$(MAKE) TEST=y clean compile
