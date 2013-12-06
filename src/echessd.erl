@@ -151,8 +151,13 @@ do_stop(InstanceID, Cookie) ->
     ok = start_net_kernel(MyID, Cookie),
     case net_adm:ping(ServerNode = node_fullname(InstanceID)) of
         pong ->
-            ok = rpc:call(ServerNode, erlang, halt, [0]),
-            halt(0);
+            catch rpc:call(ServerNode, erlang, halt, [0]),
+            case net_adm:ping(ServerNode) of
+                pang ->
+                    halt(0);
+                pong ->
+                    err("Failed to stop the server", [])
+            end;
         pang ->
             err("Echessd is not alive", [])
     end.
