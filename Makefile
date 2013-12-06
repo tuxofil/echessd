@@ -20,10 +20,6 @@ ifdef TEST
 COPTS := $(COPTS), {d, 'TEST'}
 endif
 
-ifdef TRACE
-COPTS := $(COPTS), {d, 'TRACE'}
-endif
-
 OTPREL = $(shell erl -noshell -eval 'io:format(erlang:system_info(otp_release)),halt()')
 ifeq ($(shell expr $(OTPREL) '<' R14B02), 1)
 COPTS := $(COPTS), {d, 'WITHOUT_INETS_HEADER'}
