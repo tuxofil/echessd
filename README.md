@@ -36,7 +36,7 @@ Goals of the project:
 
  - cross platform (all you need to run is Erlang installed);
  - easy configuration. Functional even with empty configuration file;
- - multi language support;
+ - multi language support (as for now: English, Russian, Ukrainian);
  - switchable styles;
  - notifications with XMPP (Jabber);
  - logging to a file;
