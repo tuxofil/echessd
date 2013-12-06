@@ -32,3 +32,17 @@ To run [Dialyzer](http://erlang.org/doc/apps/dialyzer/users_guide.html) type:
 
     $ make dialyze
 
+## Translate Echessd to a new language
+
+All internationalisation data is defined in a _priv/echessd.lang_ file.
+There is no need to make changes in other places to add support of a new language.
+As far as the file is compiled in the Echessd executable, you'll need to
+rebuild and restart the Echessd Server.
+
+## Add a new CSS style
+
+The task must be done in three stages:
+
+ 1. Add the new style declaration to a _priv/echessd.styles_ file;
+ 2. Add a corresponding CSS file to a _priv/www_ directory;
+ 3. Rebuild and restart the Echessd.
