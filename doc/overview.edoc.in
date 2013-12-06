@@ -23,6 +23,11 @@
  <li>{@section Play}</li>
  <li>{@section Server administration}</li>
  <li>{@section Security}</li>
+ <li>{@section Developers info}
+  <ol>
+   <li>{@section Supervision tree}</li>
+  </ol>
+ </li>
 </ol>
 
 == Summary ==
@@ -132,3 +137,8 @@ Important note: the server must be stopped while database initialisation.
    something long and random which will be hard to guess.</li>
 </ol>
 
+== Developers info ==
+
+=== Supervision tree ===
+
+<img src="figure_1.png" />

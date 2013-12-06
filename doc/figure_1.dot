@@ -1,0 +1,73 @@
+digraph G{
+  label = "Echessd supervision tree";
+  rankdir = LR;
+
+  ApplicationMaster[
+    shape = box, style = rounded,
+    label = "Echessd\nApplication\nMaster",
+  ];
+  Supervisor[
+    shape = box, style = rounded,
+    label = "Main Supervisor\n(echessd_sup)"
+  ];
+  Logger[
+    shape = box, style = rounded,
+    label = "Logger\n(echessd_log)"
+  ];
+  PrivFS[
+    shape = box, style = rounded,
+    label = "Priv Virtual\nFilesystem\n(echessd_priv)"
+  ];
+  LangDatabase[
+    shape = box, style = rounded,
+    label = "Internationalisation\nDatabase\n(echessd_lang)"
+  ];
+  StyleDatabase[
+    shape = box, style = rounded,
+    label = "CSS Style\nDatabase\n(echessd_styles)"
+  ];
+  ConfigurationDatabase[
+    shape = box, style = rounded,
+    label = "Configuration\nDatabase\n(echessd_cfg)"
+  ];
+  MimeTypeDatabase[
+    shape = box, style = rounded,
+    label = "MIME Type Database\n(echessd_mime_types)"
+  ];
+  SessionDatabase[
+    shape = box, style = rounded,
+    label = "HTTP Session\nDatabase\n(echessd_session)"
+  ];
+  Warden[
+    shape = box, style = rounded,
+    label = "WWW Server Warden\n(echessd_httpd_warden)"
+  ];
+  WebServer[
+    shape = box, style = rounded,
+    label = "WWW Server\n(echessd_httpd)"
+  ];
+  RequestHandler1[
+    shape = box, style = dotted,
+    label = "HTTP Request Handler"
+  ];
+  RequestHandler2[
+    shape = box, style = dotted,
+    label = "          ...          "
+  ];
+  RequestHandler3[
+    shape = box, style = dotted,
+    label = "HTTP Request Handler"
+  ];
+
+  ApplicationMaster -> Supervisor -> Logger;
+  Supervisor -> PrivFS;
+  Supervisor -> LangDatabase;
+  Supervisor -> StyleDatabase;
+  Supervisor -> ConfigurationDatabase;
+  Supervisor -> MimeTypeDatabase;
+  Supervisor -> SessionDatabase;
+  Supervisor -> Warden -> WebServer;
+  WebServer -> RequestHandler1;
+  WebServer -> RequestHandler2;
+  WebServer -> RequestHandler3;
+}
