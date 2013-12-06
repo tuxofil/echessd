@@ -10,15 +10,13 @@
 -behaviour(gen_server).
 
 %% API exports
--export([start_link/0, reconfig/0]).
+-export([start_link/0, hup/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_info/2, handle_cast/2,
          terminate/2, code_change/3]).
 
 -include("echessd.hrl").
-
--define(reconfig, '*reconfig').
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -30,10 +28,9 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, no_args, []).
 
 %% @doc Sends 'reconfig' signal to the warden process.
--spec reconfig() -> ok.
-reconfig() ->
-    catch ?MODULE ! ?reconfig,
-    ok.
+-spec hup() -> ok.
+hup() ->
+    ok = gen_server:cast(?MODULE, hup).
 
 %% ----------------------------------------------------------------------
 %% gen_server callbacks
@@ -49,20 +46,14 @@ reconfig() ->
 -spec init(Args :: any()) -> {ok, InitialState :: #state{}}.
 init(_Args) ->
     false = process_flag(trap_exit, true),
-    self() ! ?reconfig,
+    ok = gen_server:cast(?MODULE, hup),
     echessd_log:info("~w> started", [?MODULE]),
     {ok, #state{}}.
 
 %% @hidden
--spec handle_cast(Request :: any(), State :: #state{}) ->
+-spec handle_cast(Request :: hup, State :: #state{}) ->
                          {noreply, NewState :: #state{}}.
-handle_cast(_Request, State) ->
-    {noreply, State}.
-
-%% @hidden
--spec handle_info(Info :: any(), State :: #state{}) ->
-                         {noreply, State :: #state{}}.
-handle_info(?reconfig, State) ->
+handle_cast(hup, State) ->
     echessd_log:debug("~w> got reconfig signal!", [?MODULE]),
     BindAddr = echessd_cfg:get(?CFG_BIND_ADDR),
     BindPort = echessd_cfg:get(?CFG_BIND_PORT),
@@ -91,11 +82,15 @@ handle_info(?reconfig, State) ->
             end;
        true ->
             {noreply, State}
-    end;
+    end.
+
+%% @hidden
+-spec handle_info(Info :: any(), State :: #state{}) ->
+                         {noreply, State :: #state{}}.
 handle_info({'EXIT', From, Reason}, State)
   when From == State#state.server ->
     echessd_log:err("HTTPD process died: ~99999p", [Reason]),
-    self() ! ?reconfig,
+    ok = gen_server:cast(?MODULE, hup),
     {noreply, State#state{server = undefined}};
 handle_info(_Request, State) ->
     {noreply, State}.

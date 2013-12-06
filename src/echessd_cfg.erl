@@ -55,7 +55,7 @@ init(_Args) ->
 %% @hidden
 -spec handle_cast(Request :: hup, State :: #state{}) ->
                          {noreply, NewState :: #state{}}.
-handle_cast(_Request, State) ->
+handle_cast(hup, State) ->
     ok = read(),
     {noreply, State}.
 

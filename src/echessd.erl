@@ -122,9 +122,9 @@ do_hup(InstanceID, Cookie) ->
     ok = start_net_kernel(MyID, Cookie),
     case net_adm:ping(ServerNode = node_fullname(InstanceID)) of
         pong ->
-            ok = rpc:call(ServerNode, echessd_cfg, read, []),
-            ok = rpc:call(ServerNode, echessd_log, reopen, []),
-            ok = rpc:call(ServerNode, echessd_web_warden, reconfig, []),
+            ok = rpc:call(ServerNode, echessd_cfg, hup, []),
+            ok = rpc:call(ServerNode, echessd_log, hup, []),
+            ok = rpc:call(ServerNode, echessd_httpd_warden, hup, []),
             halt(0);
         pang ->
             err("Echessd is not alive", [])
