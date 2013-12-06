@@ -24,7 +24,7 @@ Goals of the project:
  - no email address collecting;
  - no social networking;
  - less network traffic:
-   - no images (except captcha maybe);
+   - no images;
    - no ads;
  - no extra software dependencies;
  - just playing chess with other people. Anytime, everywhere
@@ -60,7 +60,7 @@ The server will start as a foreground process.
 
 ### 7. Play
 
-1. Send the browser to [http://localhost:8888/](http://localhost:8888/)
+1. Send the browser to [http://localhost:8888/](http://localhost:8888/);
 2. Register a new user;
 3. Choose an opponent in user list and hit the button 'Create new game';
 4. Wait while the opponent confirms the game (you will need to
