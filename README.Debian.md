@@ -5,6 +5,7 @@
 * erlang
 * erlang-inets
 * erlang-mnesia
+* sendxmpp (to send notifications with Jabber)
 
 ## Build dependencies
 
