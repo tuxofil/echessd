@@ -28,7 +28,7 @@ To run EUnit tests type:
 
     $ make eunit
 
-To run [Dialyzer http://erlang.org/doc/apps/dialyzer/users_guide.html] type:
+To run [Dialyzer](http://erlang.org/doc/apps/dialyzer/users_guide.html) type:
 
     $ make dialyze
 
