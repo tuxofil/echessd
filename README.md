@@ -4,13 +4,14 @@
 
  1. Summary
  2. Goals
- 3. License
- 4. Build
- 5. Configure
- 6. Run
- 7. Play
- 8. Server administration
- 9. Security
+ 3. Features
+ 4. License
+ 5. Build
+ 6. Configure
+ 7. Run
+ 8. Play
+ 9. Server administration
+ 10. Security
 
 ### 1. Summary
 
@@ -30,12 +31,25 @@ Goals of the project:
  - just playing chess with other people. Anytime, everywhere
    with any type of a browser - even like lynx or w3m.
 
-### 3. License
+### 3. Features
+
+ - cross platform (all you need to run is Erlang installed);
+ - easy configuration. Functional even with empty configuration file;
+ - multi language support;
+ - switchable styles;
+ - notifications with XMPP (Jabber);
+ - logging to a file;
+ - reconfiguration on-the-fly;
+ - database backing up and restore using text file;
+ - multithreaded request processing;
+ - user's password encryption.
+
+### 4. License
 
 _Echessd_ uses a [FreeBSD License](http://www.freebsd.org/copyright/freebsd-license.html).
 You can obtain the license online or in the file LICENSE on the top of Echessd source tree.
 
-### 4. Build
+### 5. Build
 
 Erlang must be installed to build and run the _Echessd_.
 You always can obtain the latest Erlang version [here](http://www.erlang.org/download.html)
@@ -46,19 +60,23 @@ will work with older Erlang versions.
 
     $ make
 
-### 5. Configure
+To build developer HTML documentation type:
+
+    $ make html
+
+### 6. Configure
 
 You can use an _echessd.conf_ file as example of configuration for the _Echessd_.
 It contains reasonable* (see Security section) defaults and configuration
 parameter explanations.
 
-### 6. Run
+### 7. Run
 
     $ ./echessd /path/to/echessd.conf
 
 The server will start as a foreground process.
 
-### 7. Play
+### 8. Play
 
 1. Send the browser to [http://localhost:8888/](http://localhost:8888/);
 2. Register a new user;
@@ -67,7 +85,7 @@ The server will start as a foreground process.
  refresh the web page unless you're set 'Auto Refresh' to ON on the
  account settings page).
 
-### 8. Server administration
+### 9. Server administration
 
 A compiled binary of the _Echessd_ take some command line options.
 As mentioned above, to start the server, type:
@@ -101,7 +119,7 @@ To initialize the database (all data will be destroyed):
 
 Important note: the server must be stopped while database initialisation.
 
-### 9. Security
+### 10. Security
 
 1. Do not run the _Echessd_ with superuser privileges;
 2. Do not allow normal users to read your echessd.conf file

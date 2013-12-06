@@ -16,6 +16,7 @@
 <ol>
  <li>{@section Summary}</li>
  <li>{@section Goals of the project}</li>
+ <li>{@section Features}</li>
  <li>{@section License}</li>
  <li>{@section Build}</li>
  <li>{@section Configure}</li>
@@ -53,6 +54,21 @@ written with the [Erlang http://www.erlang.org/] programming language.
    with any type of a browser - even like lynx or w3m.</li>
 </ul>
 
+== Features ==
+
+<ul>
+ <li>cross platform (all you need to run is Erlang installed);</li>
+ <li>easy configuration. Functional even with empty configuration file;</li>
+ <li>multi language support;</li>
+ <li>switchable styles;</li>
+ <li>notifications with XMPP (Jabber);</li>
+ <li>logging to a file;</li>
+ <li>reconfiguration on-the-fly;</li>
+ <li>database backing up and restore using text file;</li>
+ <li>multithreaded request processing;</li>
+ <li>user's password encryption.</li>
+</ul>
+
 == License ==
 
 Echessd uses [FreeBSD License http://www.freebsd.org/copyright/freebsd-license.html].
@@ -68,6 +84,10 @@ Echessd is developed and tested with Erlang R15B01 but probably
 will work with older Erlang versions.
 
 <code>$ make</code>
+
+To build developer HTML documentation type:
+
+<code>$ make html</code>
 
 == Configure ==
 
