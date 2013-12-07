@@ -267,7 +267,7 @@ game(Session, Query) ->
            GameInfo :: echessd_game:info()) ->
                   HTML :: iolist().
 game(Session, Query, GameID, GameInfo) ->
-    FullHistory = proplists:get_value(?gi_moves, GameInfo, []),
+    FullHistory = proplists:get_value(?gi_history, GameInfo, []),
     FullHistoryLen = length(FullHistory),
     Step = proplists:get_value(?Q_STEP, Query, last),
     History =

@@ -169,8 +169,8 @@
 
 %% game info item keys
 -define(gi_type, type).
--define(gi_moves, moves).
--define(gi_time, time).
+-define(gi_history, history).
+-define(gi_created, created).
 -define(gi_private, private).
 -define(gi_creator, creator).
 -define(gi_users, users).

@@ -323,7 +323,7 @@ gameply(GameID, Username, Ply) ->
                   Username ->
                       TurnColor = echessd_game:turn_color(GameInfo),
                       GameType = proplists:get_value(?gi_type, GameInfo),
-                      History = proplists:get_value(?gi_moves, GameInfo, []),
+                      History = proplists:get_value(?gi_history, GameInfo, []),
                       {ok, _NewBoard, NewHistory, GameStatus} =
                           echessd_game:move(GameType, History, Ply),
                       {Winner, WinnerColor} =
@@ -336,7 +336,7 @@ gameply(GameID, Username, Ply) ->
                       NewGameInfo =
                           proplist_update(
                             GameInfo,
-                            [{?gi_moves, NewHistory},
+                            [{?gi_history, NewHistory},
                              {?gi_status, GameStatus},
                              {?gi_winner, Winner},
                              {?gi_winner_color, WinnerColor}]),
@@ -475,11 +475,11 @@ gamerewind(GameID) ->
     transaction_ok(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
-              History = proplists:get_value(?gi_moves, GameInfo, []),
+              History = proplists:get_value(?gi_history, GameInfo, []),
               NewHistory = all_except_last(History),
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
-                [{?gi_moves, NewHistory}, {?gi_status, ?gs_alive},
+                [{?gi_history, NewHistory}, {?gi_status, ?gs_alive},
                  {?gi_winner, undefined},
                  {?gi_winner_color, undefined}])
       end).
@@ -493,7 +493,7 @@ gamereset(GameID) ->
               GameInfo = ll_get_props(?dbt_games, GameID),
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
-                [{?gi_moves, []}, {?gi_status, ?gs_alive},
+                [{?gi_history, []}, {?gi_status, ?gs_alive},
                  {?gi_winner, undefined},
                  {?gi_winner_color, undefined}])
       end).

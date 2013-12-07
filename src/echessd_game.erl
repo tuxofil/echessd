@@ -65,8 +65,8 @@
 
 -type info_item() ::
         {?gi_type, gametype()} |
-        {?gi_moves, history()} |
-        {?gi_time, erlang:timestamp()} |
+        {?gi_history, history()} |
+        {?gi_created, erlang:timestamp()} |
         {?gi_private, boolean()} |
         {?gi_creator, echessd_user:name()} |
         {?gi_users, [{echessd_user:name(), color()}]} |
@@ -126,7 +126,7 @@
 add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
     Props =
         [{?gi_type, GameType},
-         {?gi_time, now()},
+         {?gi_created, now()},
          {?gi_creator, Owner},
          {?gi_status, ?gs_alive},
          {?gi_acknowledged, Owner == Opponent},
@@ -206,7 +206,7 @@ ply(ID, User, Ply) ->
               "game ~9999p: user ~9999p moved ~9999p",
               [ID, User, Coords]),
             [LastPly | _] =
-                lists:reverse(proplists:get_value(?gi_moves, Info)),
+                lists:reverse(proplists:get_value(?gi_history, Info)),
             case proplists:get_value(?gi_status, Info) of
                 ?gs_alive -> nop;
                 _GameEndedStatus ->
@@ -294,7 +294,7 @@ who_must_turn(Info) ->
 -spec turn_color(Info :: info()) -> Color :: color().
 turn_color(Info) ->
     turn_color_by_history(
-      proplists:get_value(?gi_moves, Info, [])).
+      proplists:get_value(?gi_history, Info, [])).
 
 %% @doc Return the color of the side that must make the next turn.
 -spec turn_color_by_history(History :: history()) -> Color :: color().
