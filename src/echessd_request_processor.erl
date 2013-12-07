@@ -152,20 +152,16 @@ handle_post(?SECTION_PASSWD, Query, Session)
     Password1 = proplists:get_value(?Q_EDIT_PASSWORD1, Query),
     Password2 = proplists:get_value(?Q_EDIT_PASSWORD2, Query),
     case echessd_user:auth(Session#session.username, Password0) of
-        {ok, _UserInfo} ->
-            if Password1 /= Password2 ->
-                    geterr(Session, txt_passw_conf_error);
-               true ->
-                    NewUserInfo = [{password, Password1}],
-                    case echessd_user:setprops(
-                           Session#session.username, NewUserInfo) of
-                        ok ->
-                            {redirect, "/"};
-                        {error, Reason} ->
-                            geterr(Session, txt_err_passwd, Reason)
-                    end
+        {ok, _UserInfo} when Password1 == Password2 ->
+            case echessd_user:passwd(Session#session.username, Password1) of
+                ok ->
+                    {redirect, "/"};
+                {error, Reason} ->
+                    geterr(Session, txt_err_passwd, Reason)
             end;
-        _ ->
+        {ok, _UserInfo} ->
+            geterr(Session, txt_passw_conf_error);
+        {error, _Reason} ->
             echessd_html:eaccess(Session)
     end;
 handle_post(?SECTION_SAVEUSER, Query, Session)

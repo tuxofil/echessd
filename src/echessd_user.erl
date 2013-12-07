@@ -10,8 +10,7 @@
 %% API exports
 -export(
    [list/0, add/2, del/1, auth/2, getprops/1, setprops/2,
-    get_value/2, default/1,
-    lang_info/1
+    passwd/2, get_value/2, default/1
    ]).
 
 -include("echessd.hrl").
@@ -183,6 +182,12 @@ setprops(Name, Info0) ->
             FinalError
     end.
 
+%% @doc Set a new password for the user.
+-spec passwd(Name :: name(), Password :: nonempty_string()) ->
+                    ok | {error, Reason :: any()}.
+passwd(Name, Password) ->
+    setprops(Name, [{password, Password}]).
+
 %% @doc Fetch a value from the user properties.
 %% Same as proplists:get_value/2, but substitute
 %% reasonable default value when value for the Key is not set.
@@ -221,26 +226,6 @@ default(games) ->
     [];
 default(_) ->
     undefined.
-
-%% @doc Fetch the language information from the user's info.
--spec lang_info(Info :: info()) ->
-                       {LangID :: atom(),
-                        LangName :: nonempty_string()}.
-lang_info(Info) ->
-    LangID = get_value(language, Info),
-    Languages = echessd_lang:list(),
-    case proplists:get_value(LangID, Languages) of
-        [_ | _] = LangName ->
-            {LangID, LangName};
-        _ ->
-            DefLangID = echessd_cfg:get(?CFG_DEF_LANG),
-            case proplists:get_value(DefLangID, Languages) of
-                [_ | _] = LangName ->
-                    {DefLangID, LangName};
-                _ ->
-                    throw({error, no_default_language})
-            end
-    end.
 
 %% ----------------------------------------------------------------------
 %% Internal functions

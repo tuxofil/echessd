@@ -685,9 +685,9 @@ user_info(Session, Username, UserInfo) ->
                              [{CellCaption :: iolist(),
                                CellValue :: iolist()}].
 user_info_cells(Session, Username, UserInfo) ->
-    LangInfo = echessd_user:lang_info(UserInfo),
     lists:flatmap(
-      fun(login) -> [{gettext(Session, txt_login, []), Username}];
+      fun(login) ->
+              [{gettext(Session, txt_login, []), Username}];
          (fullname = Key) ->
               [{gettext(Session, txt_fullname, []),
                 case echessd_user:get_value(Key, UserInfo) of
@@ -707,9 +707,11 @@ user_info_cells(Session, Username, UserInfo) ->
               [{gettext(Session, txt_timezone, []),
                 echessd_lib:time_offset_to_list(
                   echessd_user:get_value(Key, UserInfo))}];
-         (language) ->
-              {_LangAbbr, LangName} = LangInfo,
-              [{gettext(Session, txt_language, []), LangName}];
+         (language = Key) ->
+              [{gettext(Session, txt_language, []),
+                proplists:get_value(
+                  echessd_user:get_value(Key, UserInfo),
+                  echessd_lang:list())}];
          (_) -> []
       end, [login, fullname, created, timezone, language]).
 
