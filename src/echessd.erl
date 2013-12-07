@@ -12,6 +12,19 @@
 
 -include("echessd.hrl").
 
+-define(opt_key_dump, dump).
+-define(opt_key_load, load).
+-define(opt_key_config, config).
+
+-define(opt_sasl, sasl).
+-define(opt_hup, hup).
+-define(opt_ping, ping).
+-define(opt_init, init).
+-define(opt_stop, stop).
+-define(opt_dump(Filename), {?opt_key_dump, Filename}).
+-define(opt_load(Filename), {?opt_key_load, Filename}).
+-define(opt_config(Filename), {?opt_key_config, Filename}).
+
 %% --------------------------------------------------------------------
 %% Type definitions
 %% --------------------------------------------------------------------
@@ -19,8 +32,9 @@
 -type parsed_args() :: [parsed_arg()].
 
 -type parsed_arg() ::
-        sasl | hup | ping | init | stop |
-        dump | load | {config, file:filename()}.
+        ?opt_sasl | ?opt_hup | ?opt_ping | ?opt_init | ?opt_stop |
+        ?opt_dump(file:filename()) | ?opt_load(file:filename()) |
+        ?opt_config(file:filename()).
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -41,14 +55,14 @@ main(Args) ->
     _IgnoredStdout = os:cmd("epmd -address 127.0.0.1 -daemon"),
     %% parse command line arguments
     ParsedArgs = parse_args(Args),
-    case proplists:is_defined(sasl, ParsedArgs) of
+    case proplists:is_defined(?opt_sasl, ParsedArgs) of
         true ->
             ok = application:start(sasl, permanent);
         false ->
             nop
     end,
     %% read and parse configuration file
-    ConfigPath = proplists:get_value(config, ParsedArgs),
+    ConfigPath = proplists:get_value(?opt_key_config, ParsedArgs),
     Config = echessd_config_parser:read(ConfigPath),
     InstanceID = proplists:get_value(?CFG_INSTANCE_ID, Config),
     Cookie     = proplists:get_value(?CFG_COOKIE, Config),
@@ -81,7 +95,8 @@ main(Args) ->
                       MnesiaDir :: nonempty_string()) ->
                              ok | no_return().
 handle_cmd_args(ParsedArgs, InstanceID, Cookie, MnesiaDir) ->
-    case [O || O <- [hup, ping, stop, init, dump, load],
+    case [O || O <- [?opt_hup, ?opt_ping, ?opt_stop, ?opt_init,
+                     ?opt_key_dump, ?opt_key_load],
                proplists:is_defined(O, ParsedArgs)] of
         [_, _ | _] ->
             err("--hup, --ping, --stop, --init, --dump and --load "
@@ -100,17 +115,17 @@ handle_cmd_args(ParsedArgs, InstanceID, Cookie, MnesiaDir) ->
                      Cookie :: atom(),
                      MnesiaDir :: nonempty_string()) ->
                             ok | no_return().
-handle_cmd_arg(init, InstanceID, _Cookie, MnesiaDir) ->
+handle_cmd_arg(?opt_init, InstanceID, _Cookie, MnesiaDir) ->
     do_init(InstanceID, MnesiaDir);
-handle_cmd_arg(hup, InstanceID, Cookie, _MnesiaDir) ->
+handle_cmd_arg(?opt_hup, InstanceID, Cookie, _MnesiaDir) ->
     do_hup(InstanceID, Cookie);
-handle_cmd_arg(ping, InstanceID, Cookie, _MnesiaDir) ->
+handle_cmd_arg(?opt_ping, InstanceID, Cookie, _MnesiaDir) ->
     do_ping(InstanceID, Cookie);
-handle_cmd_arg(stop, InstanceID, Cookie, _MnesiaDir) ->
+handle_cmd_arg(?opt_stop, InstanceID, Cookie, _MnesiaDir) ->
     do_stop(InstanceID, Cookie);
-handle_cmd_arg({dump, DumpFilePath}, InstanceID, Cookie, _MnesiaDir) ->
+handle_cmd_arg(?opt_dump(DumpFilePath), InstanceID, Cookie, _MnesiaDir) ->
     do_dump(InstanceID, Cookie, DumpFilePath);
-handle_cmd_arg({load, DumpFilePath}, InstanceID, Cookie, _MnesiaDir) ->
+handle_cmd_arg(?opt_load(DumpFilePath), InstanceID, Cookie, _MnesiaDir) ->
     do_load(InstanceID, Cookie, DumpFilePath);
 handle_cmd_arg(_ParsedArg, _InstanceID, _Cookie, _MnesiaDir) ->
     ok.
@@ -230,29 +245,29 @@ parse_args(Args) ->
 -spec parse_args(Args :: [string()], Acc :: parsed_args()) ->
                         parsed_args() | no_return().
 parse_args(["--sasl" | Tail], Acc) ->
-    parse_args(Tail, [sasl | Acc]);
+    parse_args(Tail, [?opt_sasl | Acc]);
 parse_args(["--hup" | Tail], Acc) ->
-    parse_args(Tail, [hup | Acc]);
+    parse_args(Tail, [?opt_hup | Acc]);
 parse_args(["--ping" | Tail], Acc) ->
-    parse_args(Tail, [ping | Acc]);
+    parse_args(Tail, [?opt_ping | Acc]);
 parse_args(["--stop" | Tail], Acc) ->
-    parse_args(Tail, [stop | Acc]);
+    parse_args(Tail, [?opt_stop | Acc]);
 parse_args(["--init" | Tail], Acc) ->
-    parse_args(Tail, [init | Acc]);
+    parse_args(Tail, [?opt_init | Acc]);
 parse_args(["--dump", [_ | _] = DumpFilePath | Tail], Acc) ->
-    parse_args(Tail, [{dump, DumpFilePath} | Acc]);
+    parse_args(Tail, [?opt_dump(DumpFilePath) | Acc]);
 parse_args(["--dump", _ | _Tail], _Acc) ->
     err("--dump option assumes non empty value", []);
 parse_args(["--load", [_ | _] = DumpFilePath | Tail], Acc) ->
-    parse_args(Tail, [{load, DumpFilePath} | Acc]);
+    parse_args(Tail, [?opt_load(DumpFilePath) | Acc]);
 parse_args(["--load", _ | _Tail], _Acc) ->
     err("--load option assumes non empty value", []);
 parse_args(["--", ConfigFilePath], Acc) ->
-    [{config, ConfigFilePath} | Acc];
+    [?opt_config(ConfigFilePath) | Acc];
 parse_args(["-" ++ _ = Option | _Tail], _Acc) ->
     err("Unrecognized option: ~p", [Option]);
 parse_args([ConfigFilePath], Acc) ->
-    [{config, ConfigFilePath} | Acc];
+    [?opt_config(ConfigFilePath) | Acc];
 parse_args(Other, _Acc) ->
     err("Unrecognized option or arguments: ~p", [Other]).
 

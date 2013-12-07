@@ -172,22 +172,20 @@ do_reconfig(State) ->
 -spec openlog(OldIoDevice :: io:device() | undefined,
               LogPath :: nonempty_string() | undefined) ->
                      NewIoDevice :: io:device() | undefined.
-openlog(OldIoDevice, LogPath) ->
+openlog(OldIoDevice, undefined) ->
     catch file:close(OldIoDevice),
-    case LogPath of
-        [_ | _] ->
-            catch filelib:ensure_dir(LogPath),
-            case file:open(LogPath, [raw, append]) of
-                {ok, IoDevice} ->
-                    IoDevice;
-                {error, Reason} ->
-                    io:format(
-                      standard_error,
-                      format_msg(
-                        now(), ?LOG_ERR, "Unable to open ~9999p: ~p",
-                        [LogPath, Reason])),
-                    undefined
-            end;
-        undefined ->
+    undefined;
+openlog(OldIoDevice, [_ | _] = LogPath) ->
+    catch file:close(OldIoDevice),
+    catch filelib:ensure_dir(LogPath),
+    case file:open(LogPath, [raw, append]) of
+        {ok, IoDevice} ->
+            IoDevice;
+        {error, Reason} ->
+            io:format(
+              standard_error,
+              format_msg(
+                now(), ?LOG_ERR, "Unable to open ~9999p: ~p",
+                [LogPath, Reason])),
             undefined
     end.

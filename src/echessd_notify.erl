@@ -44,11 +44,11 @@ game_move(GameID, Username, Ply) ->
                       _ -> {Ply, []}
                   end,
               FinalCoords =
-                  case proplists:get_value(notation, Meta) of
+                  case proplists:get_value(?pi_notation, Meta) of
                       [_ | _] = Notation -> Notation;
                       _ -> Coords
                   end,
-              case proplists:get_value(comment, Meta) of
+              case proplists:get_value(?pi_comment, Meta) of
                   [_ | _] = Comment ->
                       io_lib:format(
                         Format ++ "~n" ++
@@ -102,13 +102,13 @@ game_end(GameID) ->
     Watchers =
         lists:usort(
           echessd_game:get_watchers(GameInfo)),
-    case proplists:get_value(status, GameInfo) of
-        alive -> ok;
-        give_up ->
+    case proplists:get_value(?gi_status, GameInfo) of
+        ?gs_alive -> ok;
+        ?gs_give_up ->
             Winner =
-                proplists:get_value(winner, GameInfo),
+                proplists:get_value(?gi_winner, GameInfo),
             WinnerColor =
-                proplists:get_value(winner_color, GameInfo),
+                proplists:get_value(?gi_winner_color, GameInfo),
             Looser =
                 echessd_game:get_opponent(GameInfo, Winner),
             LooserColor =
@@ -121,11 +121,11 @@ game_end(GameID) ->
                          Winner, localize_color(WinnerColor, Lang),
                          Looser, localize_color(LooserColor, Lang)])
               end, Watchers -- [Looser]);
-        checkmate ->
+        ?gs_checkmate ->
             Winner =
-                proplists:get_value(winner, GameInfo),
+                proplists:get_value(?gi_winner, GameInfo),
             WinnerColor =
-                proplists:get_value(winner_color, GameInfo),
+                proplists:get_value(?gi_winner_color, GameInfo),
             Looser =
                 echessd_game:get_opponent(GameInfo, Winner),
             LooserColor =
@@ -138,7 +138,7 @@ game_end(GameID) ->
                          Winner, localize_color(WinnerColor, Lang),
                          Looser, localize_color(LooserColor, Lang)])
               end, Watchers -- [Winner]);
-        Draw when Draw == draw_stalemate; Draw == draw_agreement ->
+        Draw when Draw == ?gs_draw_stalemate; Draw == ?gs_draw_agreement ->
             Creator =
                 echessd_game:get_creator(GameInfo),
             CreatorColor =
@@ -187,10 +187,10 @@ do_notify_(MessageGenerator, Username) ->
         {ok, XmppUser, XmppServer, XmppPassword} ->
             case echessd_user:getprops(Username) of
                 {ok, UserInfo} ->
-                    NotifyEnabled = echessd_user:get_value(notify, UserInfo),
-                    case echessd_user:get_value(jid, UserInfo) of
+                    NotifyEnabled = echessd_user:get_value(?ui_notify, UserInfo),
+                    case echessd_user:get_value(?ui_jid, UserInfo) of
                         [_ | _] = JabberID when NotifyEnabled ->
-                            Lang = echessd_user:get_value(language, UserInfo),
+                            Lang = echessd_user:get_value(?ui_language, UserInfo),
                             try MessageGenerator(Lang) of
                                 [] -> nop;
                                 [_ | _] = Message ->

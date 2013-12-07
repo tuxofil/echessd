@@ -64,23 +64,23 @@
 -type info() :: [info_item()].
 
 -type info_item() ::
-        {type, gametype()} |
-        {moves, history()} |
-        {time, erlang:timestamp()} |
-        {private, boolean()} |
-        {creator, echessd_user:name()} |
-        {users, [{echessd_user:name(), color()}]} |
-        {status, status()} |
-        {winner, echessd_user:name()} |
-        {winner_color, color()} |
-        {draw_request_from, echessd_user:name()} |
-        {acknowledged, boolean()}.
+        {?gi_type, gametype()} |
+        {?gi_moves, history()} |
+        {?gi_time, erlang:timestamp()} |
+        {?gi_private, boolean()} |
+        {?gi_creator, echessd_user:name()} |
+        {?gi_users, [{echessd_user:name(), color()}]} |
+        {?gi_status, status()} |
+        {?gi_winner, echessd_user:name()} |
+        {?gi_winner_color, color()} |
+        {?gi_draw_request_from, echessd_user:name()} |
+        {?gi_acknowledged, boolean()}.
 
 -type status() ::
-        alive | checkmate | draw_stalemate.
+        ?gs_alive | ?gs_checkmate | ?gs_draw_stalemate.
 
 -type final_status() ::
-        status() | give_up | draw_agreement.
+        status() | ?gs_give_up | ?gs_draw_agreement.
 
 -type color() :: ?white | ?black.
 %% Color of the player. There is no place for latinos, amigo ;)
@@ -94,9 +94,9 @@
 -type ply_info() :: [ply_info_item()].
 
 -type ply_info_item() ::
-        {time, GregorianSeconds :: non_neg_integer()} |
-        {notation, ChessNotation :: nonempty_string()} |
-        {comment, Comment :: string()}.
+        {?pi_time, GregorianSeconds :: non_neg_integer()} |
+        {?pi_notation, ChessNotation :: nonempty_string()} |
+        {?pi_comment, Comment :: string()}.
 
 -type history() :: [ply()].
 %% Ply sequence from the first to the last.
@@ -125,12 +125,12 @@
                  {ok, ID :: id()} | {error, Reason :: any()}.
 add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
     Props =
-        [{type, GameType},
-         {time, now()},
-         {creator, Owner},
-         {status, alive},
-         {acknowledged, Owner == Opponent},
-         {users,
+        [{?gi_type, GameType},
+         {?gi_time, now()},
+         {?gi_creator, Owner},
+         {?gi_status, ?gs_alive},
+         {?gi_acknowledged, Owner == Opponent},
+         {?gi_users,
           [{Owner, OwnerColor},
            {Opponent, hd([?black, ?white] -- [OwnerColor])}]}
          | OtherProps],
@@ -195,9 +195,10 @@ ply(ID, User, Ply) ->
         case Ply of
             {Coords0, Meta0} ->
                 {Coords0,
-                 [{time, Seconds} |
-                  [I || {K, _} = I <- Meta0, K /= time]]};
-            _ -> {Ply, [{time, Seconds}]}
+                 [{?pi_time, Seconds} |
+                  [I || {K, _} = I <- Meta0, K /= ?pi_time]]};
+            _ ->
+                {Ply, [{?pi_time, Seconds}]}
         end,
     case echessd_db:gameply(ID, User, Ply1) of
         {ok, Info} ->
@@ -205,9 +206,9 @@ ply(ID, User, Ply) ->
               "game ~9999p: user ~9999p moved ~9999p",
               [ID, User, Coords]),
             [LastPly | _] =
-                lists:reverse(proplists:get_value(moves, Info)),
-            case proplists:get_value(status, Info) of
-                alive -> nop;
+                lists:reverse(proplists:get_value(?gi_moves, Info)),
+            case proplists:get_value(?gi_status, Info) of
+                ?gs_alive -> nop;
                 _GameEndedStatus ->
                     ok = echessd_notify:game_end(ID)
             end,
@@ -285,7 +286,7 @@ getprops(ID) ->
                            Username :: echessd_user:name().
 who_must_turn(Info) ->
     Users =
-        [{C, N} || {users, L} <- Info,
+        [{C, N} || {?gi_users, L} <- Info,
                    {N, C} <- L, lists:member(C, [?black, ?white])],
     proplists:get_value(turn_color(Info), Users).
 
@@ -293,7 +294,7 @@ who_must_turn(Info) ->
 -spec turn_color(Info :: info()) -> Color :: color().
 turn_color(Info) ->
     turn_color_by_history(
-      proplists:get_value(moves, Info, [])).
+      proplists:get_value(?gi_moves, Info, [])).
 
 %% @doc Return the color of the side that must make the next turn.
 -spec turn_color_by_history(History :: history()) -> Color :: color().
@@ -331,7 +332,7 @@ get_creator(ID) when is_integer(ID) ->
     {ok, Info} = getprops(ID),
     get_creator(Info);
 get_creator(Info) when is_list(Info) ->
-    proplists:get_value(creator, Info).
+    proplists:get_value(?gi_creator, Info).
 
 %% @doc Fetch watcher names for the game.
 -spec get_watchers((ID :: id()) |
@@ -341,7 +342,7 @@ get_watchers(ID) when is_integer(ID) ->
     {ok, Info} = getprops(ID),
     get_watchers(Info);
 get_watchers(Info) when is_list(Info) ->
-    Users = proplists:get_value(users, Info),
+    Users = proplists:get_value(?gi_users, Info),
     [N || {N, _Role} <- Users].
 
 %% @doc Fetch the player names for the game.
@@ -352,7 +353,7 @@ get_players(ID) when is_integer(ID) ->
     {ok, Info} = getprops(ID),
     get_players(Info);
 get_players(Info) when is_list(Info) ->
-    Users = proplists:get_value(users, Info),
+    Users = proplists:get_value(?gi_users, Info),
     [N || {N, Role} <- Users, lists:member(Role, [?black, ?white])].
 
 %% @doc Fetch the opponent for the user.
@@ -376,7 +377,7 @@ get_player_color(ID, Username) when is_integer(ID) ->
     {ok, Info} = getprops(ID),
     get_player_color(Info, Username);
 get_player_color(Info, Username) when is_list(Info) ->
-    Users = proplists:get_value(users, Info),
+    Users = proplists:get_value(?gi_users, Info),
     [Color | _] = [C || {N, C} <- Users, N == Username],
     Color.
 

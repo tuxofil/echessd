@@ -106,9 +106,7 @@ parse(ModData) ->
             ?HTTP_GET ->
                 GetQueryString;
             ?HTTP_POST ->
-                ModData#mod.entity_body;
-            Other ->
-                throw({bad_method, Other})
+                ModData#mod.entity_body
         end)).
 
 %% @doc Encode the query to URL query string.
@@ -207,7 +205,7 @@ parse_query_value_(?Q_EDIT_AUTO_PERIOD, String) ->
         Int
     catch
         _:_ ->
-            echessd_user:default(auto_refresh_period)
+            echessd_user:default(?ui_auto_refresh_period)
     end;
 parse_query_value_(?Q_EDIT_TIMEZONE, String) ->
     case echessd_lib:list_to_time_offset(String) of
@@ -219,7 +217,8 @@ parse_query_value_(?Q_EDIT_TIMEZONE, String) ->
 parse_query_value_(?Q_EDIT_FULLNAME, String) ->
     echessd_lib:strip(String, " \t\r\n");
 parse_query_value_(PasswordKey, [_ | _] = String)
-  when PasswordKey == ?Q_PASSWORD; PasswordKey == ?Q_EDIT_PASSWORD0;
+  when PasswordKey == ?Q_PASSWORD;
+       PasswordKey == ?Q_EDIT_PASSWORD0;
        PasswordKey == ?Q_EDIT_PASSWORD1;
        PasswordKey == ?Q_EDIT_PASSWORD2 ->
     String;
@@ -242,4 +241,3 @@ parse_query_value_(LanguageKey, String)
   when LanguageKey == ?Q_EDIT_LANGUAGE;
        LanguageKey == ?Q_LANG ->
     echessd_lang:parse(String).
-

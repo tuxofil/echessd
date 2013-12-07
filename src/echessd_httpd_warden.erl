@@ -78,7 +78,7 @@ handle_cast(hup, State) ->
                 {error, Reason} ->
                     echessd_log:err(
                       "HTTP server start failed: ~99999p", [Reason]),
-                    throw({httpd_start, Reason})
+                    throw({?e_httpd_start, Reason})
             end;
        true ->
             {noreply, State}
@@ -111,8 +111,3 @@ terminate(Reason, _State) ->
                          {ok, NewState :: #state{}}.
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
-
-%% ----------------------------------------------------------------------
-%% Internal functions
-%% ----------------------------------------------------------------------
-

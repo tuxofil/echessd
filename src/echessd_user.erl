@@ -28,22 +28,22 @@
 %% User properties format definition.
 
 -type info_item() ::
-        {login, name()} |
-        {password, ((ClearPassword :: nonempty_string()) |
-                    (PasswordHash :: encrypted_password()))} |
-        {created, erlang:timestamp()} |
-        {fullname, string()} |
-        {timezone, echessd_lib:administrative_offset()} |
-        {language, LangID :: atom()} |
-        {show_in_list, boolean()} |
-        {show_history, boolean()} |
-        {show_comment, boolean()} |
-        {notify, boolean()} |
-        {auto_refresh, boolean()} |
-        {auto_refresh_period, pos_integer()} |
-        {style, StyleID :: atom()} |
-        {jid, string()} |
-        {games, [echessd_game:id()]}.
+        {?ui_login, name()} |
+        {?ui_password, ((ClearPassword :: nonempty_string()) |
+                        (PasswordHash :: encrypted_password()))} |
+        {?ui_created, erlang:timestamp()} |
+        {?ui_fullname, string()} |
+        {?ui_timezone, echessd_lib:administrative_offset()} |
+        {?ui_language, LangID :: atom()} |
+        {?ui_show_in_list, boolean()} |
+        {?ui_show_history, boolean()} |
+        {?ui_show_comment, boolean()} |
+        {?ui_notify, boolean()} |
+        {?ui_auto_refresh, boolean()} |
+        {?ui_auto_refresh_period, pos_integer()} |
+        {?ui_style, StyleID :: atom()} |
+        {?ui_jid, string()} |
+        {?ui_games, [echessd_game:id()]}.
 
 -type encrypted_password() ::
         legacy_sha1_encrypted_password() |
@@ -56,10 +56,10 @@
 -type legacy_sha1_encrypted_password() :: binary().
 
 -type info_item_key() ::
-        password | created | login | fullname | timezone |
-        language | show_in_list | show_history | show_comment |
-        notify | auto_refresh | auto_refresh_period | style |
-        jid | games.
+        ?ui_password | ?ui_created | ?ui_login | ?ui_fullname | ?ui_timezone |
+        ?ui_language | ?ui_show_in_list | ?ui_show_history | ?ui_show_comment |
+        ?ui_notify | ?ui_auto_refresh | ?ui_auto_refresh_period | ?ui_style |
+        ?ui_jid | ?ui_games.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -85,7 +85,7 @@ add(Name, Info0) ->
                         Error
                 end;
             _ ->
-                {error, {bad_username, Name}}
+                {error, {?e_bad_username, Name}}
         end,
     case Result of
         ok ->
@@ -120,18 +120,17 @@ auth(Name, ClearPassword) ->
     case getprops(Name) of
         {ok, Info} = Ok ->
             case compare_password(
-                   get_value(password, Info), ClearPassword) of
+                   get_value(?ui_password, Info), ClearPassword) of
                 true ->
                     echessd_log:info(
                       "user ~9999p authenticated",
                       [Name]),
                     Ok;
                 false ->
-                    Reason = password_incorrect,
                     echessd_log:err(
                       "user ~9999p authentication failed: ~9999p",
-                      [Name, Reason]),
-                    {error, Reason}
+                      [Name, ?e_password_incorrect]),
+                    {error, ?e_password_incorrect}
             end;
         {error, Reason} = Error ->
             echessd_log:err(
@@ -186,7 +185,7 @@ setprops(Name, Info0) ->
 -spec passwd(Name :: name(), Password :: nonempty_string()) ->
                     ok | {error, Reason :: any()}.
 passwd(Name, Password) ->
-    setprops(Name, [{password, Password}]).
+    setprops(Name, [{?ui_password, Password}]).
 
 %% @doc Fetch a value from the user properties.
 %% Same as proplists:get_value/2, but substitute
@@ -200,29 +199,29 @@ get_value(Key, _) ->
 
 %% @doc Return default value for an user property.
 -spec default(Key :: info_item_key()) -> (Value :: any()) | undefined.
-default(show_in_list) ->
+default(?ui_show_in_list) ->
     true;
-default(show_history) ->
+default(?ui_show_history) ->
     true;
-default(show_comment) ->
+default(?ui_show_comment) ->
     true;
-default(notify) ->
+default(?ui_notify) ->
     true;
-default(auto_refresh) ->
+default(?ui_auto_refresh) ->
     false;
-default(auto_refresh_period) ->
+default(?ui_auto_refresh_period) ->
     60;
-default(language) ->
+default(?ui_language) ->
     echessd_cfg:get(?CFG_DEF_LANG);
-default(style) ->
+default(?ui_style) ->
     echessd_cfg:get(?CFG_DEF_STYLE);
-default(timezone) ->
+default(?ui_timezone) ->
     echessd_lib:local_offset();
-default(jid) ->
+default(?ui_jid) ->
     "";
-default(fullname) ->
+default(?ui_fullname) ->
     "";
-default(games) ->
+default(?ui_games) ->
     [];
 default(_) ->
     undefined.
@@ -235,8 +234,8 @@ default(_) ->
 -spec hide_sensitive(Info :: info()) -> NewInfo :: info().
 hide_sensitive(Info) ->
     lists:map(
-      fun({password, _}) ->
-              {password, '*********'};
+      fun({?ui_password = Key, _}) ->
+              {Key, '*********'};
          (Other) ->
               Other
       end, Info).
@@ -280,50 +279,50 @@ check_property(Term) ->
         {Key, NewValue}
     catch
         _:_ ->
-            throw({error, {bad_info_item, Term}})
+            throw({error, {?e_bad_info_item, Term}})
     end.
 
 %% @doc
 -spec check_property_(InfoItem :: info_item()) -> Value :: any().
-check_property_({password, V}) when is_binary(V) ->
+check_property_({?ui_password, V}) when is_binary(V) ->
     V;
-check_property_({password, {Algo, Salt, Encrypted} = V})
+check_property_({?ui_password, {Algo, Salt, Encrypted} = V})
   when is_atom(Algo), is_binary(Salt), is_binary(Encrypted) ->
     V;
-check_property_({password, V}) when is_list(V) ->
+check_property_({?ui_password, V}) when is_list(V) ->
     true = is_string(V),
     Salt = crypto:rand_bytes(4),
     {sha, Salt, crypto:sha([Salt, V])};
-check_property_({created, V}) when ?is_now(V) ->
+check_property_({?ui_created, V}) when ?is_now(V) ->
     V;
-check_property_({games, V}) ->
+check_property_({?ui_games, V}) ->
     true = lists:all(fun(I) when is_integer(I), I > 0 -> true end, V),
     V;
-check_property_({fullname, V}) ->
+check_property_({?ui_fullname, V}) ->
     true = is_string(V),
     lists:sublist(V, 70);
-check_property_({timezone, V}) ->
+check_property_({?ui_timezone, V}) ->
     true = lists:member(V, echessd_lib:administrative_offsets()),
     V;
-check_property_({language, V}) ->
+check_property_({?ui_language, V}) ->
     true = lists:member(V, [N || {N, _} <- echessd_lang:list()]),
     V;
-check_property_({show_in_list, V}) when is_boolean(V) ->
+check_property_({?ui_show_in_list, V}) when is_boolean(V) ->
     V;
-check_property_({show_history, V}) when is_boolean(V) ->
+check_property_({?ui_show_history, V}) when is_boolean(V) ->
     V;
-check_property_({show_comment, V}) when is_boolean(V) ->
+check_property_({?ui_show_comment, V}) when is_boolean(V) ->
     V;
-check_property_({notify, V}) when is_boolean(V) ->
+check_property_({?ui_notify, V}) when is_boolean(V) ->
     V;
-check_property_({auto_refresh, V}) when is_boolean(V) ->
+check_property_({?ui_auto_refresh, V}) when is_boolean(V) ->
     V;
-check_property_({auto_refresh_period, V}) when is_integer(V), V >= 0 ->
+check_property_({?ui_auto_refresh_period, V}) when is_integer(V), V >= 0 ->
     V;
-check_property_({style, V}) ->
+check_property_({?ui_style, V}) ->
     true = lists:member(V, [N || {N, _} <- echessd_styles:list()]),
     V;
-check_property_({jid, V}) ->
+check_property_({?ui_jid, V}) ->
     true = is_string(V),
     V.
 

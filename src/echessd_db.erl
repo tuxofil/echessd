@@ -110,7 +110,7 @@ list_users() ->
               mnesia:foldl(
                 fun(HRec, Acc) ->
                         case echessd_user:get_value(
-                               show_in_list, HRec#hrec.val) of
+                               ?ui_show_in_list, HRec#hrec.val) of
                             false -> Acc;
                             _ ->
                                 [HRec#hrec.key | Acc]
@@ -127,7 +127,7 @@ adduser(Username, UserInfo) ->
       fun() ->
               case mnesia:read({?dbt_users, Username}) of
                   [_] ->
-                      mnesia:abort({user_already_exists, Username});
+                      mnesia:abort({?e_user_already_exists, Username});
                   _ ->
                       ll_set_props(?dbt_users, Username, UserInfo)
               end
@@ -149,7 +149,7 @@ deluser(Username) ->
 get_user_props(Username) ->
     transaction(
       fun() ->
-              [{login, Username} |
+              [{?ui_login, Username} |
                ll_get_props(?dbt_users, Username)]
       end).
 
@@ -172,8 +172,7 @@ set_user_props(Username, UserInfo) ->
 addgame(GameInfo) ->
     transaction(
       fun() ->
-              GameID = generate_game_id(),
-              set_game_props_(GameID, GameInfo),
+              set_game_props_(GameID = generate_game_id(), GameInfo),
               GameID
       end).
 
@@ -186,26 +185,25 @@ game_ack(GameID, Username) ->
       fun() ->
               _UserInfo = ll_get_props(?dbt_users, Username),
               GameInfo = ll_get_props(?dbt_games, GameID),
-              case proplists:get_value(creator, GameInfo) of
+              case proplists:get_value(?gi_creator, GameInfo) of
                   Username ->
-                      mnesia:abort(not_your_game);
+                      mnesia:abort(?e_not_your_game);
                   _ -> nop
               end,
               List =
-                  [z || {users, [_ | _] = L} <- GameInfo,
-                        {N, C} <- L,
-                        N == Username,
+                  [z || {?gi_users, [_ | _] = L} <- GameInfo,
+                        {N, C} <- L, N == Username,
                         lists:member(C, [?white, ?black])],
               if length(List) > 0 -> nop;
                  true ->
-                      mnesia:abort(not_your_game)
+                      mnesia:abort(?e_not_your_game)
               end,
-              case proplists:get_value(acknowledged, GameInfo) of
+              case proplists:get_value(?gi_acknowledged, GameInfo) of
                   true -> ok;
                   _ ->
                       ll_replace_props(
                         ?dbt_games, GameID, GameInfo,
-                        [{acknowledged, true}])
+                        [{?gi_acknowledged, true}])
               end
       end).
 
@@ -219,17 +217,16 @@ game_deny(GameID, Username) ->
               _UserInfo = ll_get_props(?dbt_users, Username),
               GameInfo = ll_get_props(?dbt_games, GameID),
               List =
-                  [z || {users, [_ | _] = L} <- GameInfo,
-                        {N, C} <- L,
-                        N == Username,
+                  [z || {?gi_users, [_ | _] = L} <- GameInfo,
+                        {N, C} <- L, N == Username,
                         lists:member(C, [?white, ?black])],
               if length(List) > 0 -> nop;
                  true ->
-                      mnesia:abort(not_your_game)
+                      mnesia:abort(?e_not_your_game)
               end,
-              case proplists:get_value(acknowledged, GameInfo) of
+              case proplists:get_value(?gi_acknowledged, GameInfo) of
                   true ->
-                      mnesia:abort(unable_to_deny_confirmed_game);
+                      mnesia:abort(?e_unable_to_deny_confirmed_game);
                   _ ->
                       delgame_(GameID, GameInfo)
               end
@@ -258,16 +255,16 @@ set_game_props(GameID, GameInfo) ->
       end).
 
 set_game_props_(GameID, GameInfo) ->
-    Users = [N || {users, L} <- GameInfo, {N, _Role} <- L],
+    Users = [N || {?gi_users, L} <- GameInfo, {N, _Role} <- L],
     lists:foreach(
       fun(Username) ->
               UserInfo = ll_get_props(?dbt_users, Username),
               UserGames =
                   lists:usort(
-                    [GameID | echessd_user:get_value(games, UserInfo)]),
+                    [GameID | echessd_user:get_value(?ui_games, UserInfo)]),
               ll_replace_props(
                 ?dbt_users, Username, UserInfo,
-                [{games, UserGames}])
+                [{?ui_games, UserGames}])
       end, Users),
     ll_set_props(?dbt_games, GameID, GameInfo).
 
@@ -286,17 +283,17 @@ delgame(GameID) ->
       end).
 
 delgame_(GameID, GameInfo) ->
-    Users = [N || {users, L} <- GameInfo, {N, _Role} <- L],
+    Users = [N || {?gi_users, L} <- GameInfo, {N, _Role} <- L],
     lists:foreach(
       fun(Username) ->
               UserInfo = ll_get_props(?dbt_users, Username),
               UserGames =
                   lists:usort(
                     echessd_user:get_value(
-                      games, UserInfo) -- [GameID]),
+                      ?ui_games, UserInfo) -- [GameID]),
               ll_replace_props(
                 ?dbt_users, Username, UserInfo,
-                [{games, UserGames}])
+                [{?ui_games, UserGames}])
       end, Users),
     mnesia:delete({?dbt_games, GameID}).
 
@@ -310,28 +307,28 @@ gameply(GameID, Username, Ply) ->
     transaction(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
-              case proplists:get_value(acknowledged, GameInfo) of
+              case proplists:get_value(?gi_acknowledged, GameInfo) of
                   true -> nop;
                   _ ->
-                      mnesia:abort(game_not_acknowledged)
+                      mnesia:abort(?e_game_not_acknowledged)
               end,
               %% check if such user exists
               _UserInfo = ll_get_props(?dbt_users, Username),
-              case proplists:get_value(status, GameInfo) of
-                  alive -> nop;
+              case proplists:get_value(?gi_status, GameInfo) of
+                  ?gs_alive -> nop;
                   _ ->
-                      mnesia:abort(game_ended)
+                      mnesia:abort(?e_game_ended)
               end,
               case echessd_game:who_must_turn(GameInfo) of
                   Username ->
                       TurnColor = echessd_game:turn_color(GameInfo),
-                      GameType = proplists:get_value(type, GameInfo),
-                      History = proplists:get_value(moves, GameInfo, []),
+                      GameType = proplists:get_value(?gi_type, GameInfo),
+                      History = proplists:get_value(?gi_moves, GameInfo, []),
                       {ok, _NewBoard, NewHistory, GameStatus} =
                           echessd_game:move(GameType, History, Ply),
                       {Winner, WinnerColor} =
                           case GameStatus of
-                              checkmate ->
+                              ?gs_checkmate ->
                                   {Username, TurnColor};
                               _ ->
                                   {undefined, undefined}
@@ -339,22 +336,22 @@ gameply(GameID, Username, Ply) ->
                       NewGameInfo =
                           proplist_update(
                             GameInfo,
-                            [{moves, NewHistory},
-                             {status, GameStatus},
-                             {winner, Winner},
-                             {winner_color, WinnerColor}]),
+                            [{?gi_moves, NewHistory},
+                             {?gi_status, GameStatus},
+                             {?gi_winner, Winner},
+                             {?gi_winner_color, WinnerColor}]),
                       ll_set_props(?dbt_games, GameID, NewGameInfo),
                       NewGameInfo;
                   _ ->
                       case lists:member(
                              Username,
-                             [N || {users, L} <- GameInfo,
+                             [N || {?gi_users, L} <- GameInfo,
                                    {N, Role} <- L,
                                    lists:member(Role, [?white, ?black])]) of
                           true ->
-                              mnesia:abort(not_your_turn);
+                              mnesia:abort(?e_not_your_turn);
                           _ ->
-                              mnesia:abort(not_your_game)
+                              mnesia:abort(?e_not_your_game)
                       end
               end
       end).
@@ -367,21 +364,21 @@ game_give_up(GameID, Username) ->
     transaction_ok(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
-              case proplists:get_value(acknowledged, GameInfo) of
+              case proplists:get_value(?gi_acknowledged, GameInfo) of
                   true -> nop;
                   _ ->
-                      mnesia:abort(game_not_acknowledged)
+                      mnesia:abort(?e_game_not_acknowledged)
               end,
               %% check if such user exists
               _UserInfo = ll_get_props(?dbt_users, Username),
               Players =
-                  [I || {users, L} <- GameInfo,
+                  [I || {?gi_users, L} <- GameInfo,
                         {_N, R} = I <- L,
                         lists:member(R, [?white, ?black])],
               case [N || {N, _} <- Players, N == Username] of
                   [_ | _] -> nop;
                   _ ->
-                      mnesia:abort(not_your_game)
+                      mnesia:abort(?e_not_your_game)
               end,
               MyColor =
                   case lists:usort([N || {N, _} <- Players]) of
@@ -395,16 +392,16 @@ game_give_up(GameID, Username) ->
               WinnerColor = hd([?white, ?black] -- [MyColor]),
               [Winner | _] =
                   [N || {N, C} <- Players, C == WinnerColor],
-              case proplists:get_value(status, GameInfo) of
-                  alive ->
+              case proplists:get_value(?gi_status, GameInfo) of
+                  ?gs_alive ->
                       ll_replace_props(
                         ?dbt_games, GameID, GameInfo,
-                        [{status, give_up},
-                         {winner, Winner},
-                         {winner_color, WinnerColor}]);
-                  give_up -> ok;
+                        [{?gi_status, ?gs_give_up},
+                         {?gi_winner, Winner},
+                         {?gi_winner_color, WinnerColor}]);
+                  ?gs_give_up -> ok;
                   _ ->
-                      mnesia:abort(game_ended)
+                      mnesia:abort(?e_game_ended)
               end
       end).
 
@@ -416,21 +413,21 @@ game_request_draw(GameID, Username) ->
     transaction_ok(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
-              case proplists:get_value(acknowledged, GameInfo) of
+              case proplists:get_value(?gi_acknowledged, GameInfo) of
                   true -> nop;
                   _ ->
-                      mnesia:abort(game_not_acknowledged)
+                      mnesia:abort(?e_game_not_acknowledged)
               end,
               %% check if such user exists
               _UserInfo = ll_get_props(?dbt_users, Username),
               Players =
-                  [I || {users, L} <- GameInfo,
+                  [I || {?gi_users, L} <- GameInfo,
                         {_N, R} = I <- L,
                         lists:member(R, [?white, ?black])],
               case [N || {N, _} <- Players, N == Username] of
                   [_ | _] -> nop;
                   _ ->
-                      mnesia:abort(not_your_game)
+                      mnesia:abort(?e_not_your_game)
               end,
               MyColor =
                   case lists:usort([N || {N, _} <- Players]) of
@@ -442,35 +439,32 @@ game_request_draw(GameID, Username) ->
                           MyColor0
                   end,
               [Opponent | _] = [N || {N, C} <- Players, C /= MyColor],
-              case proplists:get_value(status, GameInfo) of
-                  alive ->
-                      OldDrawRequest =
-                          proplists:get_value(
-                            draw_request_from, GameInfo),
-                      if Username == Opponent ->
-                              %% test game: just end the game
-                              ll_replace_props(
-                                ?dbt_games, GameID, GameInfo,
-                                [{status, {draw, agreement}},
-                                 {winner, undefined},
-                                 {winner_color, undefined}]);
-                         OldDrawRequest == Opponent ->
-                              %% confirm draw
-                              ll_replace_props(
-                                ?dbt_games, GameID, GameInfo,
-                                [{status, {draw, agreement}},
-                                 {winner, undefined},
-                                 {winner_color, undefined}]);
-                         true ->
-                              %% make draw request
-                              ll_replace_props(
-                                ?dbt_games, GameID, GameInfo,
-                                [{draw_request_from, Username},
-                                 {winner, undefined},
-                                 {winner_color, undefined}])
-                      end;
+              OldDrawRequestUser =
+                  proplists:get_value(?gi_draw_request_from, GameInfo),
+              case proplists:get_value(?gi_status, GameInfo) of
+                  ?gs_alive when Username == Opponent ->
+                      %% test game: just end the game
+                      ll_replace_props(
+                        ?dbt_games, GameID, GameInfo,
+                        [{?gi_status, ?gs_draw_agreement},
+                         {?gi_winner, undefined},
+                         {?gi_winner_color, undefined}]);
+                  ?gs_alive when OldDrawRequestUser == Opponent ->
+                      %% confirm draw
+                      ll_replace_props(
+                        ?dbt_games, GameID, GameInfo,
+                        [{?gi_status, ?gs_draw_agreement},
+                         {?gi_winner, undefined},
+                         {?gi_winner_color, undefined}]);
+                  ?gs_alive ->
+                      %% make draw request
+                      ll_replace_props(
+                        ?dbt_games, GameID, GameInfo,
+                        [{?gi_draw_request_from, Username},
+                         {?gi_winner, undefined},
+                         {?gi_winner_color, undefined}]);
                   _ ->
-                      mnesia:abort(game_ended)
+                      mnesia:abort(?e_game_ended)
               end
       end).
 
@@ -481,13 +475,13 @@ gamerewind(GameID) ->
     transaction_ok(
       fun() ->
               GameInfo = ll_get_props(?dbt_games, GameID),
-              History = proplists:get_value(moves, GameInfo, []),
+              History = proplists:get_value(?gi_moves, GameInfo, []),
               NewHistory = all_except_last(History),
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
-                [{moves, NewHistory}, {status, alive},
-                 {winner, undefined},
-                 {winner_color, undefined}])
+                [{?gi_moves, NewHistory}, {?gi_status, ?gs_alive},
+                 {?gi_winner, undefined},
+                 {?gi_winner_color, undefined}])
       end).
 
 %% @doc Cancel all plies for the game.
@@ -499,9 +493,9 @@ gamereset(GameID) ->
               GameInfo = ll_get_props(?dbt_games, GameID),
               ll_replace_props(
                 ?dbt_games, GameID, GameInfo,
-                [{moves, []}, {status, alive},
-                 {winner, undefined},
-                 {winner_color, undefined}])
+                [{?gi_moves, []}, {?gi_status, ?gs_alive},
+                 {?gi_winner, undefined},
+                 {?gi_winner_color, undefined}])
       end).
 
 %% @doc Make a dump of all user accounts from the database.
@@ -636,11 +630,11 @@ ll_get_props(DbTable, RecID) ->
         [HRec] ->
             HRec#hrec.val;
         _ when DbTable == ?dbt_users ->
-            mnesia:abort({no_such_user, RecID});
+            mnesia:abort({?e_no_such_user, RecID});
         _ when DbTable == ?dbt_games ->
-            mnesia:abort({no_such_game, RecID});
+            mnesia:abort({?e_no_such_game, RecID});
         _ ->
-            mnesia:abort({no_such_item, RecID})
+            mnesia:abort({?e_no_such_item, RecID})
     end.
 
 %% @doc

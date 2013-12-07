@@ -53,7 +53,7 @@ gettext(TextID) ->
 gettext(TextID, undefined) ->
     case echessd_cfg:get(?CFG_DEF_LANG) of
         undefined ->
-            throw(undefined_language);
+            throw(?e_undefined_language);
         LangID ->
             gettext(TextID, LangID)
     end;

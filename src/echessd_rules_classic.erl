@@ -74,9 +74,9 @@ move(History, {PlyCoords, PlyInfo} = Ply) ->
     {Color, _ChessmanType} = Chessman = getcell(Board, SrcCoord),
     case getcell(Board, DstCoord) of
         {Color, _} ->
-            throw(friendly_fire);
+            throw(?e_friendly_fire);
         {_, ?king} ->
-            throw(cannot_take_king);
+            throw(?e_cannot_take_king);
         _ -> ok
     end,
     true = lists:member(
@@ -89,7 +89,7 @@ move(History, {PlyCoords, PlyInfo} = Ply) ->
         notation(Chessman, Ply, Capture, NewBoard, Status, NewHistory),
     FinalPly =
         {PlyCoords,
-         [{notation, Notation} | lists:keydelete(notation, 1, PlyInfo)]},
+         [{?pi_notation, Notation} | lists:keydelete(?pi_notation, 1, PlyInfo)]},
     {ok, NewBoard, History ++ [FinalPly], Status}.
 
 %% @doc Return a list of all available moves.
@@ -181,14 +181,14 @@ move_chessman(Board, SrcCoord, DstCoord, SrcEntry, DstEntry) ->
 status(Board, Color, History) ->
     case can_move(Board, Color, History) of
         true ->
-            alive;
+            ?gs_alive;
         false ->
             KingCoord = whereis_the_king(History, Color),
             case is_cell_attacked(Board, KingCoord, not_color(Color)) of
                 false ->
-                    draw_stalemate;
+                    ?gs_draw_stalemate;
                 _ ->
-                    checkmate
+                    ?gs_checkmate
             end
     end.
 
@@ -534,7 +534,7 @@ notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
                 end]
        end,
        case GameStatus of
-           alive ->
+           ?gs_alive ->
                EnemyColor = not_color(Color),
                EnemyKingCoord = whereis_the_king(History, EnemyColor),
                case cell_attackers_count(
@@ -543,9 +543,9 @@ notation(Chessman, Ply, Capture, NewBoard, GameStatus, History) ->
                    1 -> "+";
                    2 -> "++"
                end;
-           checkmate ->
+           ?gs_checkmate ->
                "#";
-           draw_stalemate ->
+           ?gs_draw_stalemate ->
                "="
        end]).
 

@@ -148,9 +148,9 @@ fill_session(Session) when Session#session.username /= undefined ->
         {ok, UserInfo} ->
             Session#session{
               userinfo = filter_userinfo(UserInfo),
-              timezone = echessd_user:get_value(timezone, UserInfo),
-              language = echessd_user:get_value(language, UserInfo),
-              style    = echessd_user:get_value(style, UserInfo)
+              timezone = echessd_user:get_value(?ui_timezone, UserInfo),
+              language = echessd_user:get_value(?ui_language, UserInfo),
+              style    = echessd_user:get_value(?ui_style, UserInfo)
              };
         _ ->
             ok = del(Session),
@@ -164,4 +164,4 @@ fill_session(Session) ->
                              FilteredUserInfo :: echessd_user:info().
 filter_userinfo(UserInfo) ->
     [InfoItem || {InfoItemKey, _Value} = InfoItem <- UserInfo,
-                 InfoItemKey /= password].
+                 InfoItemKey /= ?ui_password].

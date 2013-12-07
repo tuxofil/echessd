@@ -130,13 +130,13 @@ handle_post(?SECTION_REG, Query, Session)
        true ->
             case echessd_user:add(
                    Username,
-                   [{password, Password1},
-                    {jid, JID},
-                    {fullname, Fullname},
-                    {timezone, Timezone},
-                    {language, Language},
-                    {show_in_list, ShowInList},
-                    {created, now()}]) of
+                   [{?ui_password, Password1},
+                    {?ui_jid, JID},
+                    {?ui_fullname, Fullname},
+                    {?ui_timezone, Timezone},
+                    {?ui_language, Language},
+                    {?ui_show_in_list, ShowInList},
+                    {?ui_created, now()}]) of
                 ok ->
                     handle_post(
                       ?SECTION_LOGIN,
@@ -178,17 +178,17 @@ handle_post(?SECTION_SAVEUSER, Query, Session)
     StyleID = proplists:get_value(?Q_EDIT_STYLE, Query),
     JID = proplists:get_value(?Q_EDIT_JID, Query),
     NewUserInfo =
-        [{fullname, Fullname},
-         {timezone, Timezone},
-         {language, Language},
-         {style, StyleID},
-         {jid, JID},
-         {notify, Notify},
-         {auto_refresh, AutoRefresh},
-         {auto_refresh_period, AutoRefreshPeriod},
-         {show_history, ShowHistory},
-         {show_comment, ShowComment},
-         {show_in_list, ShowInList}],
+        [{?ui_fullname, Fullname},
+         {?ui_timezone, Timezone},
+         {?ui_language, Language},
+         {?ui_style, StyleID},
+         {?ui_jid, JID},
+         {?ui_notify, Notify},
+         {?ui_auto_refresh, AutoRefresh},
+         {?ui_auto_refresh_period, AutoRefreshPeriod},
+         {?ui_show_history, ShowHistory},
+         {?ui_show_comment, ShowComment},
+         {?ui_show_in_list, ShowInList}],
     case echessd_user:setprops(Session#session.username, NewUserInfo) of
         ok ->
             {redirect, "/"};
@@ -203,7 +203,7 @@ handle_post(?SECTION_NEWGAME, Query, Session)
     Private = proplists:is_defined(?Q_PRIVATE, Query),
     case echessd_game:add(
            GameType, Session#session.username, Color, Opponent,
-           [{private, Private}]) of
+           [{?gi_private, Private}]) of
         {ok, GameID} when Session#session.username == Opponent ->
             redirect_to_game(GameID);
         {ok, _GameID} ->
@@ -221,14 +221,14 @@ handle_post(?SECTION_MOVE, Query, Session)
             Ply =
                 {Coords,
                  case Comment of
-                     [_ | _] -> [{comment, Comment}];
+                     [_ | _] -> [{?pi_comment, Comment}];
                      _ -> []
                  end ++ []},
             case echessd_game:ply(
                    GameID, Session#session.username, Ply) of
                 ok ->
                     nop;
-                {error, not_your_turn} ->
+                {error, ?e_not_your_turn} ->
                     %% silently ignore this
                     %% (maybe caused by old page update)
                     nop;

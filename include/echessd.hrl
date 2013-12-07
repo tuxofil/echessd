@@ -150,6 +150,48 @@
 
 -define(empty, z).
 
+%% user info item keys
+-define(ui_password, password).
+-define(ui_created, created).
+-define(ui_login, login).
+-define(ui_fullname, fullname).
+-define(ui_timezone, timezone).
+-define(ui_language, language).
+-define(ui_show_in_list, show_in_list).
+-define(ui_show_history, show_history).
+-define(ui_show_comment, show_comment).
+-define(ui_notify, notify).
+-define(ui_auto_refresh, auto_refresh).
+-define(ui_auto_refresh_period, auto_refresh_period).
+-define(ui_style, style).
+-define(ui_jid, jid).
+-define(ui_games, games).
+
+%% game info item keys
+-define(gi_type, type).
+-define(gi_moves, moves).
+-define(gi_time, time).
+-define(gi_private, private).
+-define(gi_creator, creator).
+-define(gi_users, users).
+-define(gi_status, status).
+-define(gi_winner, winner).
+-define(gi_winner_color, winner_color).
+-define(gi_draw_request_from, draw_request_from).
+-define(gi_acknowledged, acknowledged).
+
+%% game statuses
+-define(gs_alive, alive).
+-define(gs_checkmate, checkmate).
+-define(gs_draw_stalemate, draw_stalemate).
+-define(gs_draw_agreement, draw_agreement).
+-define(gs_give_up, give_up).
+
+%% ply info item keys
+-define(pi_time, time).
+-define(pi_notation, notation).
+-define(pi_comment, comment).
+
 %% user session record
 -record(session,
         {id :: echessd_session:id(),
@@ -161,6 +203,25 @@
          userinfo = [] :: echessd_user:info(),
          vars = [] :: [{Key :: any(), Value :: any()}]
         }).
+
+%% error reasons
+-define(e_user_already_exists, user_already_exists).
+-define(e_not_your_game, not_your_game).
+-define(e_not_your_turn, not_your_turn).
+-define(e_unable_to_deny_confirmed_game, unable_to_deny_confirmed_game).
+-define(e_game_not_acknowledged, game_not_acknowledged).
+-define(e_game_ended, game_ended).
+-define(e_no_such_user, no_such_user).
+-define(e_no_such_game, no_such_game).
+-define(e_no_such_item, no_such_item).
+-define(e_bad_username, bad_username).
+-define(e_password_incorrect, password_incorrect).
+-define(e_bad_info_item, bad_info_item).
+-define(e_httpd_start, httpd_start).
+-define(e_undefined_language, undefined_language).
+-define(e_enoent, enoent).
+-define(e_friendly_fire, friendly_fire).
+-define(e_cannot_take_king, cannot_take_king).
 
 %% ----------------------------------------------------------------------
 

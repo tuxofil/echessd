@@ -54,7 +54,7 @@ read_file_info(Filename) ->
                 [{Filename, FileInfo, _Contents}] ->
                     {ok, FileInfo};
                 [] ->
-                    {error, enoent}
+                    {error, ?e_enoent}
             end;
         false ->
             file:read_file_info(in_priv(Filename))
@@ -70,7 +70,7 @@ read_file(Filename) ->
                 [{Filename, _FileInfo, Contents}] ->
                     {ok, Contents};
                 [] ->
-                    {error, enoent}
+                    {error, ?e_enoent}
             end;
         false ->
             file:read_file(in_priv(Filename))
