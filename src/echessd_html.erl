@@ -366,13 +366,15 @@ is_my_turn(Session, GameInfo) ->
                          GameInfo :: echessd_game:info()) ->
                                 HTML :: iolist().
 game_title_message(Session, GameInfo) ->
+    Winner = proplists:get_value(?gi_winner, GameInfo),
+    WinnerColor = proplists:get_value(?gi_winner_color, GameInfo),
     case proplists:get_value(?gi_status, GameInfo, ?gs_alive) of
         ?gs_checkmate ->
-            Winner = proplists:get_value(?gi_winner, GameInfo),
-            h2(gettext(Session, txt_gt_over_checkmate, [userlink(Winner)]));
+            h2(gettext(Session, txt_gt_over_checkmate,
+                       [playerlink(WinnerColor, Winner)]));
         ?gs_give_up ->
-            Winner = proplists:get_value(?gi_winner, GameInfo),
-            h2(gettext(Session, txt_gt_over_giveup, [userlink(Winner)]));
+            h2(gettext(Session, txt_gt_over_giveup,
+                       [playerlink(WinnerColor, Winner)]));
         ?gs_draw_stalemate ->
             h2(gettext(Session, txt_gt_over_stalemate, []));
         ?gs_draw_agreement ->
@@ -396,7 +398,7 @@ game_title_message(Session, GameInfo) ->
             end
     end.
 
-%% @doc
+%% @doc Get user settings item value from the session.
 -spec user_cfg(Session :: #session{},
                UserInfoKey :: echessd_user:info_item_key()) ->
                       Value :: any().
@@ -427,7 +429,6 @@ chess_table(Session, GameID, GameInfo, History, IsLast, Board,
                   proplists:get_value(?gi_type, GameInfo), History);
            true -> []
         end,
-    echessd_log:debug("Hints: ~9999p", [Hints]),
     ActiveCells =
         lists:usort(
           lists:append([[[A, B], [C, D]] || [A, B, C, D] <- Hints])),
@@ -1051,6 +1052,15 @@ select_option(Value, Caption, IsSelected) ->
                       HTML :: iolist().
 userlink(Username) ->
     a(url([{?Q_GOTO, ?SECTION_USER}, {?Q_NAME, Username}]), Username).
+
+%% @doc
+-spec playerlink(Color :: echessd_game:color(),
+                 Username :: echessd_user:name()) ->
+                        HTML :: iolist().
+playerlink(?white, Username) ->
+    [chessman(?wking), "&nbsp;", userlink(Username)];
+playerlink(?black, Username) ->
+    [chessman(?bking), "&nbsp;", userlink(Username)].
 
 %% @doc
 -spec gamelink(GameID :: echessd_game:id()) ->
