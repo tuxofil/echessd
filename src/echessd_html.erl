@@ -1170,6 +1170,7 @@ hist_buttons(GameID, Step, IsLast) ->
             tag(form, ["method=get"],
                 [hidden(?Q_GOTO, ?SECTION_GAME),
                  hidden(?Q_GAME, GameID),
+                 hidden(?Q_STEP, Step),
                  "<input type=submit class=hb value='&#8635;'>"])) |
          case {Step, IsLast} of
              {0, true} -> [];
