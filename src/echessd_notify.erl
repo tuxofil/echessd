@@ -64,7 +64,7 @@ game_move(GameID, Username, Ply) ->
 -spec game_add(GameID :: echessd_game:id()) -> ok.
 game_add(GameID) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
-    Creator = echessd_game:get_creator(GameInfo),
+    Creator = proplists:get_value(?gi_creator, GameInfo),
     Watchers =
         lists:usort(
           echessd_game:get_watchers(GameInfo)),
@@ -80,7 +80,7 @@ game_add(GameID) ->
 -spec game_ack(GameID :: echessd_game:id()) -> ok.
 game_ack(GameID) ->
     {ok, GameInfo} = echessd_game:getprops(GameID),
-    Creator = echessd_game:get_creator(GameInfo),
+    Creator = proplists:get_value(?gi_creator, GameInfo),
     CreatorColor = echessd_game:get_player_color(GameInfo, Creator),
     Opponent = echessd_game:get_opponent(GameInfo, Creator),
     OpponentColor = echessd_game:get_player_color(GameInfo, Opponent),
@@ -139,8 +139,7 @@ game_end(GameID) ->
                          Looser, localize_color(LooserColor, Lang)])
               end, Watchers -- [Winner]);
         Draw when Draw == ?gs_draw_stalemate; Draw == ?gs_draw_agreement ->
-            Creator =
-                echessd_game:get_creator(GameInfo),
+            Creator = proplists:get_value(?gi_creator, GameInfo),
             CreatorColor =
                 echessd_game:get_player_color(GameInfo, Creator),
             Opponent =

@@ -23,9 +23,7 @@
     from_scratch/2,
     can_move/2,
     transpose/2,
-    get_creator/1,
     get_watchers/1,
-    get_players/1,
     get_opponent/2,
     get_player_color/2
    ]).
@@ -324,62 +322,25 @@ can_move(?GAME_CLASSIC, History) ->
 transpose(?GAME_CLASSIC, Board) ->
     echessd_rules_classic:transpose(Board).
 
-%% @doc Fetch the game creator name.
--spec get_creator((ID :: id()) |
-                  (Info :: info())) ->
-                         Username :: echessd_user:name().
-get_creator(ID) when is_integer(ID) ->
-    {ok, Info} = getprops(ID),
-    get_creator(Info);
-get_creator(Info) when is_list(Info) ->
-    proplists:get_value(?gi_creator, Info).
-
 %% @doc Fetch watcher names for the game.
--spec get_watchers((ID :: id()) |
-                   (Info :: info())) ->
-                          [Username :: echessd_user:name()].
-get_watchers(ID) when is_integer(ID) ->
-    {ok, Info} = getprops(ID),
-    get_watchers(Info);
+-spec get_watchers(Info :: info()) -> [Username :: echessd_user:name()].
 get_watchers(Info) when is_list(Info) ->
-    Users = proplists:get_value(?gi_users, Info),
-    [N || {N, _Role} <- Users].
-
-%% @doc Fetch the player names for the game.
--spec get_players((ID :: id()) |
-                  (Info :: info())) ->
-                         [Username :: echessd_user:name()].
-get_players(ID) when is_integer(ID) ->
-    {ok, Info} = getprops(ID),
-    get_players(Info);
-get_players(Info) when is_list(Info) ->
-    Users = proplists:get_value(?gi_users, Info),
-    [N || {N, Role} <- Users, lists:member(Role, [?black, ?white])].
+    [N || {N, _Color} <- proplists:get_value(?gi_users, Info)].
 
 %% @doc Fetch the opponent for the user.
--spec get_opponent((ID :: id()) |
-                   (Info :: info()),
-                   Username :: echessd_user:name()) ->
+-spec get_opponent(Info :: info(), Username :: echessd_user:name()) ->
                           Opponent :: echessd_user:name().
-get_opponent(ID, Username) when is_integer(ID) ->
-    {ok, Info} = getprops(ID),
-    get_opponent(Info, Username);
 get_opponent(Info, Username) when is_list(Info) ->
-    [Opponent | _] = get_players(Info) -- [Username],
-    Opponent.
+    hd([Name || {Name, Color} <- proplists:get_value(?gi_users, Info),
+                lists:member(Color, [?black, ?white]),
+                Name /= Username]).
 
 %% @doc Fetch the color of the player.
--spec get_player_color((ID :: id()) |
-                       (Info :: info()),
-                       Username :: echessd_user:name()) ->
+-spec get_player_color(Info :: info(), Username :: echessd_user:name()) ->
                               Color :: color().
-get_player_color(ID, Username) when is_integer(ID) ->
-    {ok, Info} = getprops(ID),
-    get_player_color(Info, Username);
 get_player_color(Info, Username) when is_list(Info) ->
-    Users = proplists:get_value(?gi_users, Info),
-    [Color | _] = [C || {N, C} <- Users, N == Username],
-    Color.
+    hd([Color || {Name, Color} <- proplists:get_value(?gi_users, Info),
+                 Name == Username]).
 
 %% ----------------------------------------------------------------------
 %% Internal functions
