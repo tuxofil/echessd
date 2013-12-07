@@ -1107,7 +1107,7 @@ chess_board(Session, GameID, GameInfo, Step, IsLast, Board,
         end,
     ExtraAction =
         fun(Crd, true) ->
-                ["onclick=\"mv('" ++ Crd ++ "');\""];
+                ["onclick=\"mv('", Crd, "');\""];
            (_, _) -> []
         end,
     tag(
