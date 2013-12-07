@@ -16,6 +16,10 @@ digraph G{
       shape = box, style = rounded,
       label = "WWW Server\n(echessd_httpd)"
     ];
+    QueryParser[
+      shape = box, style = rounded,
+      label = "Query Parser\n(echessd_query_parser)"
+    ];
     RequestProcessor[
       shape = box, style = rounded,
       label = "HTTP Request Processor.\nHandles GET and POST\nfor dynamic pages\n(echessd_request_processor)"
@@ -47,6 +51,10 @@ digraph G{
     GameDatabaseApi[
       shape = box, style = rounded,
       label = "Game Database API\n(echessd_game)"
+    ];
+    ChessRules[
+      shape = box, style = rounded,
+      label = "Chess Rules Library\n(echessd_rules_classic)"
     ];
     SessionDatabase[
       shape = box, style = rounded,
@@ -108,10 +116,10 @@ digraph G{
   ];
   WebServer -> MimeTypeDatabase -> MimeTypesFile;
   WebServer -> PrivFS -> StaticResources;
-  WebServer -> RequestProcessor;
+  WebServer -> QueryParser -> RequestProcessor;
   RequestProcessor -> HtmlGenerator;
   RequestProcessor -> UserDatabaseApi -> DatabaseApi;
-  RequestProcessor -> GameDatabaseApi -> DatabaseApi;
+  RequestProcessor -> GameDatabaseApi -> ChessRules -> DatabaseApi;
   GameDatabaseApi -> NotificationApi -> SendXMPP;
   RequestProcessor -> SessionDatabase;
   DatabaseApi -> Mnesia;
