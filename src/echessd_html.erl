@@ -576,7 +576,7 @@ redirection(Session, URL) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc
+%% @doc Initialisation JavaScript code for hinting.
 -spec js_init(Hints :: [echessd_game:ply_coords()],
               ActiveCells :: [CellCoord :: nonempty_string()],
               LastPlyCoords :: echessd_game:ply_coords() | undefined) ->
@@ -632,7 +632,7 @@ log_reg_page(Session, Section, Title, Content) ->
 fetch_game(Session, GameID) ->
     case echessd_game:getprops(GameID) of
         {ok, GameInfo} ->
-            case proplists:get_value(?gi_private, GameInfo) of
+            case proplists:is_defined(?gi_private, GameInfo) of
                 true ->
                     case is_my_game(Session, GameInfo) of
                         true ->
@@ -643,11 +643,11 @@ fetch_game(Session, GameID) ->
                                gettext(Session, txt_game_fetch_error, []) ++
                                    ":~n~p", [GameID, {no_such_game, GameID}])
                     end;
-                _ ->
-                    case proplists:get_value(?gi_acknowledged, GameInfo) of
+                false ->
+                    case proplists:is_defined(?gi_acknowledged, GameInfo) of
                         true ->
                             {ok, GameInfo};
-                        _ ->
+                        false ->
                             ?MODULE:error(
                                Session,
                                gettext(
