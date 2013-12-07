@@ -919,10 +919,16 @@ b(String) ->
 tt(String) ->
     tag(tt, String).
 
+%% @equiv td([], String)
 %% @doc
 -spec td(String :: iolist()) -> HTML :: iolist().
 td(String) ->
-    tag(td, String).
+    td([], String).
+
+%% @doc
+-spec td(Attrs :: [string()], String :: iolist()) -> HTML :: iolist().
+td(Attrs, String) ->
+    tag(td, Attrs, String).
 
 %% @doc
 -spec tr(String :: iolist()) -> HTML :: iolist().
@@ -1105,40 +1111,39 @@ chess_board(Session, GameID, GameInfo, Step, IsLast, Board,
            (_, _) -> []
         end,
     tag(
-      "table", ["cellpadding=0", "cellspacing=0"],
-      tr(td("") ++ [tag("td", ["class=crd_t"], tt([$a + C - 1])) ||
-                       C <- cseq(ColStep)] ++ td("")) ++
-          lists:map(
-            fun(R) ->
-                    tr(tag("td", ["class=crd_l"], tt([$1 + R - 1])) ++
-                           lists:map(
-                             fun(C) ->
-                                     Crd = [$a + C - 1, $1 + R - 1],
-                                     IsActive =
-                                         lists:member(
-                                           Crd, ActiveCells),
-                                     CellClass =
-                                         proplists:get_value(
-                                           inply(LastPly, Crd),
-                                           [{true, "lastply"}], "cell"),
-                                     tag("td",
-                                         ["class=" ++ Color(C, R)] ++
-                                             ExtraAction(Crd, IsActive),
-                                         tag("div",
-                                             ["class=" ++ CellClass] ++
-                                                 if IsActive -> ["id=" ++ Crd];
-                                                    true -> []
-                                                 end,
-                                             chessman(cell(Board, C, R))))
-                             end, cseq(ColStep)) ++
-                           tag("td", ["class=crd_r"], tt([$1 + R - 1])))
-            end, cseq(RowStep)) ++
-          tr(td("") ++ [tag("td", ["class=crd_b"], tt([$a + C - 1])) ||
-                           C <- cseq(ColStep)] ++ td("")) ++
-          tr(
-            td("") ++
-                tag("td", ["colspan=8"], hist_buttons(GameID, Step, IsLast)) ++
-                td(""))).
+      table, ["cellpadding=0", "cellspacing=0"],
+      [tr([td(""),
+           [td(["class=crd_t"], tt([$a + C - 1])) || C <- cseq(ColStep)],
+           td("")]),
+       lists:map(
+         fun(R) ->
+                 tr(
+                   [td(["class=crd_l"], tt([$1 + R - 1])),
+                    lists:map(
+                      fun(C) ->
+                              Crd = [$a + C - 1, $1 + R - 1],
+                              IsActive = lists:member(Crd, ActiveCells),
+                              CellClass =
+                                  proplists:get_value(
+                                    inply(LastPly, Crd),
+                                    [{true, "lastply"}], "cell"),
+                              td(["class=" ++ Color(C, R)] ++
+                                     ExtraAction(Crd, IsActive),
+                                 tag("div",
+                                     ["class=" ++ CellClass] ++
+                                         if IsActive -> ["id=" ++ Crd];
+                                            true -> []
+                                         end,
+                                     chessman(cell(Board, C, R))))
+                      end, cseq(ColStep)),
+                    td(["class=crd_r"], tt([$1 + R - 1]))])
+         end, cseq(RowStep)),
+       tr([td(""),
+           [td(["class=crd_b"], tt([$a + C - 1])) || C <- cseq(ColStep)],
+           td("")]),
+       tr([td(""),
+           td(["colspan=8"], hist_buttons(GameID, Step, IsLast)),
+           td("")])]).
 
 %% @doc
 -spec hist_buttons(GameID :: echessd_game:id(),
@@ -1148,25 +1153,24 @@ chess_board(Session, GameID, GameInfo, Step, IsLast, Board,
 hist_buttons(GameID, Step, IsLast) ->
     HistBtn =
         fun(_, _, false) ->
-                tag(td, ["class=hbc"], "");
+                td(["class=hbc"], "");
            (Caption, LinkStep, _Enabled) ->
-                tag(td, ["class=hbc"],
-                    tag(form, ["method=get"],
-                        [hidden(?Q_GOTO, ?SECTION_GAME),
-                         hidden(?Q_GAME, GameID),
-                         hidden(?Q_STEP, LinkStep),
-                         "<input type=submit class=hb value='",
-                         Caption, "'>"]))
+                td(["class=hbc"],
+                   tag(form, ["method=get"],
+                       [hidden(?Q_GOTO, ?SECTION_GAME),
+                        hidden(?Q_GAME, GameID),
+                        hidden(?Q_STEP, LinkStep),
+                        "<input type=submit class=hb value='",
+                        Caption, "'>"]))
         end,
     tag(
       table, ["cellpadding=0", "cellspacing=0", "width='100%'"],
       tr(
-        [tag(
-           td, ["class=hbc"],
-           tag(form, ["method=get"],
-               [hidden(?Q_GOTO, ?SECTION_GAME),
-                hidden(?Q_GAME, GameID),
-                "<input type=submit class=hb value='&#8635;'>"])) |
+        [td(["class=hbc"],
+            tag(form, ["method=get"],
+                [hidden(?Q_GOTO, ?SECTION_GAME),
+                 hidden(?Q_GAME, GameID),
+                 "<input type=submit class=hb value='&#8635;'>"])) |
          case {Step, IsLast} of
              {0, true} -> [];
              _ ->
