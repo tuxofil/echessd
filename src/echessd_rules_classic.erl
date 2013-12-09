@@ -45,22 +45,6 @@
 %% API functions
 %% ----------------------------------------------------------------------
 
-%% @doc Create a chess board with the all chessmans at their start point.
--spec new() -> board().
-new() ->
-    {
-     %%  a       b        c       d       e       f        g       h
-     {?brook,?bknight,?bbishop,?bqueen,?bking,?bbishop,?bknight,?brook}, % 8
-     {?bpawn,?bpawn,  ?bpawn,  ?bpawn, ?bpawn,?bpawn,  ?bpawn,  ?bpawn}, % 7
-     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 6
-     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 5
-     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 4
-     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 3
-     {?wpawn,?wpawn,  ?wpawn,  ?wpawn, ?wpawn,?wpawn,  ?wpawn,  ?wpawn}, % 2
-     {?wrook,?wknight,?wbishop,?wqueen,?wking,?wbishop,?wknight,?wrook}  % 1
-     %%  a       b        c       d       e       f        g       h
-    }.
-
 %% @doc Do the next move.
 -spec move(History :: echessd_game:history(), Ply :: echessd_game:ply()) ->
                   {ok, NewBoard :: board(),
@@ -114,33 +98,25 @@ hint(History) ->
               end
       end, all_cells()).
 
-%% @doc Make the chessman move according to the chessman type.
-%% No additional checks will be performed (e.g is king checked).
--spec move_unsafe(Board :: board(),
-                  Ply :: echessd_game:ply() |
-                         echessd_game:ply_coords()) ->
-                         {NewBoard :: board(),
-                          Capture :: echessd_game:entry()}.
-move_unsafe(Board, Ply) ->
-    {I1, I2, Tail} = ply_dec(Ply),
-    move_unsafe(Board, I1, I2, Tail).
-
-%% @private
-%% @doc Helper for the can_move/1 fun.
--spec can_move(Board :: board(), Color :: echessd_game:color(),
-               History :: echessd_game:history()) -> boolean().
-can_move(Board, Color, History) ->
-    lists:any(
-      fun(I1) ->
-              case getcell(Board, I1) of
-                  {Color, _ChessmanType} ->
-                      lists:any(
-                        fun(I2) ->
-                                is_valid(Board, I1, I2, History)
-                        end, hint_for_cell_unsafe(Board, I1, History));
-                  _ -> false
-              end
-      end, all_cells()).
+%% @doc Return chess board with chessmans in their current positions,
+%% a list of all captured chessmans and the color of the next move.
+-spec from_scratch(History :: echessd_game:history()) ->
+                          {Board :: board(),
+                           Captured :: [echessd_game:chessman()],
+                           NextColor :: echessd_game:color()}.
+from_scratch(History) ->
+    {Board, Captured, HistoryLen} =
+        lists:foldl(
+          fun(Ply, {B, C, HL}) ->
+                  {NewBoard, Capture} = move_unsafe(B, Ply),
+                  {NewBoard, [Capture | C], HL + 1}
+          end, {new(), _Captured = [], _HistoryLen = 0}, History),
+    {Board, Captured,
+     if HistoryLen rem 2 == 0 ->
+             ?white;
+        true ->
+             ?black
+     end}.
 
 %% @doc Turn the board at 180 degrees.
 -spec transpose(Board :: board()) -> TransposedBoard :: board().
@@ -154,6 +130,22 @@ transpose(Board) ->
 %% ----------------------------------------------------------------------
 %% Internal functions
 %% ----------------------------------------------------------------------
+
+%% @doc Create a chess board with the all chessmans at their start point.
+-spec new() -> board().
+new() ->
+    {
+     %%  a       b        c       d       e       f        g       h
+     {?brook,?bknight,?bbishop,?bqueen,?bking,?bbishop,?bknight,?brook}, % 8
+     {?bpawn,?bpawn,  ?bpawn,  ?bpawn, ?bpawn,?bpawn,  ?bpawn,  ?bpawn}, % 7
+     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 6
+     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 5
+     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 4
+     {?empty,?empty,  ?empty,  ?empty, ?empty,?empty,  ?empty,  ?empty}, % 3
+     {?wpawn,?wpawn,  ?wpawn,  ?wpawn, ?wpawn,?wpawn,  ?wpawn,  ?wpawn}, % 2
+     {?wrook,?wknight,?wbishop,?wqueen,?wking,?wbishop,?wknight,?wrook}  % 1
+     %%  a       b        c       d       e       f        g       h
+    }.
 
 %% @doc Just change chessman locations on the chess board.
 -spec move_chessman(Board :: board(),
@@ -184,25 +176,32 @@ status(Board, Color, History) ->
             end
     end.
 
-%% @doc Return chess board with chessmans in their current positions,
-%% a list of all captured chessmans and the color of the next move.
--spec from_scratch(History :: echessd_game:history()) ->
-                          {Board :: board(),
-                           Captured :: [echessd_game:chessman()],
-                           NextColor :: echessd_game:color()}.
-from_scratch(History) ->
-    {Board, Captured, HistoryLen} =
-        lists:foldl(
-          fun(Ply, {B, C, HL}) ->
-                  {NewBoard, Capture} = move_unsafe(B, Ply),
-                  {NewBoard, [Capture | C], HL + 1}
-          end, {new(), _Captured = [], _HistoryLen = 0}, History),
-    {Board, Captured,
-     if HistoryLen rem 2 == 0 ->
-             ?white;
-        true ->
-             ?black
-     end}.
+%% @doc Helper for the can_move/1 fun.
+-spec can_move(Board :: board(), Color :: echessd_game:color(),
+               History :: echessd_game:history()) -> boolean().
+can_move(Board, Color, History) ->
+    lists:any(
+      fun(I1) ->
+              case getcell(Board, I1) of
+                  {Color, _ChessmanType} ->
+                      lists:any(
+                        fun(I2) ->
+                                is_valid(Board, I1, I2, History)
+                        end, hint_for_cell_unsafe(Board, I1, History));
+                  _ -> false
+              end
+      end, all_cells()).
+
+%% @doc Make the chessman move according to the chessman type.
+%% No additional checks will be performed (e.g is king checked).
+-spec move_unsafe(Board :: board(),
+                  Ply :: echessd_game:ply() |
+                         echessd_game:ply_coords()) ->
+                         {NewBoard :: board(),
+                          Capture :: echessd_game:entry()}.
+move_unsafe(Board, Ply) ->
+    {I1, I2, Tail} = ply_dec(Ply),
+    move_unsafe(Board, I1, I2, Tail).
 
 %% @doc Helper for the move_unsafe/2 fun.
 -spec move_unsafe(Board :: board(), SrcCoord :: coord(),
