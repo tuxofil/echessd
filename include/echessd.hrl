@@ -129,7 +129,7 @@
 -define(queen, q).
 -define(king, k).
 
-%% chessmans
+%% chessmen
 -define(wpawn, {?white, ?pawn}).
 -define(bpawn, {?black, ?pawn}).
 -define(wrook, {?white, ?rook}).

@@ -100,8 +100,8 @@ hint(History) ->
               end
       end, all_cells()).
 
-%% @doc Return chess board with chessmans in their current positions,
-%% a list of all captured chessmans and the color of the next move.
+%% @doc Return chess board with chessmen in their current positions,
+%% a list of all captured chessmen and the color of the next move.
 -spec from_scratch(History :: echessd_game:history()) ->
                           {Board :: board(),
                            Captured :: [echessd_game:chessman()],
@@ -133,7 +133,7 @@ transpose(Board) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc Create a chess board with the all chessmans at their start point.
+%% @doc Create a chess board with the all chessmen at their start point.
 -spec new() -> board().
 new() ->
     {
@@ -656,7 +656,7 @@ free_cells_until_enemy(Board, MyColor, Start, Direction) ->
 is_cell_attacked(Board, CellCoord, EnemyColor) ->
     cell_attackers_count(Board, CellCoord, EnemyColor) > 0.
 
-%% @doc Return the number of enemy chessmans attacking the board cell.
+%% @doc Return the number of enemy chessmen attacking the board cell.
 %% The maximum value which can be returned is 2 for optimization
 %% reasons.
 -spec cell_attackers_count(Board :: board(), Coord :: coord(),

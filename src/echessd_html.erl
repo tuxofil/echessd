@@ -1256,7 +1256,7 @@ inply([_A, _B, C, D | _], [C, D]) ->
 inply(_, _) ->
     false.
 
-%% @doc
+%% @doc Generate a list of captured chessmen.
 -spec captures(Captures :: [echessd_game:chessman()]) -> HTML :: iolist().
 captures(Captures) ->
     table(
@@ -1266,7 +1266,7 @@ captures(Captures) ->
        td(["class=captures"],
           lists:sort([chessman(F) || {?white, _} = F <- Captures]))]).
 
-%% @doc
+%% @doc Encode the chessman to HTML entity.
 -spec chessman(Chessman :: echessd_game:chessman() | ?empty) ->
                       HTML :: iolist().
 chessman(?empty) ->

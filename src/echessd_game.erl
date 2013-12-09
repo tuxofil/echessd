@@ -313,7 +313,7 @@ get_players(Info) ->
      IdleColor}.
 
 %% @doc Create a new board and make all moves from the given history.
-%% Return the chess board and a list of all chessmans captured.
+%% Return the chess board and a list of all chessmen captured.
 -spec from_scratch(GameType :: gametype(), History :: history()) ->
                           {Board :: board(),
                            Captures :: [chessman()],
