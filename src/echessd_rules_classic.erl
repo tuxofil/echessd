@@ -84,18 +84,18 @@ move(History, {PlyCoords, PlyInfo} = Ply) ->
 hint(History) ->
     {Board, _Captured, Color} = from_scratch(History),
     lists:flatmap(
-      fun(I1) ->
-              case getcell(Board, I1) of
+      fun(SrcCoord) ->
+              case getcell(Board, SrcCoord) of
                   {Color, _ChessmanType} ->
                       lists:flatmap(
-                        fun(I2) ->
-                                case is_valid(Board, I1, I2, History) of
+                        fun(DstCoord) ->
+                                case is_valid(Board, SrcCoord, DstCoord, History) of
                                     true ->
-                                        [ind_enc(I1) ++ ind_enc(I2)];
+                                        [ind_enc(SrcCoord) ++ ind_enc(DstCoord)];
                                     false ->
                                         []
                                 end
-                        end, hint_for_cell_unsafe(Board, I1, History));
+                        end, hint_for_cell_unsafe(Board, SrcCoord, History));
                   _ -> []
               end
       end, all_cells()).
@@ -406,19 +406,7 @@ available_castlings(Board, Color, History) ->
                     History :: echessd_game:history()) ->
                            coord() | ?null.
 long_castling(Board, Color, History) ->
-    case is_have_been_moved(History, long_rook_coord(Color)) of
-        true ->
-            ?null;
-        _ ->
-            KingStartCoord = king_start_coord(Color),
-            KingDstCoord = ind_inc(KingStartCoord, {-1, 0}),
-            case is_cell_attacked(Board, KingDstCoord, not_color(Color)) of
-                false ->
-                    ind_inc(KingStartCoord, {-2, 0});
-                true ->
-                    ?null
-            end
-    end.
+    castling(Board, Color, History, long_rook_coord(Color), {-1, 0}).
 
 %% @doc
 -spec short_castling(Board :: board(),
@@ -426,19 +414,38 @@ long_castling(Board, Color, History) ->
                      History :: echessd_game:history()) ->
                             coord() | ?null.
 short_castling(Board, Color, History) ->
-    case is_have_been_moved(History, short_rook_coord(Color)) of
+    castling(Board, Color, History, short_rook_coord(Color), {1, 0}).
+
+%% @doc
+-spec castling(Board :: board(), Color :: echessd_game:color(),
+               History :: echessd_game:history(),
+               RookCoord :: coord(), Delta :: delta()) ->
+                      coord() | ?null.
+castling(Board, Color, History, RookCoord, Delta) ->
+    case is_have_been_moved(History, RookCoord) of
         true ->
             ?null;
         _ ->
             KingStartCoord = king_start_coord(Color),
-            KingDstCoord = ind_inc(KingStartCoord, {1, 0}),
-            case is_cell_attacked(Board, KingDstCoord, not_color(Color)) of
-                false ->
-                    ind_inc(KingStartCoord, {2, 0});
+            EnemyColor = not_color(Color),
+            KingStep1 = ind_inc(KingStartCoord, Delta),
+            KingStep2 = ind_inc(KingStep1, Delta),
+            case is_good_for_king(Board, KingStep1, EnemyColor)
+                andalso is_good_for_king(Board, KingStep2, EnemyColor) of
                 true ->
+                    KingStep2;
+                false ->
                     ?null
             end
     end.
+
+%% @doc Check if cell is good for the king (not settled and not attacked
+%% by the enemy.
+-spec is_good_for_king(Board :: board(), Coord :: coord(),
+                       EnemyColor :: echessd_game:color()) -> boolean().
+is_good_for_king(Board, Coord, EnemyColor) ->
+    is_empty(Board, Coord) andalso
+        not is_cell_attacked(Board, Coord, EnemyColor).
 
 %% @doc
 -spec king_start_coord(Color :: echessd_game:color()) -> coord().
@@ -627,6 +634,11 @@ is_empty_or_enemy(Board, MyColor, Coord) ->
         _ ->
             ?null
     end.
+
+%% @doc Check if cell is empty or not.
+-spec is_empty(Board :: board(), Coord :: coord()) -> boolean().
+is_empty(Board, Coord) ->
+    getcell(Board, Coord) == ?empty.
 
 %% @doc Search free cells in the given direction until enemy chessman
 %% or board end found. When the enemy chessman found the enemy
