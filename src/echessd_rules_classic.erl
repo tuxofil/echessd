@@ -8,11 +8,9 @@
 -module(echessd_rules_classic).
 
 -export(
-   [new/0,
-    move/2,
+   [move/2,
     hint/1,
-    move_unsafe/2,
-    can_move/1,
+    from_scratch/1,
     transpose/1
    ]).
 
@@ -69,7 +67,7 @@ new() ->
                    NewHistory :: echessd_game:history(),
                    GameStatus :: echessd_game:final_status()}.
 move(History, {PlyCoords, PlyInfo} = Ply) ->
-    {Board, Color} = restore_board_and_next_color(History),
+    {Board, _Captured, Color} = from_scratch(History),
     {SrcCoord, DstCoord, PlyCoordsTail} = ply_dec(Ply),
     {Color, _ChessmanType} = Chessman = getcell(Board, SrcCoord),
     case getcell(Board, DstCoord) of
@@ -98,7 +96,7 @@ move(History, {PlyCoords, PlyInfo} = Ply) ->
 -spec hint(History :: echessd_game:history()) ->
                   Plies :: [echessd_game:ply_coords()].
 hint(History) ->
-    {Board, Color} = restore_board_and_next_color(History),
+    {Board, _Captured, Color} = from_scratch(History),
     lists:flatmap(
       fun(I1) ->
               case getcell(Board, I1) of
@@ -126,12 +124,6 @@ hint(History) ->
 move_unsafe(Board, Ply) ->
     {I1, I2, Tail} = ply_dec(Ply),
     move_unsafe(Board, I1, I2, Tail).
-
-%% @doc Check if valid turn is present for the color.
--spec can_move(History :: echessd_game:history()) -> boolean().
-can_move(History) ->
-    {Board, Color} = restore_board_and_next_color(History),
-    can_move(Board, Color, History).
 
 %% @private
 %% @doc Helper for the can_move/1 fun.
@@ -192,17 +184,25 @@ status(Board, Color, History) ->
             end
     end.
 
-%% @doc Return chess board with chessmans in their current positions and the
-%% color of the next move.
--spec restore_board_and_next_color(History :: echessd_game:history()) ->
-                                          {Board :: board(),
-                                           Color :: echessd_game:color()}.
-restore_board_and_next_color(History) ->
-    {lists:foldl(
-       fun(Ply, Acc) ->
-               element(1, move_unsafe(Acc, Ply))
-       end, new(), History),
-     next_color(History)}.
+%% @doc Return chess board with chessmans in their current positions,
+%% a list of all captured chessmans and the color of the next move.
+-spec from_scratch(History :: echessd_game:history()) ->
+                          {Board :: board(),
+                           Captured :: [echessd_game:chessman()],
+                           NextColor :: echessd_game:color()}.
+from_scratch(History) ->
+    {Board, Captured, HistoryLen} =
+        lists:foldl(
+          fun(Ply, {B, C, HL}) ->
+                  {NewBoard, Capture} = move_unsafe(B, Ply),
+                  {NewBoard, [Capture | C], HL + 1}
+          end, {new(), _Captured = [], _HistoryLen = 0}, History),
+    {Board, Captured,
+     if HistoryLen rem 2 == 0 ->
+             ?white;
+        true ->
+             ?black
+     end}.
 
 %% @doc Helper for the move_unsafe/2 fun.
 -spec move_unsafe(Board :: board(), SrcCoord :: coord(),
@@ -253,14 +253,6 @@ is_valid(Board, SrcCoord, DstCoord, History) ->
 -spec all_cells() -> [coord()].
 all_cells() ->
     [{C, R} || C <- lists:seq(1, 8), R <- lists:seq(1, 8)].
-
-%% @doc Return a color for the next move.
--spec next_color(History :: echessd_game:history()) ->
-                        echessd_game:color().
-next_color(History) when length(History) rem 2 == 0 ->
-    ?white;
-next_color(_) ->
-    ?black.
 
 %% @doc Make the next ply according to *ALL* chess rules.
 -spec move_safe(Board :: board(), SrcCoord :: coord(), DstCoord :: coord(),

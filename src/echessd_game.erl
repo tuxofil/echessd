@@ -7,6 +7,7 @@
 
 -module(echessd_game).
 
+%% game logic API exports
 -export(
    [add/5,
     ack/2,
@@ -15,13 +16,15 @@
     move/3,
     hint/2,
     give_up/2,
-    request_draw/2,
-    getprops/1,
-    who_must_turn/1,
-    turn_color/1,
-    turn_color_by_history/1,
+    request_draw/2
+   ]).
+
+%% other API exports
+-export(
+   [getprops/1,
+    current_player/1,
+    get_players/1,
     from_scratch/2,
-    can_move/2,
     transpose/2,
     get_watchers/1,
     get_opponent/2,
@@ -279,42 +282,44 @@ request_draw(ID, Username) ->
 getprops(ID) ->
     echessd_db:get_game_props(ID).
 
-%% @doc Return user name who must make the next turn.
--spec who_must_turn(Info :: info()) ->
-                           Username :: echessd_user:name().
-who_must_turn(Info) ->
-    Users =
-        [{C, N} || {?gi_users, L} <- Info,
-                   {N, C} <- L, lists:member(C, [?black, ?white])],
-    proplists:get_value(turn_color(Info), Users).
+%% @doc
+-spec current_player(Info :: info()) ->
+                            {Username :: echessd_user:name(),
+                             Color :: color()}.
+current_player(Info) ->
+    {CurrentPlayerName, CurrentColor, _OpponentName, _OpponentColor} =
+        get_players(Info),
+    {CurrentPlayerName, CurrentColor}.
 
-%% @doc Return the color of the side that must make the next turn.
--spec turn_color(Info :: info()) -> Color :: color().
-turn_color(Info) ->
-    turn_color_by_history(
-      proplists:get_value(?gi_history, Info, [])).
-
-%% @doc Return the color of the side that must make the next turn.
--spec turn_color_by_history(History :: history()) -> Color :: color().
-turn_color_by_history(History) ->
-    lists:nth((length(History) rem 2) + 1, [?white, ?black]).
+%% @doc
+-spec get_players(Info :: info()) ->
+                         {CurrentPlayerName :: echessd_user:name(),
+                          CurrentColor :: color(),
+                          IdlePlayerName :: echessd_user:name(),
+                          IdleColor :: color()}.
+get_players(Info) ->
+    History = proplists:get_value(?gi_history, Info, []),
+    CurrentColor =
+        if length(History) rem 2 == 0 ->
+                ?white;
+           true ->
+                ?black
+        end,
+    IdleColor = hd([?white, ?black] -- [CurrentColor]),
+    Users = proplists:get_value(?gi_users, Info, []),
+    {hd([Name || {Name, Color} <- Users, Color == CurrentColor]),
+     CurrentColor,
+     hd([Name || {Name, Color} <- Users, Color == IdleColor]),
+     IdleColor}.
 
 %% @doc Create a new board and make all moves from the given history.
 %% Return the chess board and a list of all chessmans captured.
 -spec from_scratch(GameType :: gametype(), History :: history()) ->
-                          {Board :: board(), Captures :: [chessman()]}.
-from_scratch(GameType, History) ->
-    lists:foldl(
-      fun(Ply, {Board, Captures}) ->
-              {NewGame, Capture} = move_unsafe(GameType, Board, Ply),
-              {NewGame, [Capture | Captures]}
-      end, {new(GameType), []}, History).
-
-%% @doc Check if valid turn is present for the color.
--spec can_move(GameType :: gametype(), History :: history()) ->
-                      boolean().
-can_move(?GAME_CLASSIC, History) ->
-    echessd_rules_classic:can_move(History).
+                          {Board :: board(),
+                           Captures :: [chessman()],
+                           NextColor :: color()}.
+from_scratch(?GAME_CLASSIC, History) ->
+    echessd_rules_classic:from_scratch(History).
 
 %% @doc Turn the board at 180 degrees.
 -spec transpose(GameType :: gametype(), Board :: board()) ->
@@ -341,20 +346,3 @@ get_opponent(Info, Username) when is_list(Info) ->
 get_player_color(Info, Username) when is_list(Info) ->
     hd([Color || {Name, Color} <- proplists:get_value(?gi_users, Info),
                  Name == Username]).
-
-%% ----------------------------------------------------------------------
-%% Internal functions
-%% ----------------------------------------------------------------------
-
-%% @doc Create a chess board with the all chessmans at their start point.
--spec new(GameType :: gametype()) -> Board :: board().
-new(?GAME_CLASSIC) ->
-    echessd_rules_classic:new().
-
-%% @doc Move the chessman regarding the rules of the game.
--spec move_unsafe(GameType :: gametype(), Board :: board(),
-                  Ply :: ply()) ->
-                         {NewBoard :: board(),
-                          Capture :: chessman() | ?empty}.
-move_unsafe(?GAME_CLASSIC, Board, Ply) ->
-    echessd_rules_classic:move_unsafe(Board, Ply).
