@@ -35,7 +35,7 @@
 -type coord() ::
         {Column :: 1..8, Row :: 1..8}.
 
--type step() ::
+-type delta() ::
         {ColumnDelta :: -2..2, RowDelta :: -2..2}.
 
 -type promotion_chessman_type() ::
@@ -358,8 +358,8 @@ hint_for_chessman_type(Board, Coord, Color, ?queen, History) ->
     [hint_for_chessman_type(Board, Coord, Color, ?bishop, History),
      hint_for_chessman_type(Board, Coord, Color, ?rook, History)];
 hint_for_chessman_type(Board, Coord, Color, ?knight, _History) ->
-    [is_empty_or_enemy(Board, Color, ind_inc(Coord, Step)) ||
-        Step <- knight_steps()];
+    [is_empty_or_enemy(Board, Color, ind_inc(Coord, Delta)) ||
+        Delta <- knight_deltas()];
 hint_for_chessman_type(Board, Coord, Color, ?king, History) ->
     [is_empty_or_enemy(Board, Color, ind_inc(Coord, {-1, -1})),
      is_empty_or_enemy(Board, Color, ind_inc(Coord, {-1, 0})),
@@ -634,7 +634,7 @@ is_empty_or_enemy(Board, MyColor, Coord) ->
 -spec free_cells_until_enemy(Board :: board(),
                              MyColor :: echessd_game:color(),
                              Start :: coord(),
-                             Direction :: step()) ->
+                             Direction :: delta()) ->
                                     [FreeCell :: coord()].
 free_cells_until_enemy(Board, MyColor, Start, Direction) ->
     case getcell(Board, NextCoord = ind_inc(Start, Direction)) of
@@ -672,7 +672,7 @@ cell_attackers_count(Board, Coord, EnemyColor) ->
 %% @doc Helper for the cell_attackers_count/3 fun.
 -spec cell_attackers_loop(Board :: board(), Coord :: coord(),
                           EnemyColor :: echessd_game:color(),
-                          SearchDirections :: [step()],
+                          SearchDirections :: [delta()],
                           Found :: non_neg_integer()) ->
                                  0..2.
 cell_attackers_loop(_Board, _Coord, _EnemyColor, _SearchDirections, Found)
@@ -707,23 +707,23 @@ cell_attackers_loop(Board, Coord, EnemyColor, [SearchDirection | Tail],
                         EnemyColor :: echessd_game:color()) -> 0..2.
 attacking_knights(Board, Coord, EnemyColor) ->
     attacking_knights_loop(
-      Board, Coord, knight_steps(), EnemyColor, _Found = 0).
+      Board, Coord, knight_deltas(), EnemyColor, _Found = 0).
 
 %% @doc Return a list of available Knight moves.
--spec knight_steps() -> [step()].
-knight_steps() ->
+-spec knight_deltas() -> [delta()].
+knight_deltas() ->
     [{1, 2}, {-1, 2}, {1, -2}, {-1, -2},
      {2, 1}, {-2, 1}, {2, -1}, {-2, -1}].
 
 %% @doc Helper for the attacking_knights/3 fun.
 -spec attacking_knights_loop(Board :: board(), Coord :: coord(),
-                             KnightSteps :: [step()],
+                             KnightDeltas :: [delta()],
                              EnemyColor :: echessd_game:color(),
                              Found :: 0..2) -> 0..2.
 attacking_knights_loop(_Board, _Coord, [], _EnemyColor, Found) ->
     Found;
-attacking_knights_loop(Board, Coord, [Step | Tail], EnemyColor, Found) ->
-    case getcell(Board, ind_inc(Coord, Step)) of
+attacking_knights_loop(Board, Coord, [Delta | Tail], EnemyColor, Found) ->
+    case getcell(Board, ind_inc(Coord, Delta)) of
         {EnemyColor, ?knight} when Found >= 1 ->
             2;
         {EnemyColor, ?knight} ->
@@ -734,16 +734,16 @@ attacking_knights_loop(Board, Coord, [Step | Tail], EnemyColor, Found) ->
 
 %% @doc Search the enemy chessman starting from the coordinates
 %% with the direction.
--spec find_enemy(Board :: board(), Coord :: coord(), Step :: step(),
+-spec find_enemy(Board :: board(), Coord :: coord(), Delta :: delta(),
                  EnemyColor :: echessd_game:color()) ->
                         {EnemyChessmanType :: echessd_game:chessman_type(),
                          Distance :: pos_integer()} |
                         undefined.
-find_enemy(Board, Coord, Step, EnemyColor) ->
-    find_enemy(Board, Coord, Step, EnemyColor, _Distance = 1).
+find_enemy(Board, Coord, Delta, EnemyColor) ->
+    find_enemy(Board, Coord, Delta, EnemyColor, _Distance = 1).
 
 %% @doc Helper for the find_enemy/4 fun.
--spec find_enemy(Board :: board(), Coord :: coord(), Direction :: step(),
+-spec find_enemy(Board :: board(), Coord :: coord(), Direction :: delta(),
                  EnemyColor :: echessd_game:color(),
                  Distance :: pos_integer()) ->
                         {EnemyChessmanType :: echessd_game:chessman_type(),
@@ -838,10 +838,10 @@ ind_dec(C, R) ->
 ind_enc({C, R}) ->
     [$a + C - 1, $1 + R - 1].
 
-%% @doc Increment the cell coordinates with the step.
+%% @doc Increment the cell coordinates with the Delta.
 %% The function return new coordinates or ?null if result
 %% is out of valid coordinates range (out of the chess board).
--spec ind_inc(Coord :: coord(), Step :: step()) ->
+-spec ind_inc(Coord :: coord(), Delta :: delta()) ->
                      (NewCoord :: coord()) | ?null.
 ind_inc({C, R}, {CS, RS}) ->
     Crd = {C + CS, R + RS},
