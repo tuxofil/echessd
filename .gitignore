@@ -16,3 +16,4 @@ Emakefile
 echessd-database
 *.dump
 doc/overview.edoc
+Mnesia.*
