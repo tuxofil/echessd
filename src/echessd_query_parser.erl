@@ -27,16 +27,14 @@
 -type http_query() :: [http_query_item()].
 
 -type http_query_item() ::
-        {?Q_GOTO, section()} |
+        {?Q_PAGE, section()} |
         {?Q_STEP, step()} |
         {?Q_GAME, pos_integer()} |
-        {?Q_NAME, nonempty_string()} |
         {?Q_MOVE, nonempty_string()} |
         {?Q_COMMENT, string()} |
         {?Q_PRIVATE, boolean()} |
         {?Q_GAMETYPE, echessd_game:gametype()} |
         {?Q_COLOR, ?black | ?white} |
-        {?Q_OPPONENT, nonempty_string()} |
         {?Q_EDIT_JID, string()} |
         {?Q_EDIT_STYLE, StyleID :: atom()} |
         {?Q_EDIT_AUTO_PERIOD, pos_integer()} |
@@ -54,27 +52,26 @@
         {?Q_EDIT_USERNAME, nonempty_string()} |
         {?Q_USERNAME, nonempty_string()} |
         {?Q_PASSWORD, nonempty_string()} |
-        {?Q_LANG, LangID :: atom()} |
-        {?Q_USER, nonempty_string()}.
+        {?Q_LANG, LangID :: atom()}.
 
 -type http_query_key() ::
-        ?Q_GOTO | ?Q_STEP | ?Q_GAME | ?Q_NAME | ?Q_MOVE | ?Q_COMMENT |
-        ?Q_PRIVATE | ?Q_GAMETYPE | ?Q_COLOR | ?Q_OPPONENT |
+        ?Q_PAGE | ?Q_STEP | ?Q_GAME | ?Q_MOVE | ?Q_COMMENT |
+        ?Q_PRIVATE | ?Q_GAMETYPE | ?Q_COLOR |
         ?Q_EDIT_JID | ?Q_EDIT_STYLE | ?Q_EDIT_AUTO_PERIOD |
         ?Q_EDIT_AUTO_REFRESH | ?Q_EDIT_NOTIFY | ?Q_EDIT_SHOW_COMMENT |
         ?Q_EDIT_SHOW_HISTORY | ?Q_EDIT_SHOW_IN_LIST | ?Q_EDIT_LANGUAGE |
         ?Q_EDIT_TIMEZONE | ?Q_EDIT_FULLNAME | ?Q_EDIT_PASSWORD0 |
         ?Q_EDIT_PASSWORD1 | ?Q_EDIT_PASSWORD2 | ?Q_EDIT_USERNAME |
-        ?Q_USERNAME | ?Q_PASSWORD | ?Q_LANG | ?Q_USER.
+        ?Q_USERNAME | ?Q_PASSWORD | ?Q_LANG.
 
 -type section() ::
-        ?SECTION_HOME | ?SECTION_GAME | ?SECTION_USERS |
-        ?SECTION_USER | ?SECTION_NEWGAME | ?SECTION_REG |
-        ?SECTION_LOGIN | ?SECTION_EXIT | ?SECTION_MOVE |
-        ?SECTION_ACKGAME | ?SECTION_DENYGAME | ?SECTION_EDITUSER |
-        ?SECTION_SAVEUSER | ?SECTION_PASSWD_FORM | ?SECTION_PASSWD |
-        ?SECTION_DRAW_CONFIRM | ?SECTION_DRAW | ?SECTION_GIVEUP_CONFIRM |
-        ?SECTION_GIVEUP.
+        ?PAGE_HOME | ?PAGE_GAME | ?PAGE_USERS |
+        ?PAGE_USER | ?PAGE_NEWGAME | ?PAGE_REGISTER |
+        ?PAGE_LOGIN | ?PAGE_EXIT | ?PAGE_MOVE |
+        ?PAGE_ACKGAME | ?PAGE_DENYGAME | ?PAGE_EDITUSER |
+        ?PAGE_SAVEUSER | ?PAGE_PASSWD_FORM | ?PAGE_PASSWD |
+        ?PAGE_DRAW_CONFIRM | ?PAGE_DRAW | ?PAGE_GIVEUP_CONFIRM |
+        ?PAGE_GIVEUP.
 
 -type step() :: non_neg_integer() | last.
 
@@ -97,7 +94,7 @@ parse(ModData) ->
                     %% handle shortcut http://host/$GAME_ID
                     "/" ++ StrGameID = Path,
                     {ok, GameID} = parse_query_value(?Q_GAME, StrGameID),
-                    "/?" ++ Str = encode([{?Q_GOTO, ?SECTION_GAME},
+                    "/?" ++ Str = encode([{?Q_PAGE, ?PAGE_GAME},
                                           {?Q_GAME, GameID}]),
                     Str
                 catch _:_ ->
@@ -168,8 +165,8 @@ parse_query_value(Key, StrValue) ->
 -spec parse_query_value_(Key :: echessd_query_parser:http_query_key(),
                          StrValue :: string()) ->
                                 Value :: any().
-parse_query_value_(?Q_GOTO, String) ->
-    echessd_lib:list_to_atom(String, ?ALL_SECTIONS, ?SECTION_HOME);
+parse_query_value_(?Q_PAGE, String) ->
+    echessd_lib:list_to_atom(String, ?ALL_PAGES, ?PAGE_HOME);
 parse_query_value_(?Q_STEP, String) ->
     try list_to_integer(String) of
         Int when Int >= 0 ->
@@ -224,10 +221,7 @@ parse_query_value_(PasswordKey, [_ | _] = String)
     String;
 parse_query_value_(UsernameKey, String)
   when UsernameKey == ?Q_EDIT_USERNAME;
-       UsernameKey == ?Q_USERNAME;
-       UsernameKey == ?Q_NAME;
-       UsernameKey == ?Q_USER;
-       UsernameKey == ?Q_OPPONENT ->
+       UsernameKey == ?Q_USERNAME ->
     [_ | _] = echessd_lib:strip(String, " \t\r\n");
 parse_query_value_(BooleanKey, String)
   when BooleanKey == ?Q_PRIVATE;

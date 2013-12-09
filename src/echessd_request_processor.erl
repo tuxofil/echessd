@@ -41,11 +41,11 @@ handle(?HTTP_POST, Section, Query, Session) ->
 -spec handle_get(Section :: echessd_query_parser:section(),
                  Query :: echessd_query_parser:http_query(),
                  Session :: #session{}) -> result().
-handle_get(?SECTION_EXIT, _Query, Session)
+handle_get(?PAGE_EXIT, _Query, Session)
   when ?is_logged_in(Session) ->
     ok = echessd_session:del(Session),
     {redirect, "/"};
-handle_get(?SECTION_ACKGAME, Query, Session)
+handle_get(?PAGE_ACKGAME, Query, Session)
   when ?is_logged_in(Session) ->
     GameID = proplists:get_value(?Q_GAME, Query),
     case echessd_game:ack(GameID, Session#session.username) of
@@ -54,7 +54,7 @@ handle_get(?SECTION_ACKGAME, Query, Session)
         {error, Reason} ->
             geterr(Session, txt_err_game_confirm, Reason)
     end;
-handle_get(?SECTION_DENYGAME, Query, Session)
+handle_get(?PAGE_DENYGAME, Query, Session)
   when ?is_logged_in(Session) ->
     GameID = proplists:get_value(?Q_GAME, Query),
     case echessd_game:deny(GameID, Session#session.username) of
@@ -77,9 +77,9 @@ handle_get(Section, Query, Session) ->
                 Session#session{language = LangID}
         end,
     case Section of
-        ?SECTION_REG ->
+        ?PAGE_REGISTER ->
             echessd_html:register(NewSession);
-        ?SECTION_GAME ->
+        ?PAGE_GAME ->
             handle_show(NewSession, Query);
         _ ->
             echessd_html:login(NewSession)
@@ -89,7 +89,7 @@ handle_get(Section, Query, Session) ->
 -spec handle_post(Section :: echessd_query_parser:section(),
                   Query :: echessd_query_parser:http_query(),
                   Session :: #session{}) -> result().
-handle_post(?SECTION_LOGIN, Query, Session) ->
+handle_post(?PAGE_LOGIN, Query, Session) ->
     Username = proplists:get_value(?Q_USERNAME, Query),
     Password = proplists:get_value(?Q_PASSWORD, Query),
     case ?is_logged_in(Session) andalso
@@ -115,7 +115,7 @@ handle_post(?SECTION_LOGIN, Query, Session) ->
                     echessd_html:eaccess(Session)
             end
     end;
-handle_post(?SECTION_REG, Query, Session)
+handle_post(?PAGE_REGISTER, Query, Session)
   when not ?is_logged_in(Session) ->
     Username = proplists:get_value(?Q_EDIT_USERNAME, Query),
     Fullname = proplists:get_value(?Q_EDIT_FULLNAME, Query),
@@ -139,14 +139,14 @@ handle_post(?SECTION_REG, Query, Session)
                     {?ui_created, now()}]) of
                 ok ->
                     handle_post(
-                      ?SECTION_LOGIN,
+                      ?PAGE_LOGIN,
                       [{?Q_USERNAME, Username}, {?Q_PASSWORD, Password1}],
                       Session);
                 {error, Reason} ->
                     geterr(Session, txt_err_new_user, Reason)
             end
     end;
-handle_post(?SECTION_PASSWD, Query, Session)
+handle_post(?PAGE_PASSWD, Query, Session)
   when ?is_logged_in(Session) ->
     Password0 = proplists:get_value(?Q_EDIT_PASSWORD0, Query),
     Password1 = proplists:get_value(?Q_EDIT_PASSWORD1, Query),
@@ -164,7 +164,7 @@ handle_post(?SECTION_PASSWD, Query, Session)
         {error, _Reason} ->
             echessd_html:eaccess(Session)
     end;
-handle_post(?SECTION_SAVEUSER, Query, Session)
+handle_post(?PAGE_SAVEUSER, Query, Session)
   when ?is_logged_in(Session) ->
     Fullname = proplists:get_value(?Q_EDIT_FULLNAME, Query),
     Timezone = proplists:get_value(?Q_EDIT_TIMEZONE, Query),
@@ -195,9 +195,9 @@ handle_post(?SECTION_SAVEUSER, Query, Session)
         {error, Reason} ->
             geterr(Session, txt_err_save_user, Reason)
     end;
-handle_post(?SECTION_NEWGAME, Query, Session)
+handle_post(?PAGE_NEWGAME, Query, Session)
   when ?is_logged_in(Session) ->
-    Opponent = proplists:get_value(?Q_OPPONENT, Query),
+    Opponent = proplists:get_value(?Q_USERNAME, Query),
     Color = proplists:get_value(?Q_COLOR, Query),
     GameType = proplists:get_value(?Q_GAMETYPE, Query),
     Private = proplists:is_defined(?Q_PRIVATE, Query),
@@ -211,7 +211,7 @@ handle_post(?SECTION_NEWGAME, Query, Session)
         {error, Reason} ->
             geterr(Session, txt_err_new_game, Reason)
     end;
-handle_post(?SECTION_MOVE, Query, Session)
+handle_post(?PAGE_MOVE, Query, Session)
   when ?is_logged_in(Session) ->
     GameID = proplists:get_value(?Q_GAME, Query),
     Coords = proplists:get_value(?Q_MOVE, Query),
@@ -239,7 +239,7 @@ handle_post(?SECTION_MOVE, Query, Session)
             nop
     end,
     redirect_to_game(GameID);
-handle_post(?SECTION_DRAW, Query, Session)
+handle_post(?PAGE_DRAW, Query, Session)
   when ?is_logged_in(Session) ->
     GameID = proplists:get_value(?Q_GAME, Query),
     case echessd_game:request_draw(GameID, Session#session.username) of
@@ -249,7 +249,7 @@ handle_post(?SECTION_DRAW, Query, Session)
             put(error, Error)
     end,
     redirect_to_game(GameID);
-handle_post(?SECTION_GIVEUP, Query, Session)
+handle_post(?PAGE_GIVEUP, Query, Session)
   when ?is_logged_in(Session) ->
     GameID = proplists:get_value(?Q_GAME, Query),
     case echessd_game:give_up(GameID, Session#session.username) of
@@ -271,24 +271,24 @@ handle_post(_, _, Session) ->
                   Query :: echessd_query_parser:http_query()) ->
                          HTML :: iolist().
 handle_show(Session, Query) ->
-    case proplists:get_value(?Q_GOTO, Query, ?SECTION_HOME) of
-        ?SECTION_GAME ->
+    case proplists:get_value(?Q_PAGE, Query, ?PAGE_HOME) of
+        ?PAGE_GAME ->
             echessd_html:game(Session, Query);
-        ?SECTION_USERS ->
+        ?PAGE_USERS ->
             echessd_html:users(Session);
-        ?SECTION_USER ->
+        ?PAGE_USER ->
             echessd_html:user(Session, Query);
-        ?SECTION_EDITUSER ->
+        ?PAGE_EDITUSER ->
             echessd_html:edituser(Session);
-        ?SECTION_PASSWD_FORM ->
+        ?PAGE_PASSWD_FORM ->
             echessd_html:passwd(Session);
-        ?SECTION_NEWGAME ->
+        ?PAGE_NEWGAME ->
             echessd_html:newgame(Session, Query);
-        ?SECTION_DRAW_CONFIRM ->
+        ?PAGE_DRAW_CONFIRM ->
             echessd_html:draw_confirm(Session, Query);
-        ?SECTION_GIVEUP_CONFIRM ->
+        ?PAGE_GIVEUP_CONFIRM ->
             echessd_html:giveup_confirm(Session, Query);
-        ?SECTION_HOME ->
+        ?PAGE_HOME ->
             echessd_html:home(Session)
     end.
 
@@ -298,7 +298,7 @@ handle_show(Session, Query) ->
 redirect_to_game(GameID) ->
     {redirect,
      echessd_query_parser:encode(
-       [{?Q_GOTO, ?SECTION_GAME}, {?Q_GAME, GameID}])}.
+       [{?Q_PAGE, ?PAGE_GAME}, {?Q_GAME, GameID}])}.
 
 %% @doc
 -spec gettext(Session :: #session{}, TextID :: atom()) -> string().

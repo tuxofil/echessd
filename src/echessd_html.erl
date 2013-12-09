@@ -55,10 +55,10 @@
 -spec login(Session :: #session{}) -> HTML :: iolist().
 login(Session) ->
     log_reg_page(
-      Session, ?SECTION_LOGIN,
+      Session, ?PAGE_LOGIN,
       "echessd - " ++ gettext(Session, txt_lgn_title, []),
       [navig_links(
-         [{url([{?Q_GOTO, ?SECTION_REG}]),
+         [{url([{?Q_PAGE, ?PAGE_REGISTER}]),
            gettext(Session, txt_lgn_rnu_link, [])}]),
        case echessd_cfg:get(?CFG_SHOW_ABOUT) of
            true ->
@@ -66,7 +66,7 @@ login(Session) ->
            _ -> ""
        end,
        "<form method=post>",
-       hidden(?Q_GOTO, ?SECTION_LOGIN),
+       hidden(?Q_PAGE, ?PAGE_LOGIN),
        input(Session, ?Q_USERNAME, txt_lgn_login, ""), "<br>",
        password(Session, ?Q_PASSWORD, txt_lgn_passw), "<br>",
        submit(Session, txt_lgn_ok_button),
@@ -82,12 +82,12 @@ login(Session) ->
 register(Session) ->
     Optional = [" (", gettext(Session, txt_rnu_optional, []), ")<br>"],
     log_reg_page(
-      Session, ?SECTION_REG,
+      Session, ?PAGE_REGISTER,
       "echessd - " ++ gettext(Session, txt_rnu_title, []),
-      [navig_links([{url([{?Q_GOTO, ?SECTION_LOGIN}]),
+      [navig_links([{url([{?Q_PAGE, ?PAGE_LOGIN}]),
                      gettext(Session, txt_rnu_ret_link, [])}]),
        "<form method=post>",
-       hidden(?Q_GOTO, ?SECTION_REG),
+       hidden(?Q_PAGE, ?PAGE_REGISTER),
        input(Session, ?Q_EDIT_USERNAME, txt_rnu_login, ""), "<br>",
        password(Session, ?Q_EDIT_PASSWORD1, txt_rnu_passw), "<br>",
        password(Session, ?Q_EDIT_PASSWORD2, txt_rnu_passw_conf), "<br>",
@@ -111,10 +111,10 @@ edituser(Session) ->
     [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
      navigation(Session), "<br>",
      navig_links(
-       [{url([{?Q_GOTO, ?SECTION_PASSWD_FORM}]),
+       [{url([{?Q_PAGE, ?PAGE_PASSWD_FORM}]),
          gettext(Session, txt_predit_passwd_link, [])}]),
      "<form method=post>",
-     hidden(?Q_GOTO, ?SECTION_SAVEUSER),
+     hidden(?Q_PAGE, ?PAGE_SAVEUSER),
      input(Session, ?Q_EDIT_FULLNAME, txt_fullname,
            echessd_user:get_value(?ui_fullname, UserInfo)), "<br>",
      select(Session, ?Q_EDIT_TIMEZONE, txt_timezone,
@@ -153,7 +153,7 @@ passwd(Session) ->
     [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
      navigation(Session),
      "<br><form method=post>",
-     hidden(?Q_GOTO, ?SECTION_PASSWD),
+     hidden(?Q_PAGE, ?PAGE_PASSWD),
      password(Session, ?Q_EDIT_PASSWORD0, txt_passwd_passw), "<br>",
      password(Session, ?Q_EDIT_PASSWORD1, txt_passwd_passw_new), "<br>",
      password(Session, ?Q_EDIT_PASSWORD2, txt_passwd_passw_new_confirm),
@@ -171,7 +171,7 @@ home(Session) ->
     [html_page_header(Session, "echessd - " ++ Title,
                       [{h1, Title ++ ": " ++ Username}]),
      navigation(Session),
-     navig_links([{url([{?Q_GOTO, ?SECTION_EDITUSER}]),
+     navig_links([{url([{?Q_PAGE, ?PAGE_EDITUSER}]),
                    gettext(Session, txt_edit_profile_title, [])}]), "<br>",
      user_info(Session, Username, UserInfo), "<br>",
      user_games(Session, Username, UserInfo, true),
@@ -202,7 +202,7 @@ users(Session) ->
            Query :: echessd_query_parser:http_query()) ->
                   HTML :: iolist().
 user(Session, Query) ->
-    case proplists:get_value(?Q_NAME, Query) of
+    case proplists:get_value(?Q_USERNAME, Query) of
         MyName when MyName == Session#session.username ->
             home(Session);
         Username ->
@@ -221,7 +221,7 @@ user(Session, Query) ->
               Query :: echessd_query_parser:http_query()) ->
                      HTML :: iolist().
 newgame(Session, Query) ->
-    Opponent = proplists:get_value(?Q_USER, Query),
+    Opponent = proplists:get_value(?Q_USERNAME, Query),
     Iam = Session#session.username,
     H2Title =
         if Iam == Opponent ->
@@ -234,8 +234,8 @@ newgame(Session, Query) ->
      navigation(Session),
      h2(H2Title),
      "<form method=post>",
-     hidden(?Q_GOTO, ?SECTION_NEWGAME),
-     hidden(?Q_OPPONENT, Opponent),
+     hidden(?Q_PAGE, ?PAGE_NEWGAME),
+     hidden(?Q_USERNAME, Opponent),
      hidden(?Q_GAMETYPE, ?GAME_CLASSIC),
      if Iam == Opponent ->
              hidden(?Q_COLOR, ?white);
@@ -400,7 +400,7 @@ move_form(Session, GameID, Hints, ActiveCells, LastPly) ->
     [tag(script, ["src='/res/echessd.js'"], ""),
      tag(script, js_init(Hints, ActiveCells, LastPly)),
      "<form method=post>",
-     hidden(?Q_GOTO, ?SECTION_MOVE),
+     hidden(?Q_PAGE, ?PAGE_MOVE),
      hidden(?Q_GAME, GameID),
      gettext(Session, txt_move_caption, []) ++ ":&nbsp;" ++
          "<input name=move type=text size=5 id=edmv>",
@@ -423,7 +423,7 @@ autorefresh_hook(Session, GameInfo) ->
             tag(
               script,
               ["setTimeout(\"document.location.href='",
-               url([{?Q_GOTO, ?SECTION_GAME},
+               url([{?Q_PAGE, ?PAGE_GAME},
                     {?Q_GAME, GameInfo#gameinfo.id},
                     {?Q_STEP, GameInfo#gameinfo.step}]),
                "'\",", integer_to_list(AutoRefreshPeriod * 1000), ")"]);
@@ -441,7 +441,7 @@ draw_confirm(Session, Query) ->
     [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
      warning(Session, txt_draw_confirm_text, []),
      "<form method=post>",
-     hidden(?Q_GOTO, ?SECTION_DRAW),
+     hidden(?Q_PAGE, ?PAGE_DRAW),
      hidden(?Q_GAME, GameID),
      submit(Session, txt_draw_button),
      "</form>",
@@ -462,7 +462,7 @@ giveup_confirm(Session, Query) ->
     [html_page_header(Session, "echessd - " ++ Title, [{h1, Title}]),
      warning(Session, txt_giveup_confirm_text, [userlink(IdlePlayerName)]),
      "<form method=post>",
-     hidden(?Q_GOTO, ?SECTION_GIVEUP),
+     hidden(?Q_PAGE, ?PAGE_GIVEUP),
      hidden(?Q_GAME, GameID),
      submit(Session, txt_giveup_button),
      "</form>",
@@ -634,7 +634,7 @@ log_reg_page(Session, Section, Title, Content) ->
        lists:map(
          fun(LangID) ->
                  {echessd_query_parser:encode(
-                    [{?Q_GOTO, Section}, {?Q_LANG, LangID}]),
+                    [{?Q_PAGE, Section}, {?Q_LANG, LangID}]),
                   echessd_query_parser:encode(?Q_LANG, LangID)}
          end, [LangID || {LangID, _} <- echessd_lang:list()])),
      h1(Title), Content, html_page_footer()].
@@ -843,7 +843,7 @@ user_games_not_acknowledged_line(Session, Owner, GameID, GameInfo) ->
                           chessman({OpponentColor, ?king})]);
          Opponent ->
              OpponentColor = proplists:get_value(Opponent, GamePlayers),
-             AckURL = url([{?Q_GOTO, ?SECTION_ACKGAME}, {?Q_GAME, GameID}]),
+             AckURL = url([{?Q_PAGE, ?PAGE_ACKGAME}, {?Q_GAME, GameID}]),
              gettext(Session, txt_waiting_for_you,
                      [userlink(Opponent) ++ " " ++
                           chessman({OpponentColor, ?king})]) ++ " " ++
@@ -851,7 +851,7 @@ user_games_not_acknowledged_line(Session, Owner, GameID, GameInfo) ->
                      gettext(Session, txt_game_confirm, []))
      end, $\s,
      tag(a, ["href='" ++
-                 url([{?Q_GOTO, ?SECTION_DENYGAME}, {?Q_GAME, GameID}]) ++
+                 url([{?Q_PAGE, ?PAGE_DENYGAME}, {?Q_GAME, GameID}]) ++
                  "'"],
          gettext(Session, txt_game_deny, []))].
 
@@ -1048,7 +1048,7 @@ select_option(Value, Caption, IsSelected) ->
 %% @doc
 -spec userlink(Username :: echessd_user:name()) -> HTML :: iolist().
 userlink(Username) ->
-    a(url([{?Q_GOTO, ?SECTION_USER}, {?Q_NAME, Username}]), Username).
+    a(url([{?Q_PAGE, ?PAGE_USER}, {?Q_USERNAME, Username}]), Username).
 
 %% @doc
 -spec winnerlink(GameInfo :: #gameinfo{}) -> HTML :: iolist().
@@ -1064,7 +1064,7 @@ winnerlink(GameInfo) ->
 %% @doc
 -spec gamelink(GameID :: echessd_game:id()) -> HTML :: iolist().
 gamelink(GameID) ->
-    a(url([{?Q_GOTO, ?SECTION_GAME}, {?Q_GAME, GameID}]),
+    a(url([{?Q_PAGE, ?PAGE_GAME}, {?Q_GAME, GameID}]),
       ["#", echessd_query_parser:encode(?Q_GAME, GameID)]).
 
 %% @doc
@@ -1073,7 +1073,7 @@ gamelink(GameID) ->
                           HTML :: iolist().
 newgame_link(Session, WithUsername) ->
     navig_links(
-      [{url([{?Q_GOTO, ?SECTION_NEWGAME}, {?Q_USER, WithUsername}]),
+      [{url([{?Q_PAGE, ?PAGE_NEWGAME}, {?Q_USERNAME, WithUsername}]),
         gettext(Session, txt_new_game_link, [])}]).
 
 %% @doc
@@ -1140,7 +1140,7 @@ history_buttons(GameInfo) ->
            (Caption, LinkStep, _Enabled) ->
                 td(["class=hbc"],
                    tag(form, ["method=get"],
-                       [hidden(?Q_GOTO, ?SECTION_GAME),
+                       [hidden(?Q_PAGE, ?PAGE_GAME),
                         hidden(?Q_GAME, GameInfo#gameinfo.id),
                         hidden(?Q_STEP, LinkStep),
                         "<input type=submit class=hb value='",
@@ -1152,7 +1152,7 @@ history_buttons(GameInfo) ->
       ["cellpadding=0", "cellspacing=0", "width='100%'"],
       [[td(["class=hbc"],
            tag(form, ["method=get"],
-               [hidden(?Q_GOTO, ?SECTION_GAME),
+               [hidden(?Q_PAGE, ?PAGE_GAME),
                 hidden(?Q_GAME, GameInfo#gameinfo.id),
                 "<input type=submit class=hb value='&#8635;'>"])) |
         case {Step, IsLastStep} of
@@ -1226,7 +1226,7 @@ game_history_itemlink(GameID, CurStep, Step, {_PlyCoords, PlyInfo}) ->
       a,
       ["title='" ++ Comment ++ "'",
        "href='" ++
-           url([{?Q_GOTO, ?SECTION_GAME},
+           url([{?Q_PAGE, ?PAGE_GAME},
                 {?Q_GAME, GameID}, {?Q_STEP, Step}]) ++ "'"],
       [tt(if CurStep == Step ->
                   b(Caption);
@@ -1323,8 +1323,8 @@ navig_links(List, Options) ->
 navigation(Session) when is_list(Session#session.username) ->
     navig_links(
       [{url([]), gettext(Session, txt_home, [])},
-       {url([{?Q_GOTO, ?SECTION_USERS}]), gettext(Session, txt_users, [])},
-       {url([{?Q_GOTO, ?SECTION_EXIT}]), gettext(Session, txt_logout, [])}]);
+       {url([{?Q_PAGE, ?PAGE_USERS}]), gettext(Session, txt_users, [])},
+       {url([{?Q_PAGE, ?PAGE_EXIT}]), gettext(Session, txt_logout, [])}]);
 navigation(_Session) ->
     %% not logged in
     "".
@@ -1339,15 +1339,15 @@ game_navigation(Session, GameInfo) ->
               [{"/", gettext(Session, txt_home, [])}] ++
                   if GameInfo#gameinfo.is_my_game andalso
                      GameInfo#gameinfo.status == ?gs_alive ->
-                          [{url([{?Q_GOTO, ?SECTION_DRAW_CONFIRM},
+                          [{url([{?Q_PAGE, ?PAGE_DRAW_CONFIRM},
                                  {?Q_GAME, GameInfo#gameinfo.id}]),
                             gettext(Session, txt_req_draw, [])},
-                           {url([{?Q_GOTO, ?SECTION_GIVEUP_CONFIRM},
+                           {url([{?Q_PAGE, ?PAGE_GIVEUP_CONFIRM},
                                  {?Q_GAME, GameInfo#gameinfo.id}]),
                             gettext(Session, txt_do_giveup, [])}];
                      true -> ""
                   end ++
-                  [{url([{?Q_GOTO, ?SECTION_EXIT}]),
+                  [{url([{?Q_PAGE, ?PAGE_EXIT}]),
                     gettext(Session, txt_logout, [])}];
           _ -> [{"/", gettext(Session, txt_authenticate, [])}]
       end,

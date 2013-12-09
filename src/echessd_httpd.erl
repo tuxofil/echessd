@@ -122,7 +122,7 @@ process(ModData, Query, Session) ->
                            echessd_request_processor:result().
 generate_html(Method, Query, Session) ->
     ok = echessd_log:debug("~s query=~9999p", [Method, Query]),
-    Section = proplists:get_value(?Q_GOTO, Query),
+    Section = proplists:get_value(?Q_PAGE, Query),
     try
         echessd_request_processor:handle(Method, Section, Query, Session)
     catch
