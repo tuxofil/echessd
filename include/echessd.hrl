@@ -219,6 +219,9 @@
 
 %% ----------------------------------------------------------------------
 
+%% special value for the 'step' HTTP query variable
+-define(last, last).
+
 -define(nonnegint(I), (is_integer(I) andalso I >= 0)).
 
 -define(is_now(T),

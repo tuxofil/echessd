@@ -73,7 +73,7 @@
         ?PAGE_DRAW_CONFIRM | ?PAGE_DRAW | ?PAGE_GIVEUP_CONFIRM |
         ?PAGE_GIVEUP.
 
--type step() :: non_neg_integer() | last.
+-type step() :: non_neg_integer() | ?last.
 
 %% ----------------------------------------------------------------------
 %% API functions
@@ -172,10 +172,10 @@ parse_query_value_(?Q_STEP, String) ->
         Int when Int >= 0 ->
             Int;
         _ ->
-            last
+            ?last
     catch
         _:_ ->
-            last
+            ?last
     end;
 parse_query_value_(?Q_GAME, String) ->
     Int = list_to_integer(String),

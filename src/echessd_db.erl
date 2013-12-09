@@ -42,6 +42,8 @@
 %% db table record
 -record(hrec, {key, val}).
 
+-define(game_counter, counter).
+
 %% ----------------------------------------------------------------------
 %% Type definitions
 %% ----------------------------------------------------------------------
@@ -52,7 +54,7 @@
 
 -type proplist() :: [{Key :: atom(), Value :: any()}].
 
--type rec_id() :: echessd_game:id() | echessd_user:name() | counter.
+-type rec_id() :: echessd_game:id() | echessd_user:name() | ?game_counter.
 
 -type dump_item() ::
         {user, UserName :: echessd_user:name(),
@@ -490,7 +492,9 @@ import_games(Games) ->
     transaction_ok(
       fun() ->
               lists:foreach(
-                fun({GameID, GameInfo}) ->
+                fun({?game_counter = Key, Counter}) ->
+                        ll_set_props(?dbt_games, Key, Counter);
+                   ({GameID, GameInfo}) ->
                         ll_set_props(?dbt_games, GameID,
                                      lists:sort(GameInfo))
                 end, Games)
@@ -628,13 +632,13 @@ ll_set_props(DbTable, RecID, Props) ->
 -spec generate_game_id() -> echessd_game:id().
 generate_game_id() ->
     GameID =
-        case mnesia:read({?dbt_games, counter}) of
+        case mnesia:read({?dbt_games, ?game_counter}) of
             [HRec] ->
                 HRec#hrec.val;
             _ ->
                 1
         end,
     mnesia:write(
-      ?dbt_games, #hrec{key = counter, val = GameID + 1},
+      ?dbt_games, #hrec{key = ?game_counter, val = GameID + 1},
       write),
     GameID.

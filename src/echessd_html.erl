@@ -257,7 +257,7 @@ newgame(Session, Query) ->
                   HTML :: iolist().
 game(Session, Query) ->
     GameID = proplists:get_value(?Q_GAME, Query),
-    Step = proplists:get_value(?Q_STEP, Query, last),
+    Step = proplists:get_value(?Q_STEP, Query, ?last),
     case get_extended_game_info(Session, GameID, Step) of
         {ok, GameInfo} ->
             [html_page_header(
@@ -505,7 +505,8 @@ redirection(Session, URL) ->
 %% Internal functions
 %% ----------------------------------------------------------------------
 
-%% @doc
+%% @doc Fetch the game info from the database and calculate additional
+%% essential info.
 -spec get_extended_game_info(Session :: #session{},
                              GameID :: echessd_game:id(),
                              Step :: echessd_query_parser:step()) ->
@@ -519,9 +520,9 @@ get_extended_game_info(Session, GameID, Step) ->
             FullHistory = proplists:get_value(?gi_history, GameInfo, []),
             FullHistoryLen = length(FullHistory),
             Status = proplists:get_value(?gi_status, GameInfo, ?gs_alive),
-            {History, IntStep, IsLastStep} =
-                if Step == last orelse Step >= FullHistoryLen ->
-                        {FullHistory, FullHistoryLen, true};
+            {History, FinalStep, IsLastStep} =
+                if Step == ?last orelse Step >= FullHistoryLen ->
+                        {FullHistory, ?last, true};
                    true ->
                         {lists:sublist(FullHistory, Step), Step, false}
                 end,
@@ -539,7 +540,7 @@ get_extended_game_info(Session, GameID, Step) ->
                        full_history_len = FullHistoryLen,
                        history = History,
                        history_len = length(History),
-                       step = IntStep,
+                       step = FinalStep,
                        is_last_step = IsLastStep,
                        current_player_name = CurrentPlayerName,
                        current_color = CurrentColor,
@@ -591,7 +592,7 @@ fetch_game(Session, GameID) ->
                [GameID, Reason])
     end.
 
-%% @doc Initialisation JavaScript code for hinting.
+%% @doc Initialization JavaScript code for hinting.
 -spec js_init(Hints :: [echessd_game:ply_coords()],
               ActiveCells :: [CellCoord :: nonempty_string()],
               LastPlyCoords :: echessd_game:ply_coords() | undefined) ->
@@ -1131,38 +1132,64 @@ chess_board(Session, GameInfo, ActiveCells, LastPly) ->
             td(["colspan=8"], history_buttons(GameInfo)),
             td("")]]).
 
-%% @doc
+%% @doc Generate the HTML code for the game history navigation pane.
 -spec history_buttons(GameInfo :: #gameinfo{}) -> HTML :: iolist().
 history_buttons(GameInfo) ->
-    HistBtn =
-        fun(_, _, false) ->
-                td(["class=hbc"], "");
-           (Caption, LinkStep, _Enabled) ->
-                td(["class=hbc"],
-                   tag(form, ["method=get"],
-                       [hidden(?Q_PAGE, ?PAGE_GAME),
-                        hidden(?Q_GAME, GameInfo#gameinfo.id),
-                        hidden(?Q_STEP, LinkStep),
-                        "<input type=submit class=hb value='",
-                        Caption, "'>"]))
-        end,
+    GameID = GameInfo#gameinfo.id,
     Step = GameInfo#gameinfo.step,
     IsLastStep = GameInfo#gameinfo.is_last_step,
     table(
       ["cellpadding=0", "cellspacing=0", "width='100%'"],
-      [[td(["class=hbc"],
-           tag(form, ["method=get"],
-               [hidden(?Q_PAGE, ?PAGE_GAME),
-                hidden(?Q_GAME, GameInfo#gameinfo.id),
-                "<input type=submit class=hb value='&#8635;'>"])) |
+      [[td(["class=hbc"], refresh_button(GameID)) |
         case {Step, IsLastStep} of
-            {0, true} -> [];
+            {0, true} ->
+                [history_button(GameID, "", 0, _Disabled = false),
+                 history_button(GameID, "", 0, _Disabled = false),
+                 history_button(GameID, "", 0, _Disabled = false),
+                 history_button(GameID, "", 0, _Disabled = false)];
             _ ->
-                [HistBtn("&lt;&lt;", 0, Step > 0),
-                 HistBtn("&lt;", Step - 1, Step > 0),
-                 HistBtn("&gt;", Step + 1, not IsLastStep),
-                 HistBtn("&gt;&gt;", last, not IsLastStep)]
+                FullHistoryLen = GameInfo#gameinfo.full_history_len,
+                PrevStep =
+                    if IsLastStep ->
+                            FullHistoryLen - 1;
+                       true ->
+                            Step - 1
+                    end,
+                NextStep =
+                    if IsLastStep orelse Step + 1 == FullHistoryLen ->
+                            ?last;
+                       true ->
+                            Step + 1
+                    end,
+                HistoryLen = GameInfo#gameinfo.history_len,
+                [history_button(GameID, "&lt;&lt;", 0, HistoryLen > 0),
+                 history_button(GameID, "&lt;", PrevStep, HistoryLen > 0),
+                 history_button(GameID, "&gt;", NextStep, not IsLastStep),
+                 history_button(GameID, "&gt;&gt;", ?last, not IsLastStep)]
         end]]).
+
+%% @doc Generate the HTML code for the game refresh button.
+-spec refresh_button(GameID :: echessd_game:id()) -> HTML :: iolist().
+refresh_button(GameID) ->
+    tag(form, ["method=get"],
+        [hidden(?Q_PAGE, ?PAGE_GAME),
+         hidden(?Q_GAME, GameID),
+         "<input type=submit class=hb value='&#8635;'>"]).
+
+%% @doc Generate the HTML code for the game history navigation.
+-spec history_button(GameID :: echessd_game:id(), Caption :: string(),
+                     Step :: echessd_query_parser:step(),
+                     IsEnabled :: boolean()) -> HTML :: iolist().
+history_button(_GameID, _Caption, _Step, false = _Disabled) ->
+    td(["class=hbc"], "");
+history_button(GameID, Caption, Step, true = _Enabled) ->
+    td(["class=hbc"],
+       tag(form, ["method=get"],
+           [hidden(?Q_PAGE, ?PAGE_GAME),
+            hidden(?Q_GAME, GameID),
+            hidden(?Q_STEP, Step),
+            "<input type=submit class=hb value='",
+            Caption, "'>"])).
 
 %% @doc
 -spec cell(Board :: echessd_game:board(),
@@ -1173,8 +1200,8 @@ cell(Board, C, R) ->
 
 %% @doc Generate game history table.
 -spec game_history(GameInfo :: #gameinfo{}) -> HTML :: iolist().
-game_history(GameInfo) when GameInfo#gameinfo.step == last ->
-    game_history(GameInfo#gameinfo{step = GameInfo#gameinfo.history_len});
+game_history(GameInfo) when GameInfo#gameinfo.step == ?last ->
+    game_history(GameInfo#gameinfo{step = GameInfo#gameinfo.full_history_len});
 game_history(GameInfo) ->
     table(
       ["cellpadding=0", "cellspacing=0", "border=0"],
