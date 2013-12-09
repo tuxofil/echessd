@@ -32,6 +32,33 @@ To run [Dialyzer](http://erlang.org/doc/apps/dialyzer/users_guide.html) type:
 
     $ make dialyze
 
+## Run Echessd within normal Erlang node
+
+To start the Echessd with empty database:
+
+    $ make compile
+    $ ERL_LIBS=.. erl -echessd config_path '"echessd.conf"'
+    ...
+    1> ok = echessd_db:init().
+    2> ok = application:start(echessd).
+
+To start the Echessd and initialize the database from a dump file:
+
+    $ make compile
+    $ ERL_LIBS=.. erl -echessd config_path '"echessd.conf"'
+    ...
+    1> {ok, Dump} = file:consult("echessd.dump").
+    2> ok = echessd_db:load(Dump).
+    3> ok = application:start(echessd).
+
+To start the Echessd with already existing database:
+
+    $ make compile
+    $ ERL_LIBS=.. erl -echessd config_path '"echessd.conf"'
+    ...
+    1> ok = mnesia:start().
+    2> ok = application:start(echessd).
+
 ## Translate Echessd to a new language
 
 All internationalisation data is defined in a _priv/echessd.lang_ file.
