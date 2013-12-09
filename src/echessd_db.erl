@@ -129,7 +129,8 @@ adduser(Username, UserInfo) ->
                   [_] ->
                       mnesia:abort({?e_user_already_exists, Username});
                   _ ->
-                      ll_set_props(?dbt_users, Username, UserInfo)
+                      ll_set_props(?dbt_users, Username,
+                                   lists:sort(UserInfo))
               end
       end).
 
@@ -172,7 +173,8 @@ set_user_props(Username, UserInfo) ->
 addgame(GameInfo) ->
     transaction(
       fun() ->
-              set_game_props_(GameID = generate_game_id(), GameInfo),
+              set_game_props_(GameID = generate_game_id(),
+                              lists:sort(GameInfo)),
               GameID
       end).
 
@@ -474,7 +476,8 @@ import_users(Users) ->
       fun() ->
               lists:foreach(
                 fun({Username, UserInfo}) ->
-                        ll_set_props(?dbt_users, Username, UserInfo)
+                        ll_set_props(?dbt_users, Username,
+                                     lists:sort(UserInfo))
                 end, Users)
       end).
 
@@ -488,7 +491,8 @@ import_games(Games) ->
       fun() ->
               lists:foreach(
                 fun({GameID, GameInfo}) ->
-                        ll_set_props(?dbt_games, GameID, GameInfo)
+                        ll_set_props(?dbt_games, GameID,
+                                     lists:sort(GameInfo))
                 end, Games)
       end).
 
@@ -592,7 +596,8 @@ transaction(Fun) ->
                        Props2Replace :: proplist()) -> ok.
 ll_replace_props(DbTable, RecID, OldProps, Props2Replace) ->
     ll_set_props(
-      DbTable, RecID, proplist_update(OldProps, Props2Replace)).
+      DbTable, RecID,
+      lists:sort(proplist_update(OldProps, Props2Replace))).
 
 %% @doc
 -spec ll_get_props(DbTable :: db_table(), RecID :: rec_id()) ->
