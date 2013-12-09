@@ -215,8 +215,7 @@
 -define(e_httpd_start, httpd_start).
 -define(e_undefined_language, undefined_language).
 -define(e_enoent, enoent).
--define(e_friendly_fire, friendly_fire).
--define(e_cannot_take_king, cannot_take_king).
+-define(e_bad_move, bad_move).
 
 %% ----------------------------------------------------------------------
 

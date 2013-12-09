@@ -56,9 +56,11 @@ move(History, {PlyCoords, PlyInfo} = Ply) ->
     {Color, _ChessmanType} = Chessman = getcell(Board, SrcCoord),
     case getcell(Board, DstCoord) of
         {Color, _} ->
-            throw(?e_friendly_fire);
+            %% friendly fire
+            throw(?e_bad_move);
         {_, ?king} ->
-            throw(?e_cannot_take_king);
+            %% can't capture the king
+            throw(?e_bad_move);
         _ -> ok
     end,
     true = lists:member(
