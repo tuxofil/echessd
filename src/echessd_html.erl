@@ -399,17 +399,30 @@ chess_table(Session, GameInfo) ->
 move_form(Session, GameID, Hints, ActiveCells, LastPly) ->
     [tag(script, ["src='/res/echessd.js'"], ""),
      tag(script, js_init(Hints, ActiveCells, LastPly)),
-     "<form method=post>",
-     hidden(?Q_PAGE, ?PAGE_MOVE),
-     hidden(?Q_GAME, GameID),
-     gettext(Session, txt_move_caption, []) ++ ":&nbsp;" ++
-         "<input name=move type=text size=5 id=edmv>",
-     submit(Session, txt_move_ok_button),
-     "<input type=reset class=btn value='" ++
-         gettext(Session, txt_move_reset_button, []) ++
-         "' onclick='clr();'><br>",
-     input(Session, ?Q_COMMENT, txt_move_comment_caption, ""),
-     "</form><br>"].
+     table(
+       ["cellspacing=0", "cellpadding=0", "border=0"],
+       [[td(
+           form(
+             post,
+             [hidden(?Q_PAGE, ?PAGE_MOVE),
+              hidden(?Q_GAME, GameID),
+              gettext(Session, txt_move_caption, []) ++ ":&nbsp;" ++
+                  "<input name=move type=text size=5 id=edmv>",
+              submit(Session, txt_move_ok_button),
+              "<input type=reset class=btn value='" ++
+                  gettext(Session, txt_move_reset_button, []) ++
+                  "' onclick='clr();'><br>",
+              input(Session, ?Q_COMMENT, txt_move_comment_caption, "",
+                    ["style='width:120'"])])),
+         td(
+           center(
+             [form(
+                [hidden(?Q_PAGE, ?PAGE_GIVEUP_CONFIRM),
+                 hidden(?Q_GAME, GameID), submit(Session, txt_do_giveup)]),
+              form(
+                [hidden(?Q_PAGE, ?PAGE_DRAW_CONFIRM),
+                 hidden(?Q_GAME, GameID), submit(Session, txt_req_draw)])]))
+        ]])].
 
 %% @doc
 -spec autorefresh_hook(Session :: #session{}, GameInfo :: #gameinfo{}) ->
@@ -940,6 +953,22 @@ pre(String) ->
 a(URL, Caption) ->
     tag(a, ["href='" ++ URL ++ "'"], Caption).
 
+%% @doc
+-spec center(Content :: iolist()) -> HTML :: iolist().
+center(Content) ->
+    tag(center, Content).
+
+%% @equiv form(get, Content)
+%% @doc
+-spec form(Content :: iolist()) -> HTML :: iolist().
+form(Content) ->
+    form(get, Content).
+
+%% @doc
+-spec form(Method :: get | post, Content :: iolist()) -> HTML :: iolist().
+form(Method, Content) ->
+    tag(form, ["method=" ++ atom_to_list(Method)], Content).
+
 %% @equiv tag(Tag, [], Value)
 %% @doc
 -spec tag(Tag :: atom() | nonempty_string(),
@@ -956,34 +985,43 @@ tag(Tag, Attrs, Value) when is_atom(Tag) ->
 tag([_ | _] = Tag, Attrs, Value) ->
     [$<, Tag, [[$\s | V] || V <- Attrs], $>, Value, "</", Tag, $>].
 
-%% @doc
+%% @doc Generate HTML code for a labelled checkbox input field.
 -spec checkbox(Session :: #session{},
                ID :: nonempty_string(),
                Name :: echessd_query_parser:http_query_key(),
                CaptionTextID :: atom(),
-               IsChecked :: boolean()) ->
-                      HTML :: iolist().
+               IsChecked :: boolean()) -> HTML :: iolist().
 checkbox(Session, ID, Name, CaptionTextID, IsChecked) ->
     [io_lib:format(
        "<label for=~s><input type=checkbox id=~s name=~w", [ID, ID, Name]),
      proplists:get_value(IsChecked, [{false, ""}], " checked"), ">&nbsp;",
      gettext(Session, CaptionTextID, []), "</label>"].
 
-%% @doc
+%% @equiv input(Session, Name, CaptionTextID, Value, [])
+%% @doc Generate HTML code for a text input field.
 -spec input(Session :: #session{},
             Name :: echessd_query_parser:http_query_key(),
             CaptionTextID :: atom(),
-            Value :: any()) ->
-                   HTML :: iolist().
+            Value :: any()) -> HTML :: iolist().
 input(Session, Name, CaptionTextID, Value) ->
+    input(Session, Name, CaptionTextID, Value, []).
+
+%% @doc Generate HTML code for a text input field.
+-spec input(Session :: #session{},
+            Name :: echessd_query_parser:http_query_key(),
+            CaptionTextID :: atom(),
+            Value :: any(), ExtraAttrs :: [string()]) ->
+                   HTML :: iolist().
+input(Session, Name, CaptionTextID, Value, ExtraAttrs) ->
     EncodedValue =
         echessd_lib:escape_html_entities(
           echessd_query_parser:encode(Name, Value)),
     [gettext(Session, CaptionTextID, []), ": ",
-     io_lib:format("<input name=~w type=text value='~s'>",
-                   [Name, EncodedValue])].
+     io_lib:format(
+       "<input name=~w type=text value='~s' ~s>",
+       [Name, EncodedValue, string:join(ExtraAttrs, " ")])].
 
-%% @doc
+%% @doc Generate HTML code for a password input field.
 -spec password(Session :: #session{},
                Name :: echessd_query_parser:http_query_key(),
                CaptionTextID :: atom()) -> HTML :: iolist().
@@ -991,7 +1029,7 @@ password(Session, Name, CaptionTextID) ->
     [gettext(Session, CaptionTextID, []), ": ",
      io_lib:format("<input name=~w type=password>", [Name])].
 
-%% @doc
+%% @doc Generate HTML code for a form submit button.
 -spec submit(Session :: #session{}, CaptionTextID :: atom()) ->
                     HTML :: iolist().
 submit(Session, CaptionTextID) ->
@@ -999,7 +1037,7 @@ submit(Session, CaptionTextID) ->
      echessd_lib:escape_html_entities(
        gettext(Session, CaptionTextID, [])), "'>"].
 
-%% @doc
+%% @doc Generate HTML code for a form hidden field.
 -spec hidden(Name :: echessd_query_parser:http_query_key(),
              Value :: any()) -> HTML :: iolist().
 hidden(Name, Value) ->
@@ -1009,7 +1047,7 @@ hidden(Name, Value) ->
     io_lib:format("<input name=~w type=hidden value='~s'>",
                   [Name, EncodedValue]).
 
-%% @doc
+%% @doc Generate HTML code for a dropdown select list.
 -spec select(Session :: #session{},
              Name :: echessd_query_parser:http_query_key(),
              CaptionTextID :: atom(),
@@ -1038,7 +1076,7 @@ select(Session, Name, CaptionTextID, Value, Items) ->
        end, Items),
      "</select>"].
 
-%% @doc
+%% @doc Helper for the select/5 fun.
 -spec select_option(Value :: iolist(), Caption :: iolist(),
                     IsSelected :: boolean()) -> HTML :: iolist().
 select_option(Value, Caption, IsSelected) ->
@@ -1363,20 +1401,10 @@ game_navigation(Session, GameInfo) ->
     navig_links(
       case Session#session.username of
           [_ | _] ->
-              [{"/", gettext(Session, txt_home, [])}] ++
-                  if GameInfo#gameinfo.is_my_game andalso
-                     GameInfo#gameinfo.status == ?gs_alive ->
-                          [{url([{?Q_PAGE, ?PAGE_DRAW_CONFIRM},
-                                 {?Q_GAME, GameInfo#gameinfo.id}]),
-                            gettext(Session, txt_req_draw, [])},
-                           {url([{?Q_PAGE, ?PAGE_GIVEUP_CONFIRM},
-                                 {?Q_GAME, GameInfo#gameinfo.id}]),
-                            gettext(Session, txt_do_giveup, [])}];
-                     true -> ""
-                  end ++
-                  [{url([{?Q_PAGE, ?PAGE_EXIT}]),
-                    gettext(Session, txt_logout, [])}];
-          _ -> [{"/", gettext(Session, txt_authenticate, [])}]
+              [{"/", gettext(Session, txt_home, [])},
+               {url([{?Q_PAGE, ?PAGE_EXIT}]), gettext(Session, txt_logout, [])}];
+          _ ->
+              [{"/", gettext(Session, txt_authenticate, [])}]
       end,
       [{prepend, gettext(Session, txt_game, []) ++ " #" ++
             integer_to_list(GameInfo#gameinfo.id) ++ ": "}]).
