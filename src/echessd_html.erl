@@ -280,10 +280,11 @@ game(Session, Query) ->
                  false ->
                      chess_table(Session, GameInfo)
              end,
-             if GameInfo#gameinfo.is_my_turn ->
-                     "";
+             if (not GameInfo#gameinfo.is_my_turn) andalso
+                GameInfo#gameinfo.status == ?gs_alive ->
+                     autorefresh_hook(Session, GameInfo);
                 true ->
-                     autorefresh_hook(Session, GameInfo)
+                     ""
              end,
              html_page_footer()];
         ErrorContent ->
