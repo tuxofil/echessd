@@ -14,6 +14,7 @@
 * zip
 * erlang
 * erlang-inets
+* erlang-tools
 
 To build HTML documentation you also have to install:
 
