@@ -2,8 +2,7 @@ APP = echessd
 
 VERSION = $(shell cat version)
 
-.PHONY: all compile html clean eunit dialyze all-tests \
-    debian-install debian-chown debian-uninstall
+.PHONY: all compile html clean eunit dialyze all-tests
 
 all: $(APP)
 
@@ -77,34 +76,3 @@ clean:
 	    $(APP).zip $(APP) erl_crash.dump Emakefile doc/overview.edoc \
 	    *.log *.log.* tmp_file
 	find . -type f -name '*~' -delete
-
-## ----------------------------------------------------------------------
-## installation/deinstallation section
-
-debian-install:
-	install -m 755 -d $(DESTDIR)/etc
-	install -m 644 echessd.conf $(DESTDIR)/etc
-	install -m 755 -d $(DESTDIR)/etc/init.d
-	install -m 755 pkg.d/debian/initd.sh $(DESTDIR)/etc/init.d/echessd
-	install -m 755 -d $(DESTDIR)/usr/sbin
-	install -m 755 echessd $(DESTDIR)/usr/sbin
-	install -m 755 pkg.d/wrapper.sh $(DESTDIR)/usr/sbin/echessd-wrapper
-	install -m 755 -d $(DESTDIR)/var/lib/echessd
-	install -m 755 -d $(DESTDIR)/var/run/echessd
-	install -m 755 -d $(DESTDIR)/var/log/echessd
-
-debian-chown:
-	getent passwd echessd || \
-	    adduser --system --group --no-create-home echessd
-	chown root:echessd $(DESTDIR)/etc/echessd.conf
-	chmod 0640 $(DESTDIR)/etc/echessd.conf
-	chown -R echessd: $(DESTDIR)/var/lib/echessd
-	chown -R echessd: $(DESTDIR)/var/run/echessd
-	chown -R echessd: $(DESTDIR)/var/log/echessd
-
-debian-uninstall:
-	rm -rf -- $(DESTDIR)/etc/echessd.conf \
-	    $(DESTDIR)/usr/sbin/echessd \
-	    $(DESTDIR)/usr/sbin/echessd-wrapper \
-	    $(DESTDIR)/etc/init.d/echessd \
-	    $(DESTDIR)/var/run/echessd
