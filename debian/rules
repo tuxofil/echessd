@@ -1,0 +1,40 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+%:
+	dh $@
+
+# Build the echessd binary and docs.
+# Also all tests available will run here BEFORE the build because
+# during tests 'clean' target is called (debhelper runs
+# the dh_auto_test target after the dh_auto_build target).
+override_dh_auto_build:
+	$(MAKE) all-tests
+	$(MAKE) clean
+	$(MAKE) echessd
+	$(MAKE) html
+
+# Do not run any tests after the build
+# (see override_dh_auto_build comment for details)
+override_dh_auto_test:
+
+# Disable use of 'install' target of the main Makefile of the project
+override_dh_auto_install:
+
+# Implement staged installation
+DESTDIR = debian/echessd
+DOC_DESTDIR = debian/echessd-doc
+override_dh_install:
+	install -m 755 -d $(DESTDIR)/etc
+	install -m 640 debian/echessd.conf $(DESTDIR)/etc
+	install -m 755 -d $(DESTDIR)/usr/bin
+	install -m 755 echessd $(DESTDIR)/usr/bin
+	install -m 755 debian/wrapper.sh $(DESTDIR)/usr/bin/echessd-wrapper
+	install -m 755 -d $(DESTDIR)/var/log/echessd
+	install -m 755 -d $(DESTDIR)/var/lib/echessd
+	install -m 755 -d $(DOC_DESTDIR)/usr/share/doc/echessd-doc
+	install -m 644 doc/*.html doc/*.css doc/*.png \
+	    $(DOC_DESTDIR)/usr/share/doc/echessd-doc

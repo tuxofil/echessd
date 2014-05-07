@@ -1,0 +1,23 @@
+Source: echessd
+Section: games
+Priority: extra
+Maintainer: Aleksey Morarash <aleksey.morarash@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), erlang-base, erlang-dev, erlang-tools,
+ erlang-edoc, graphviz, erlang-eunit, erlang-dialyzer, zip
+Standards-Version: 3.9.3
+Homepage: https://github.com/tuxofil/echessd
+Vcs-Browser: https://github.com/tuxofil/echessd
+Vcs-Git: https://github.com/tuxofil/echessd.git
+
+Package: echessd
+Architecture: all
+Depends: erlang-base, erlang-inets, erlang-mnesia, erlang-crypto,
+ sendxmpp, mime-support, logrotate
+Description: Internet Chess Server
+ Echessd - is lightweight, minimalistic and free Internet Chess
+ Server written with the Erlang programming language.
+
+Package: echessd-doc
+Architecture: all
+Description: Echessd developer documentation.
+ Contains generated HTML documentation for the echessd source code.

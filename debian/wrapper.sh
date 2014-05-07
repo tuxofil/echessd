@@ -13,4 +13,4 @@
 ## cannot set HOME to '/'.
 
 export HOME=/var/lib/echessd
-exec /usr/sbin/echessd "$@"
+exec /usr/bin/echessd "$@"
