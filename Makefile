@@ -2,7 +2,7 @@ APP = echessd
 
 VERSION = $(shell cat version)
 
-.PHONY: all compile doc clean eunit dialyze all-tests \
+.PHONY: all compile html clean eunit dialyze all-tests \
     debian-install debian-chown debian-uninstall
 
 all: $(APP)
