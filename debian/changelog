@@ -1,3 +1,9 @@
+echessd (0.3.1) unstable; urgency=low
+
+  * Typo fixes.
+
+ -- Aleksey Morarash <aleksey.morarash@gmail.com>  Thu, 05 Feb 2015 01:13:00 +0200
+
 echessd (0.3.0-3) unstable; urgency=low
 
   * Initial release.
