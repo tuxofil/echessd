@@ -576,7 +576,7 @@ get_extended_game_info(Session, GameID, Step) ->
 fetch_game(Session, GameID) ->
     case echessd_game:getprops(GameID) of
         {ok, GameInfo} ->
-            case proplists:is_defined(?gi_private, GameInfo) of
+            case proplists:get_value(?gi_private, GameInfo, false) of
                 true ->
                     case is_my_game(Session, GameInfo) of
                         true ->
@@ -588,7 +588,7 @@ fetch_game(Session, GameID) ->
                                    ":~n~p", [GameID, {no_such_game, GameID}])
                     end;
                 false ->
-                    case proplists:is_defined(?gi_acknowledged, GameInfo) of
+                    case proplists:get_value(?gi_acknowledged, GameInfo, false) of
                         true ->
                             {ok, GameInfo};
                         false ->
@@ -714,7 +714,7 @@ user_games(Session, Username, UserInfo, ShowNotAcknowledged) ->
         lists:flatmap(
           fun(GameID) ->
                   {ok, GameInfo} = echessd_game:getprops(GameID),
-                  case not proplists:is_defined(?gi_private, GameInfo)
+                  case not proplists:get_value(?gi_private, GameInfo, false)
                       orelse is_my_game(Session, GameInfo) of
                       true ->
                           [{GameID, GameInfo}];
@@ -726,7 +726,7 @@ user_games(Session, Username, UserInfo, ShowNotAcknowledged) ->
     {Acknowledged, NotAcknowledged} =
         lists:partition(
           fun({_GameID, GameInfo}) ->
-                  proplists:is_defined(?gi_acknowledged, GameInfo)
+                  proplists:get_value(?gi_acknowledged, GameInfo, false)
           end, UserGames),
     %% split finished
     {Active, Finished} =
