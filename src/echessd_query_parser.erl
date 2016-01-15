@@ -80,9 +80,7 @@
 %% ----------------------------------------------------------------------
 
 %% @doc Parse the HTTP query (query string for GET, query data for POST).
--spec parse(ModData :: #mod{}) ->
-                   DecodedQuery :: [{Key :: nonempty_string(),
-                                     Value :: string()}].
+-spec parse(ModData :: #mod{}) -> DecodedQuery :: http_query().
 parse(ModData) ->
     {Path, GetQueryString} =
         echessd_lib:split4pathNquery(ModData#mod.request_uri),
