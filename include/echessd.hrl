@@ -233,25 +233,7 @@
 
 %% ----------------------------------------------------------------------
 
--ifndef(WITHOUT_INETS_HEADER).
 -include_lib("inets/include/httpd.hrl").
--else.
-%% early versions of Erlang on Debian didn't provide inets/include/httpd.hrl
--record(mod,
-        {init_data,
-         data=[],
-         socket_type=ip_comm,
-         socket,
-         config_db,
-         method,
-         absolute_uri=[],
-         request_uri,
-         http_version,
-         request_line,
-         parsed_header=[],
-         entity_body,
-         connection}).
--endif.
 
 -define(HTTP_GET, "GET").
 -define(HTTP_POST, "POST").

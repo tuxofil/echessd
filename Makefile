@@ -19,11 +19,6 @@ ifdef TEST
 COPTS := $(COPTS), {d, 'TEST'}
 endif
 
-OTPREL = $(shell erl -noshell -eval 'io:format(erlang:system_info(otp_release)),halt()')
-ifeq ($(shell expr $(OTPREL) '<' R14B02), 1)
-COPTS := $(COPTS), {d, 'WITHOUT_INETS_HEADER'}
-endif
-
 compile:
 	mkdir -p ebin
 	sed "s/{{VERSION}}/$(VERSION)/" src/$(APP).app.in > ebin/$(APP).app
