@@ -1,0 +1,6 @@
+#
+# Config file for the echessd runtime files and directories
+#
+
+d /var/lib/echessd 0755 echessd echessd -
+d /var/log/echessd 0755 echessd echessd -

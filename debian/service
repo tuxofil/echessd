@@ -1,0 +1,19 @@
+[Unit]
+Description=Internet Chess Server
+After=network.target
+Requires=epmd.socket
+
+[Service]
+Type=simple
+User=echessd
+Group=echessd
+UMask=0077
+Environment="HOME=/var/lib/echessd"
+ExecStart=/usr/bin/echessd /etc/echessd.conf
+ExecReload=/usr/bin/echessd --hup /etc/echessd.conf
+Restart=on-failure
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+Alias=echessd

@@ -1,12 +1,8 @@
-#!/bin/sh
-
-set -e
-
-NAME=echessd
+#!/bin/sh -e
 
 case "$1" in
     purge)
-        update-rc.d $NAME remove
+        rm -rf /var/lib/echessd /var/log/echessd
         ;;
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
         ;;

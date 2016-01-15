@@ -1,12 +1,10 @@
-#!/bin/sh
-
-set -e
-
-NAME=echessd
+#!/bin/sh -e
 
 case "$1" in
     install|upgrade)
-        adduser --system --group --no-create-home $NAME || :
+        getent passwd echessd > /dev/null || \
+            adduser --system --group --no-create-home \
+                    --home /var/lib/echessd echessd
         ;;
     abort-upgrade)
         ;;

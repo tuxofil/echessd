@@ -1,0 +1,3 @@
+doc/*.html /usr/share/doc/echessd
+doc/*.css /usr/share/doc/echessd
+doc/*.png /usr/share/doc/echessd
