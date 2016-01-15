@@ -146,9 +146,9 @@ auth(Name, ClearPassword) ->
 compare_password(Encrypted, ClearPassword)
  when is_binary(Encrypted) ->
     %% legacy encrypted password
-    Encrypted == crypto:sha(ClearPassword);
+    Encrypted == crypto:hash(sha, ClearPassword);
 compare_password({sha, Salt, Encrypted}, ClearPassword) ->
-    Encrypted == crypto:sha([Salt, ClearPassword]).
+    Encrypted == crypto:hash(sha, [Salt, ClearPassword]).
 
 %% @doc Fetch the user properties from the database.
 -spec getprops(Name :: name()) ->
@@ -292,7 +292,7 @@ check_property_({?ui_password, {Algo, Salt, Encrypted} = V})
 check_property_({?ui_password, V}) when is_list(V) ->
     true = is_string(V),
     Salt = crypto:rand_bytes(4),
-    {sha, Salt, crypto:sha([Salt, V])};
+    {sha, Salt, crypto:hash(sha, [Salt, V])};
 check_property_({?ui_created, V}) when ?is_now(V) ->
     V;
 check_property_({?ui_games, V}) ->
