@@ -1,3 +1,15 @@
+echessd (0.4.0) unstable; urgency=low
+
+  * adapt for systemd
+  * remove obsolete sections from readme
+  * fix function spec
+  * dialyzer: makefile recipe minor fix
+  * remove support of OTP R14B02 and older
+  * dispose of extra file with version
+  * adapt code for Erlang/OTP 17.3
+
+ -- Aleksey Morarash <aleksey.morarash@gmail.com>  Sun, 17 Jan 2016 21:44:23 +0200
+
 echessd (0.3.1) unstable; urgency=low
 
   * Typo fixes.
