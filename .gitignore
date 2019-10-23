@@ -17,3 +17,4 @@ echessd-database
 *.dump
 doc/overview.edoc
 Mnesia.*
+*.sw[op]
