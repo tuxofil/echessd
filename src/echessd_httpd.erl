@@ -109,9 +109,9 @@ process(ModData, Query, Session) ->
           ModData, Session,
           generate_html(ModData#mod.method, Query, Session))
     catch
-        Type:Reason ->
+        Type:Reason:StackTrace ->
             ErrMsg = geterr(Session, txt_resp_send_error,
-                            {Type, Reason, erlang:get_stacktrace()}),
+                            {Type, Reason, StackTrace}),
             {break, [{response, {501, ErrMsg}}]}
     end.
 
@@ -128,8 +128,8 @@ generate_html(Method, Query, Session) ->
     catch
         _:{error, Reason} ->
             geterr(Session, txt_resp_gen_error, Reason);
-        Type:Reason ->
-            FinalReason = {Type, Reason, erlang:get_stacktrace()},
+        Type:Reason:StackTrace ->
+            FinalReason = {Type, Reason, StackTrace},
             geterr(Session, txt_resp_gen_error, FinalReason)
     end.
 

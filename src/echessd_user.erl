@@ -267,8 +267,8 @@ check_properties(Term) ->
     catch
         _:{error, _} = Error ->
             Error;
-        Type:Reason ->
-            {error, {Type, Reason, erlang:get_stacktrace()}}
+        Type:Reason:StackTrace ->
+            {error, {Type, Reason, StackTrace}}
     end.
 
 %% @doc

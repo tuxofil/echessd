@@ -197,11 +197,11 @@ do_notify_(MessageGenerator, Username) ->
                                       JabberID, Message,
                                       XmppUser, XmppServer, XmppPassword)
                             catch
-                                Type:Reason ->
+                                Type:Reason:StackTrace ->
                                     echessd_log:err(
                                       "~w: failed to format notification: ~9999p",
                                       [?MODULE,
-                                       {Type, Reason, erlang:get_stacktrace()}])
+                                       {Type, Reason, StackTrace}])
                             end;
                         _ -> ok
                     end;

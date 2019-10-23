@@ -109,10 +109,9 @@ read_mime_types(Filename) ->
             Result =
                 try read_mime_types_loop(FH, [])
                 catch
-                    Type:Reason ->
+                    Type:Reason:StackTrace ->
                         {error,
-                         {Type, Reason,
-                          erlang:get_stacktrace()}}
+                         {Type, Reason, StackTrace}}
                 end,
             catch file:close(FH),
             Result;
