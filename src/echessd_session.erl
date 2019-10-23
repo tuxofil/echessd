@@ -137,8 +137,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% @doc Generate user session ID.
 -spec generate_sid() -> id().
 generate_sid() ->
-    _OldSeed = random:seed(now()),
-    erlang:integer_to_list(random:uniform(16#ffffffffffffffff), 16).
+    erlang:integer_to_list(rand:uniform(16#ffffffffffffffff), 16).
 
 %% @doc Fill the session object with data from user's account
 %% (for logged in user).

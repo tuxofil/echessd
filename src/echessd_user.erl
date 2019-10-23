@@ -291,7 +291,7 @@ check_property_({?ui_password, {Algo, Salt, Encrypted} = V})
     V;
 check_property_({?ui_password, V}) when is_list(V) ->
     true = is_string(V),
-    Salt = crypto:rand_bytes(4),
+    Salt = crypto:strong_rand_bytes(4),
     {sha, Salt, crypto:hash(sha, [Salt, V])};
 check_property_({?ui_created, V}) when ?is_now(V) ->
     V;
