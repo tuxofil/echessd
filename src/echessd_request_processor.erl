@@ -136,7 +136,7 @@ handle_post(?PAGE_REGISTER, Query, Session)
                     {?ui_timezone, Timezone},
                     {?ui_language, Language},
                     {?ui_show_in_list, ShowInList},
-                    {?ui_created, now()}]) of
+                    {?ui_created, erlang:timestamp()}]) of
                 ok ->
                     handle_post(
                       ?PAGE_LOGIN,

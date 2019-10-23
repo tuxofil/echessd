@@ -101,7 +101,7 @@ terminate(Reason, State) ->
     _Ignored =
         file:write(
           IoDevice = State#state.file_descr,
-          format_msg(now(), ?LOG_INFO, "Terminating (~9999p)", [Reason])),
+          format_msg(erlang:timestamp(), ?LOG_INFO, "Terminating (~9999p)", [Reason])),
     catch file:close(IoDevice),
     ok.
 
@@ -185,7 +185,7 @@ openlog(OldIoDevice, [_ | _] = LogPath) ->
             io:format(
               standard_error,
               format_msg(
-                now(), ?LOG_ERR, "Unable to open ~9999p: ~p",
+                erlang:timestamp(), ?LOG_ERR, "Unable to open ~9999p: ~p",
                 [LogPath, Reason])),
             undefined
     end.

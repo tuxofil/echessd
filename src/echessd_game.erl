@@ -127,7 +127,7 @@
 add(GameType, Owner, OwnerColor, Opponent, OtherProps) ->
     Props =
         [{?gi_type, GameType},
-         {?gi_created, now()},
+         {?gi_created, erlang:timestamp()},
          {?gi_creator, Owner},
          {?gi_status, ?gs_alive},
          {?gi_acknowledged, Owner == Opponent},

@@ -198,7 +198,7 @@ do_dump(InstanceID, Cookie, DumpFilePath) ->
             ok = echessd_lib:unconsult(
                    DumpFilePath,
                    ["echessd v.", version(), " database dump\n",
-                    echessd_lib:timestamp(now())],
+                    echessd_lib:timestamp(erlang:timestamp())],
                    rpc:call(ServerNode, echessd_db, dump, [])),
             halt(0);
         pang ->
