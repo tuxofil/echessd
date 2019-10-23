@@ -1,3 +1,9 @@
+echessd (0.4.1) unstable; urgency=low
+
+  * adapt code for Erlang/OTP 21.
+
+ -- Aleksey Morarash <aleksey.morarash@gmail.com>  Wed, 23 Oct 2019 23:55:00 +0300
+
 echessd (0.4.0) unstable; urgency=low
 
   * adapt for systemd
